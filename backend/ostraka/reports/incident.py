@@ -49,6 +49,7 @@ from ostraka.reports.theme import pal
 from ostraka.standard import ach as ach_maths
 from ostraka.standard import yardstick
 from ostraka.standard.assessment import ordered_basis, sentences
+from ostraka.updates.drafts import sent_updates
 
 
 def phase_fills() -> dict[Phase, tuple[int, int, int]]:
@@ -113,6 +114,8 @@ class Record:
     chain_events: int
     chain_head: str
     exported_at: datetime = field(default_factory=utcnow)
+    # Stakeholder updates sent, in order: (UPD-7, number, approved at, approved by, texts, AI-worded)
+    updates: list[tuple] = field(default_factory=list)
 
     def name(self, user_id: uuid.UUID | None) -> str:
         return self.names.get(user_id, "Former member") if user_id else "—"
@@ -182,6 +185,7 @@ async def gather(db: AsyncSession, incident: Incident, viewer: User) -> Record:
         chain_ok=check.ok,
         chain_events=check.events,
         chain_head=head or activity.GENESIS,
+        updates=await sent_updates(db, of),
     )
 
 
@@ -896,6 +900,22 @@ def _appendices(record: Record) -> list[tuple]:
 # ---- the briefing -----------------------------------------------------------------------------------
 
 
+def _updates(record: Record, mask) -> list[tuple]:
+    """Every stakeholder update as it was sent, oldest first. An AI-worded one is marked †."""
+    if not record.updates:
+        return []
+    blocks: list[tuple] = [("section", "Updates Sent")]
+    for ref, number, at, by, texts, ai_worded in record.updates:
+        mark = " †" if ai_worded else ""
+        blocks.append(("sub", f"Update {number} ({ref}), {_date(at)}, approved by {by}{mark}"))
+        blocks += [("para", mask(t)) for t in texts]
+    if any(u[5] for u in record.updates):
+        blocks.append(
+            ("note", ["† Worded with AI help from Ostraka's draft, and checked against it before approval."])
+        )
+    return blocks
+
+
 def briefing(record: Record) -> tuple[Cover, list[tuple]]:
     """For stakeholders: the bottom line, the incident in brief, what we know, what's being done and
     what we've learned. Indicators are masked, as ostraka does for observers."""
@@ -947,6 +967,8 @@ def briefing(record: Record) -> tuple[Cover, list[tuple]]:
                 False,
             )
         )
+
+    blocks += _updates(record, mask)
 
     improve = [lesson for lesson in record.lessons if lesson.kind is LessonKind.IMPROVE]
     if improve:

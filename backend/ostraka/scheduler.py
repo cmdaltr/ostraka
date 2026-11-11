@@ -22,6 +22,7 @@ from ostraka.db import sessions
 from ostraka.incidents import access, activity
 from ostraka.log import get_logger
 from ostraka.models import FINISHED, Incident, IncidentStatus, NotificationKind, Task, User, utcnow
+from ostraka.updates import drafts
 
 log = get_logger(__name__)
 
@@ -125,6 +126,7 @@ async def tick(db: AsyncSession, now: datetime | None = None) -> int:
             task.escalated_commander_at = now
             acted += 1
 
+    await drafts.tick(db, now)  # stakeholder updates on their rhythm (not counted: tasks only)
     await activity.finish(db)
     return acted
 

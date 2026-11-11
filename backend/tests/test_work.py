@@ -208,7 +208,8 @@ async def tick(at):
 
 
 async def kinds(client, person) -> list[str]:
-    return [n["kind"] for n in (await notes(client, person))["items"]]
+    # The same ticks fall due for stakeholder updates (tests/test_updates.py); these tests are about tasks
+    return [n["kind"] for n in (await notes(client, person))["items"] if n["kind"] != "update_due"]
 
 
 async def test_reminders_then_escalation_to_the_lead_and_the_commander(db, client, people, outbox, settle):

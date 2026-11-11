@@ -52,6 +52,8 @@ class NotificationKind(StrEnum):
     COMMANDER = "commander"  # you're now incident commander
     UNBLOCKED = "unblocked"  # a task you hold was waiting on another, which has finished
     NEW_DEVICE = "new_device"  # your account signed in from a browser it hasn't used before
+    UPDATE_DUE = "update_due"  # an incident's stakeholder update is due, and its draft is ready
+    STAKEHOLDER_UPDATE = "stakeholder_update"  # an approved update, to its stakeholders
 
 
 class Task(Base):

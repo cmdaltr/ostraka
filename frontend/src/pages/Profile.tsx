@@ -256,6 +256,8 @@ const kindNames: Record<string, string> = {
   reply: 'Someone replies to my comment',
   commander: 'I’m made incident commander',
   unblocked: 'A task I hold stops waiting',
+  update_due: 'A stakeholder update I handle is due',
+  stakeholder_update: 'A stakeholder update is sent to me',
 };
 
 function Kinds({ me }: { me: Me }) {

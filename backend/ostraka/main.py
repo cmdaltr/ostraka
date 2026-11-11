@@ -30,6 +30,7 @@ from ostraka.api import (
     tasks,
     teams,
     tokens,
+    updates,
     users,
 )
 from ostraka.api import live as live_api
@@ -90,6 +91,7 @@ def create_app() -> FastAPI:
         notifications,
         tags,
         webhooks_api,
+        updates,
         live_api,
     ):
         app.include_router(module.router)

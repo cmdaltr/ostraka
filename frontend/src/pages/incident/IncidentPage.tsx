@@ -23,6 +23,7 @@ import { Observables } from './Observables';
 import { Overview } from './Overview';
 import { Tasks } from './Tasks';
 import { Timeline } from './Timeline';
+import { Updates } from './Updates';
 import './incident.css';
 
 const sections = [
@@ -32,6 +33,7 @@ const sections = [
   ['assets', 'Assets'],
   ['findings', 'Findings'],
   ['assessments', 'Assessments'],
+  ['updates', 'Updates'],
   ['ach', 'ACH'],
   ['timeline', 'Timeline'],
   ['lessons', 'Lessons'],
@@ -276,6 +278,7 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'assets' && <Assets incident={incident} />}
           {section === 'findings' && <Findings incident={incident} />}
           {section === 'assessments' && <Assessments incident={incident} />}
+          {section === 'updates' && <Updates incident={incident} />}
           {section === 'ach' && <AchMatrix incident={incident} me={me} />}
           {section === 'timeline' && <Timeline incident={incident} />}
           {section === 'lessons' && <Lessons incident={incident} me={me} />}

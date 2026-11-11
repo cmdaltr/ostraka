@@ -44,6 +44,7 @@ log = get_logger(__name__)
 
 _PENDING = "ostraka.pending_notifications"
 _PENDING_TEAMS = "ostraka.pending_team_posts"
+_PENDING_MAIL = "ostraka.pending_outside_mail"
 _background: set[asyncio.Task] = set()
 
 # Worth an email; everything else is in-app and push only
@@ -56,6 +57,8 @@ EMAIL_KINDS = frozenset(
         NotificationKind.MENTION,
         NotificationKind.COMMANDER,
         NotificationKind.NEW_DEVICE,
+        NotificationKind.UPDATE_DUE,
+        NotificationKind.STAKEHOLDER_UPDATE,
     }
 )
 URGENT_KINDS = frozenset(
@@ -79,6 +82,8 @@ KIND_WORDS = {
     NotificationKind.COMMANDER: "You're now incident commander",
     NotificationKind.UNBLOCKED: "A task you hold is no longer waiting",
     NotificationKind.NEW_DEVICE: "Your account signed in from a new browser",
+    NotificationKind.UPDATE_DUE: "A stakeholder update is due",
+    NotificationKind.STAKEHOLDER_UPDATE: "A stakeholder update was issued",
 }
 
 
@@ -191,11 +196,40 @@ def team_channel(
     return True
 
 
+@dataclass(frozen=True)
+class _Mail:
+    to: str
+    kind: NotificationKind
+    title: str
+    body: str
+    incident_id: uuid.UUID | None
+
+
+def email_outside(
+    db: AsyncSession,
+    address: str,
+    kind: NotificationKind,
+    title: str,
+    *,
+    body: str = "",
+    incident: Incident | None = None,
+) -> bool:
+    """Queue an email to an address with no Ostraka account (a stakeholder outside it), cut down by
+    `outward` like everything else. No link: they can't sign in. False when email isn't set up."""
+    if not channels.email_enabled():
+        return False
+    db.info.setdefault(_PENDING_MAIL, []).append(
+        _Mail(address, kind, title, body, incident.id if incident else None)
+    )
+    return True
+
+
 async def dispatch(db: AsyncSession) -> None:
     """After a commit: tell each recipient's open tabs, then email and push in the background."""
     ids: list[uuid.UUID] = db.info.pop(_PENDING, [])
     posts: list[_TeamPost] = db.info.pop(_PENDING_TEAMS, [])
-    if not ids and not posts:
+    mails: list[_Mail] = db.info.pop(_PENDING_MAIL, [])
+    if not ids and not posts and not mails:
         return
     users = (
         set((await db.scalars(select(Notification.user_id).where(Notification.id.in_(ids)))).all())
@@ -204,7 +238,7 @@ async def dispatch(db: AsyncSession) -> None:
     )
     for user_id in users:
         await live.publish_user(user_id, {"type": "notification"})
-    job = asyncio.create_task(_deliver(ids, posts))
+    job = asyncio.create_task(_deliver(ids, posts, mails))
     _background.add(job)
     job.add_done_callback(_background.discard)
 
@@ -219,7 +253,7 @@ def busy_sending() -> bool:
     return bool(_background)
 
 
-async def _deliver(ids: list[uuid.UUID], posts: list[_TeamPost]) -> None:
+async def _deliver(ids: list[uuid.UUID], posts: list[_TeamPost], mails: list[_Mail]) -> None:
     try:
         async with sessions()() as db:
             for notification_id in ids:
@@ -232,6 +266,10 @@ async def _deliver(ids: list[uuid.UUID], posts: list[_TeamPost]) -> None:
                 if team and team.teams_webhook:
                     title, text = outward(post.kind, post.title, post.body, incident)
                     await channels.send_teams(decrypt(team.teams_webhook), title, text, link_url(post.link))
+            for mail in mails:
+                incident = await db.get(Incident, mail.incident_id) if mail.incident_id else None
+                title, text = outward(mail.kind, mail.title, mail.body, incident)
+                await channels.send_email(mail.to, f"[Ostraka] {title}", text)
             await db.commit()
     except Exception:
         log.exception("notification delivery failed")

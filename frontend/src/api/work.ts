@@ -135,7 +135,9 @@ export type NotificationKind =
   | 'mention'
   | 'reply'
   | 'commander'
-  | 'unblocked';
+  | 'unblocked'
+  | 'update_due'
+  | 'stakeholder_update';
 
 export interface Notification {
   id: string;

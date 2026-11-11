@@ -103,3 +103,27 @@ def can_export(viewer: User, *, worked_on: bool, is_commander: bool, sensitive: 
     if worked_on or is_commander:
         return None
     return "Only people who have worked on this incident can export its reports."
+
+
+def can_run_updates(viewer: User, *, is_commander: bool, is_comms: bool) -> str | None:
+    """Set an incident's update rhythm, choose its stakeholders, and prepare its drafts: whoever
+    holds comms, and the commander."""
+    if viewer.role is Role.OBSERVER:
+        return "Observers read the briefing; they don't prepare updates."
+    if is_comms or is_commander:
+        return None
+    return "Only the incident's comms lead or commander can prepare stakeholder updates."
+
+
+def can_approve_update(viewer: User, *, is_commander: bool, is_comms: bool, comms_named: bool) -> str | None:
+    """Approve an update and send it: comms. The commander stands in only while nobody holds comms,
+    so a named comms lead's sign-off can't be skipped."""
+    if viewer.role is Role.OBSERVER:
+        return "Observers can't approve updates."
+    if is_comms:
+        return None
+    if is_commander and not comms_named:
+        return None
+    if is_commander:
+        return "This incident has a comms lead: they approve its updates."
+    return "Only the incident's comms lead approves stakeholder updates."

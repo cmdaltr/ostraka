@@ -239,6 +239,8 @@ export function sectionsFor(entityType: string): string[] {
       return ['ach'];
     case 'lesson':
       return ['lessons'];
+    case 'update':
+      return ['updates', 'briefing'];
     case 'link':
       return ['record-links'];
     default:
