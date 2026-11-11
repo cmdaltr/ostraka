@@ -22,6 +22,7 @@ import { Comments } from './Comments';
 import { DetectionGaps } from './DetectionGaps';
 import { Findings } from './Findings';
 import { Handover, SinceYouLeftBanner } from './Handover';
+import { IntelExports } from './IntelExports';
 import { Lessons } from './Lessons';
 import { Observables } from './Observables';
 import { Overview } from './Overview';
@@ -178,6 +179,7 @@ function Export({ incident }: { incident: Incident }) {
         ))}
         {incident.sensitive && <p className="hint">Sensitive: only the commander can export.</p>}
         {error && <Notice kind="error">{error}</Notice>}
+        <IntelExports incident={incident} />
       </div>
     </details>
   );

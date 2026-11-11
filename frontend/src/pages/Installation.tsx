@@ -9,6 +9,7 @@ import { Loading } from '../components/sherd/Ostrakon';
 import { Progress } from '../components/sherd/Progress';
 import { Notice, messageOf } from '../components/ui';
 import { IntegrationsTab } from './InstallationIntegrations';
+import { MispTab } from './InstallationMisp';
 import { WebhooksTab } from './InstallationWebhooks';
 import './Installation.css';
 
@@ -596,6 +597,7 @@ const tabs = [
   { key: 'brands', label: 'Report brands' },
   { key: 'webhooks', label: 'Webhooks' },
   { key: 'integrations', label: 'Rowanholt and Shikari' },
+  { key: 'misp', label: 'MISP' },
 ] as const;
 type Tab = (typeof tabs)[number]['key'];
 
@@ -607,7 +609,7 @@ export function Installation() {
       <div className="page-head">
         <div>
           <h1>Installation</h1>
-          <p className="hint">The licence, how exported reports look, webhooks, and Rowanholt and Shikari.</p>
+          <p className="hint">The licence, how exported reports look, webhooks, Rowanholt and Shikari, and MISP.</p>
         </div>
       </div>
       <nav className="tabs" aria-label="Installation sections">
@@ -628,6 +630,8 @@ export function Installation() {
         <Brands />
       ) : tab === 'webhooks' ? (
         <WebhooksTab />
+      ) : tab === 'misp' ? (
+        <MispTab />
       ) : (
         <IntegrationsTab />
       )}
