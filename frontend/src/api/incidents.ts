@@ -102,6 +102,8 @@ export interface AssetLink {
   kind: LinkKind;
   seen_at: string | null;
   technique: string;
+  // Where the connection was seen
+  source: string;
   note: string;
 }
 
@@ -156,6 +158,7 @@ export interface Comment {
   edited_at: string | null;
   deleted: boolean;
   resolved_at: string | null;
+  version: number;
 }
 
 export interface ActivityEvent {
@@ -222,12 +225,14 @@ export const keys = {
 export function sectionsFor(entityType: string): string[] {
   switch (entityType) {
     case 'observable':
-      return ['observables', 'timeline'];
+      return ['observables', 'timeline', 'observables-working', 'graph'];
     case 'asset':
     case 'asset_link':
-      return ['assets', 'links', 'timeline'];
+      return ['assets', 'links', 'timeline', 'graph'];
     case 'finding':
-      return ['findings', 'timeline'];
+      return ['findings', 'timeline', 'rowanholt', 'detection-gaps', 'graph', 'exhibits'];
+    case 'exhibit':
+      return ['exhibits', 'graph'];
     case 'comment':
       return ['comments'];
     case 'task':
@@ -239,8 +244,18 @@ export function sectionsFor(entityType: string): string[] {
       return ['ach'];
     case 'lesson':
       return ['lessons'];
+    case 'clock':
+      return ['clocks'];
+    case 'update':
+      return ['updates', 'briefing'];
     case 'link':
       return ['record-links'];
+    case 'handover':
+      return ['handover'];
+    case 'rowanholt':
+      return ['rowanholt'];
+    case 'detection_gap':
+      return ['detection-gaps', 'tasks'];
     default:
       return [];
   }

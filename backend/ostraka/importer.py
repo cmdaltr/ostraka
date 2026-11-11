@@ -33,9 +33,23 @@ mention, "@{team:Northwind SOC}" a team mention, and "#{f1}" the reference of wh
 
 Steps ("do"): update, member, team, playbook, observable, sighting, asset, asset_update, asset_link,
 finding, verify, confirm, refute, task, task_update, tick, claim, release, nudge, wait_on, comment,
-link, promote, decide, assess, hypothesis, evidence, rate, reject, lesson. Their fields are the
-API's, with keys in place of ids; see `_STEPS`. A playbook step's "keys" name its steps, and each
-becomes a task once its step opens.
+link, promote, decide, assess, hypothesis, evidence, rate, reject, lesson, handover, the regulator
+clocks' clock, clock_met and clock_close (`ostraka.clocks.importing`), exhibit, cite_exhibit,
+custody_offer, custody_accept, custody_decline, custody_withdraw. Their fields are the API's, with
+keys in place of ids; see `_STEPS`. A playbook step's "keys" name its steps, and each becomes a task
+once its step opens.
+
+Exhibits and custody (added 11 November 2026; files without them load as before):
+
+    {"do": "exhibit", "key": "x1", "with": {"label": "...", "sha256": "...", "md5": "...",
+        "location": "...", "acquired": "-6d 09:10", "holder": "jun"}}
+    {"do": "cite_exhibit", "finding": "f1", "exhibit": "x1"}
+    {"do": "custody_offer", "exhibit": "x1", "to": "tom", "with": {"purpose": "...", "location": "..."}}
+    {"do": "custody_accept", "by": "tom", "exhibit": "x1",
+        "with": {"acknowledgement": "...", "sha256": "..."}}
+    {"do": "custody_decline" | "custody_withdraw", "exhibit": "x1", "with": {"note": "..."}}
+
+An acceptance is made by the person the exhibit was offered to, as in Ostraka itself.
 """
 
 from __future__ import annotations
@@ -55,6 +69,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka import accounts, audit, branding, live, notify, webhooks
 from ostraka.auth.secrets import new_token, token_hash
+from ostraka.clocks import importing as clock_steps
 from ostraka.db import sessions
 from ostraka.log import get_logger
 from ostraka.models import (
@@ -466,6 +481,43 @@ class _Run:
             )
             await self.call("POST", f"{self.base(step)}/lessons/{out['id']}/task", body)
 
+    # ---- exhibits and custody ------------------------------------------------------------------------
+
+    def _exhibit_path(self, key: str) -> str:
+        made = self.get(key, "exhibit")
+        return f"/api/incidents/{self.get(made.record, 'record').id}/evidence/{made.id}"
+
+    async def exhibit(self, step: _Step) -> None:
+        body = dict(step.body["with"])
+        body["description"] = self.text(body.get("description", ""))
+        if "acquired" in body:
+            body["acquired_at"] = when(
+                body.pop("acquired"), now=datetime.now(UTC), previous=step.at
+            ).isoformat()
+        if "holder" in body:
+            body["holder_id"] = self.person(body.pop("holder"))
+        out = await self.call("POST", f"{self.base(step)}/evidence", body)
+        self.keep(step.body.get("key"), "exhibit", step.record, out)
+
+    async def cite_exhibit(self, step: _Step) -> None:
+        finding = self.get(step.body["finding"], "finding")
+        await self.call(
+            "POST",
+            f"{self.base(step)}/findings/{finding.id}/evidence",
+            {"evidence_id": self.get(step.body["exhibit"], "exhibit").id},
+        )
+
+    async def custody_offer(self, step: _Step) -> None:
+        body = dict(step.body.get("with", {}))
+        body["to_id"] = self.person(step.body["to"])
+        body["purpose"] = self.text(body.get("purpose", ""))
+        await self.call("POST", f"{self._exhibit_path(step.body['exhibit'])}/offer", body)
+
+    async def custody_answer(self, step: _Step) -> None:
+        body = dict(step.body.get("with", {}))
+        verb = {"custody_accept": "accept", "custody_decline": "decline", "custody_withdraw": "withdraw"}
+        await self.call("POST", f"{self._exhibit_path(step.body['exhibit'])}/{verb[step.do]}", body)
+
     async def choose(self, step: _Step) -> None:
         """Finish a decision with one of its outcomes; one that promotes names the new incident by "key"."""
         current = await self.task(step.body["task"])
@@ -591,11 +643,25 @@ class _Run:
         for index in step.body.get("items", [step.body.get("item", 0)]):
             item = current["checklist"][index]
             await self.call(
-                "PATCH", f"{self._task_path(step.body['task'])}/checklist/{item['id']}", {"done": True}
+                "PATCH",
+                f"{self._task_path(step.body['task'])}/checklist/{item['id']}",
+                {"version": item["version"], "done": True},
             )
 
     async def claim(self, step: _Step) -> None:
-        await self.call("POST", f"{self._task_path(step.body['task'])}/{step.do}")
+        current = await self.task(step.body["task"])
+        await self.call(
+            "POST", f"{self._task_path(step.body['task'])}/{step.do}", {"version": current["version"]}
+        )
+
+    async def handover(self, step: _Step) -> None:
+        """Ostraka's draft for the stretch since the last handover, with anything the file adds."""
+        made = await self.call("GET", f"{self.base(step)}/handover/draft")
+        body = made["text"]
+        if extra := step.body.get("add"):
+            body = f"{body}\n\n{self.text(extra)}"
+        covers = {k: made[k] for k in ("from_position", "through_position")}
+        await self.call("POST", f"{self.base(step)}/handover", {"body": body, **covers})
 
     async def nudge(self, step: _Step) -> None:
         await self.call(
@@ -690,6 +756,16 @@ _STEPS: dict[str, Callable[[_Run, _Step], Awaitable[None]]] = {
     "rate": _Run.rate,
     "reject": _Run.reject,
     "lesson": _Run.lesson,
+    "handover": _Run.handover,
+    "clock": clock_steps.add,  # regulator clocks: ostraka/clocks/importing.py
+    "clock_met": clock_steps.met,
+    "clock_close": clock_steps.close,
+    "exhibit": _Run.exhibit,
+    "cite_exhibit": _Run.cite_exhibit,
+    "custody_offer": _Run.custody_offer,
+    "custody_accept": _Run.custody_answer,
+    "custody_decline": _Run.custody_answer,
+    "custody_withdraw": _Run.custody_answer,
 }
 
 

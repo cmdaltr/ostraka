@@ -14,10 +14,17 @@ from ostraka.api import (
     assessments,
     assets,
     auth,
+    clocks,
     comments,
+    detection_gaps,
+    evidence,
+    exports,
     findings,
+    graph,
+    handover,
     incidents,
     installation,
+    integrations,
     invitations,
     lessons,
     links,
@@ -25,11 +32,13 @@ from ostraka.api import (
     observables,
     playbooks,
     reports,
+    rowanholt,
     system,
     tags,
     tasks,
     teams,
     tokens,
+    updates,
     users,
 )
 from ostraka.api import live as live_api
@@ -37,6 +46,7 @@ from ostraka.api import (
     webhooks as webhooks_api,
 )
 from ostraka.config import get_settings
+from ostraka.integrations import gaps
 from ostraka.log import configure
 
 
@@ -45,6 +55,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await live.startup()
     notify.startup()
     webhooks.startup()
+    gaps.startup()
     scheduler.startup()
     try:
         yield
@@ -81,7 +92,9 @@ def create_app() -> FastAPI:
         assessments,
         ach,
         lessons,
+        clocks,
         reports,
+        exports,
         installation,
         comments,
         links,
@@ -90,10 +103,17 @@ def create_app() -> FastAPI:
         notifications,
         tags,
         webhooks_api,
+        integrations,
+        rowanholt,
+        detection_gaps,
+        updates,
         live_api,
+        handover,
+        evidence,
+        graph,
     ):
         app.include_router(module.router)
-    for extra in (incidents.refs_router, tasks.mine_router, playbooks.incident_router):
+    for extra in (incidents.refs_router, tasks.mine_router, playbooks.incident_router, clocks.mine_router):
         app.include_router(extra)
     # MCP over HTTP, as the bearer token's owner (ostraka/mcp_server.py)
     app.router.routes.append(Route("/mcp", endpoint=mcp_server.app, methods=["GET", "POST", "DELETE"]))

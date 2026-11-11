@@ -52,6 +52,10 @@ class NotificationKind(StrEnum):
     COMMANDER = "commander"  # you're now incident commander
     UNBLOCKED = "unblocked"  # a task you hold was waiting on another, which has finished
     NEW_DEVICE = "new_device"  # your account signed in from a browser it hasn't used before
+    CLOCK_DUE = "clock_due"  # a regulator clock you own (or command) is running down
+    CLOCK_BREACHED = "clock_breached"  # a regulator deadline passed unmet
+    UPDATE_DUE = "update_due"  # an incident's stakeholder update is due, and its draft is ready
+    STAKEHOLDER_UPDATE = "stakeholder_update"  # an approved update, to its stakeholders
 
 
 class Task(Base):
@@ -131,6 +135,7 @@ class ChecklistItem(Base):
     done: Mapped[bool] = mapped_column(Boolean, default=False)
     done_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     done_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    version: Mapped[int] = mapped_column(Integer, default=1)
 
 
 class Playbook(Base):

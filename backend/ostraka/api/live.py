@@ -3,6 +3,7 @@
 Messages from the browser:
   {"type": "join", "incident": "<id>"}                       watch an incident
   {"type": "presence", "incident": "<id>", "focus": "finding:<id>", "editing": true}
+     (a focus is a section name or "<kind>:<uuid>"; anything else is dropped: presence carries ids only)
   {"type": "leave", "incident": "<id>"}
 Messages to the browser: {"type": "activity", "event": {...}}, {"type": "presence", "people": [...]}
 and {"type": "notification"} (fetch /api/notifications).
@@ -18,6 +19,7 @@ from ostraka import live
 from ostraka.auth.deps import Caller, current_caller
 from ostraka.db import sessions
 from ostraka.incidents import access
+from ostraka.incidents.presence import clean_focus
 from ostraka.log import get_logger
 from ostraka.models import Incident, User
 
@@ -86,7 +88,7 @@ async def socket(websocket: WebSocket, ticket: str = "") -> None:
                 await presence(incident)
             elif kind == "presence" and incident in joined:
                 await presence(
-                    incident, focus=str(message.get("focus", ""))[:80], editing=bool(message.get("editing"))
+                    incident, focus=clean_focus(message.get("focus")), editing=bool(message.get("editing"))
                 )
             elif kind == "leave" and incident in joined:
                 live.hub.rooms[incident].discard(websocket)

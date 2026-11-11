@@ -14,6 +14,7 @@ from ostraka import notify, work, workflow
 from ostraka.api import links
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
+from ostraka.incident_schemas import MaybeVersioned
 from ostraka.incidents import access, activity, views
 from ostraka.incidents.refs import parse_ref
 from ostraka.models import (
@@ -260,12 +261,15 @@ async def decide(
 async def claim(
     incident_id: uuid.UUID,
     task_id: uuid.UUID,
+    body: MaybeVersioned | None = None,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_session),
 ) -> TaskOut:
     """Take a task from your team's queue."""
     incident = await access.load(db, user, incident_id, edit=True)
     task = await _task(db, incident, task_id)
+    if body is not None and body.version is not None:
+        views.check_version(task.version, body.version, "task")
     if task.status in FINISHED:
         raise HTTPException(status.HTTP_409_CONFLICT, "That task is already finished.")
     if task.assignee_id is not None:
@@ -296,12 +300,15 @@ async def claim(
 async def release(
     incident_id: uuid.UUID,
     task_id: uuid.UUID,
+    body: MaybeVersioned | None = None,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_session),
 ) -> TaskOut:
     """Hand a claimed task back to its team's queue."""
     incident = await access.load(db, user, incident_id, edit=True)
     task = await _task(db, incident, task_id)
+    if body is not None and body.version is not None:
+        views.check_version(task.version, body.version, "task")
     if task.team_id is None:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY, "This task has no team queue to go back to."
@@ -376,6 +383,7 @@ async def update_item(
     item = next((i for i in task.checklist if i.id == item_id), None)
     if item is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such checklist item.")
+    views.check_version(item.version, body.version, "checklist item")
     what = []
     if body.text is not None and body.text.strip() != item.text:
         item.text = body.text.strip()
@@ -385,6 +393,7 @@ async def update_item(
         item.done_by, item.done_at = (user.id, utcnow()) if body.done else (None, None)
         what.append("ticked" if body.done else "unticked")
     if what:
+        item.version += 1
         task.updated_at = utcnow()
         await activity.record(
             db,

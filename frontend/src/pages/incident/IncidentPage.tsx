@@ -12,29 +12,45 @@ import { Assembling, Loading, useFinishing } from '../../components/sherd/Ostrak
 import { Notice, messageOf } from '../../components/ui';
 import { useLiveIncident } from '../../live/live';
 import type { Present } from '../../live/live';
+import { PresenceProvider } from '../../live/presence';
 import { AchMatrix } from './AchMatrix';
 import { Activity } from './Activity';
 import { Assessments } from './Assessments';
 import { Assets } from './Assets';
+import { Clocks } from './Clocks';
 import { Comments } from './Comments';
+import { DetectionGaps } from './DetectionGaps';
 import { Findings } from './Findings';
+import { Handover, SinceYouLeftBanner } from './Handover';
+import { IntelExports } from './IntelExports';
+import { Evidence } from './Evidence';
+import { Graph } from './Graph';
 import { Lessons } from './Lessons';
 import { Observables } from './Observables';
 import { Overview } from './Overview';
+import { Rowanholt } from './Rowanholt';
 import { Tasks } from './Tasks';
 import { Timeline } from './Timeline';
+import { Updates } from './Updates';
 import './incident.css';
 
 const sections = [
   ['overview', 'Overview'],
   ['tasks', 'Tasks'],
+  ['clocks', 'Clocks'],
   ['observables', 'Observables'],
   ['assets', 'Assets'],
   ['findings', 'Findings'],
+  ['rowanholt', 'Rowanholt'],
+  ['detection-gaps', 'Detection gaps'],
+  ['evidence', 'Evidence'],
+  ['graph', 'Graph'],
   ['assessments', 'Assessments'],
+  ['updates', 'Updates'],
   ['ach', 'ACH'],
   ['timeline', 'Timeline'],
   ['lessons', 'Lessons'],
+  ['handover', 'Handover'],
   ['activity', 'Activity'],
 ] as const;
 type Section = (typeof sections)[number][0];
@@ -169,6 +185,7 @@ function Export({ incident }: { incident: Incident }) {
         ))}
         {incident.sensitive && <p className="hint">Sensitive: only the commander can export.</p>}
         {error && <Notice kind="error">{error}</Notice>}
+        <IntelExports incident={incident} />
       </div>
     </details>
   );
@@ -251,6 +268,8 @@ export function IncidentPage({ me }: { me: Me }) {
 
       {promoting && <Promote hunt={incident} onClose={() => setPromoting(false)} />}
 
+      <SinceYouLeftBanner incident={incident} />
+
       <nav className="tabs" aria-label="Incident sections">
         {sections.map(([key, name]) => {
           const count = (incident.counts as Record<string, number>)[key];
@@ -268,23 +287,32 @@ export function IncidentPage({ me }: { me: Me }) {
         })}
       </nav>
 
+      <PresenceProvider value={{ incidentId: incident.id, meId: me.id, people }}>
       <div className="incident-body">
         <div className="incident-main">
           {section === 'overview' && <Overview incident={incident} me={me} />}
           {section === 'tasks' && <Tasks incident={incident} me={me} />}
+          {section === 'clocks' && <Clocks incident={incident} me={me} />}
           {section === 'observables' && <Observables incident={incident} me={me} />}
           {section === 'assets' && <Assets incident={incident} />}
           {section === 'findings' && <Findings incident={incident} />}
+          {section === 'rowanholt' && <Rowanholt incident={incident} />}
+          {section === 'detection-gaps' && <DetectionGaps incident={incident} me={me} />}
+          {section === 'evidence' && <Evidence incident={incident} />}
+          {section === 'graph' && <Graph incident={incident} />}
           {section === 'assessments' && <Assessments incident={incident} />}
+          {section === 'updates' && <Updates incident={incident} />}
           {section === 'ach' && <AchMatrix incident={incident} me={me} />}
           {section === 'timeline' && <Timeline incident={incident} />}
           {section === 'lessons' && <Lessons incident={incident} me={me} />}
+          {section === 'handover' && <Handover incident={incident} me={me} />}
           {section === 'activity' && <Activity incident={incident} />}
         </div>
         <aside className="incident-rail" aria-label="Discussion">
           <Comments incident={incident} me={me} />
         </aside>
       </div>
+      </PresenceProvider>
     </div>
       )}
     </Loading>

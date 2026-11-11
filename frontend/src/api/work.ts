@@ -21,6 +21,7 @@ export interface ChecklistItem {
   done: boolean;
   done_by: PersonRef | null;
   done_at: string | null;
+  version: number;
 }
 
 // Another task this one waits on, or that waits on it, possibly in another incident
@@ -135,7 +136,11 @@ export type NotificationKind =
   | 'mention'
   | 'reply'
   | 'commander'
-  | 'unblocked';
+  | 'unblocked'
+  | 'clock_due'
+  | 'clock_breached'
+  | 'update_due'
+  | 'stakeholder_update';
 
 export interface Notification {
   id: string;

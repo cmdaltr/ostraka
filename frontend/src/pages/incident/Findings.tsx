@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { api } from '../../api/client';
 import type { Asset, Finding, FindingKind, FindingStatus, Incident, Verification } from '../../api/incidents';
 import { Notice, formatDate } from '../../components/ui';
+import { Watching, useRecordPresence } from '../../live/presence';
 import { Rich, Tags, fromLocalInput, splitTags, useSave, useSection } from './shared';
 
 const kinds: [FindingKind, string, string][] = [
@@ -289,11 +290,14 @@ function FindingCard({ incident, finding, assets }: { incident: Incident; findin
   const asset = assets.find((a) => a.id === finding.asset_id);
   const grade = [finding.source_reliability, finding.information_credibility].filter(Boolean).join('');
   const verified = finding.verifications.length > 0;
+  const focus = `finding:${finding.id}`;
+  const presence = useRecordPresence(focus, verifying || deciding !== null);
 
   return (
-    <li className={`record finding finding-${finding.status}`} id={finding.ref}>
+    <li className={`record finding finding-${finding.status}`} id={finding.ref} {...presence}>
       <div className="record-head">
         <span className="mono ref">{finding.ref}</span>
+        <Watching focus={focus} />
         <span className={`status status-${finding.status}`}>{statusNames[finding.status]}</span>
         <span className="chip">{finding.kind}</span>
         {grade && <span className="chip mono" title="Admiralty grade">{grade}</span>}

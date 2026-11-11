@@ -227,7 +227,7 @@ function CommentItem({
           submitLabel="Save"
           onCancel={() => setEditing(false)}
           onSubmit={async (body) => {
-            const done = (await save.run(() => api(base, { method: 'PATCH', json: { body } }))) !== undefined;
+            const done = (await save.run(() => api(base, { method: 'PATCH', json: { version: comment.version, body } }))) !== undefined;
             if (done) setEditing(false);
             return done;
           }}
@@ -305,7 +305,10 @@ function Thread({ incident, me, root, replies }: { incident: Incident; me: Me; r
                   className="link-button"
                   type="button"
                   onClick={() =>
-                    save.run(() => api(`/api/incidents/${incident.id}/comments/${root.id}/resolve`, { method: 'POST' }))
+                    save.run(() => api(`/api/incidents/${incident.id}/comments/${root.id}/resolve`, {
+                        method: 'POST',
+                        json: { version: root.version },
+                      }))
                   }
                 >
                   {resolved ? 'Reopen' : 'Resolve'}

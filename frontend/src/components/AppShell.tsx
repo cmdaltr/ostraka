@@ -41,6 +41,7 @@ export function AppShell({ me }: { me: Me }) {
             Incidents
           </NavLink>
           {me.role !== 'observer' && <NavLink to="/work">Your work</NavLink>}
+          <NavLink to="/detection-gaps">Detection gaps</NavLink>
           {manages && <NavLink to="/playbooks">Playbooks</NavLink>}
           <NavLink to="/people">{manages ? 'People' : 'Directory'}</NavLink>
           <NavLink to="/profile">Profile</NavLink>

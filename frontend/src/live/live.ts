@@ -21,6 +21,9 @@ let connecting: Promise<void> | null = null;
 let retry = 1000;
 let wanted = false;
 const joined = new Set<string>();
+// What this tab last said it has open in each incident: repeated by the heartbeat and after a
+// reconnect, so neither quietly clears someone's "editing"
+const current = new Map<string, { focus: string; editing: boolean }>();
 const listeners = new Set<Listener>();
 
 async function connect(): Promise<void> {
@@ -34,7 +37,11 @@ async function connect(): Promise<void> {
       socket = ws;
       ws.onopen = () => {
         retry = 1000;
-        joined.forEach((incident) => ws.send(JSON.stringify({ type: 'join', incident })));
+        joined.forEach((incident) => {
+          ws.send(JSON.stringify({ type: 'join', incident }));
+          const now = current.get(incident);
+          if (now) ws.send(JSON.stringify({ type: 'presence', incident, ...now }));
+        });
       };
       ws.onmessage = (e) => listeners.forEach((l) => l(JSON.parse(e.data)));
       ws.onclose = () => {
@@ -61,6 +68,7 @@ export function startLive(queryClient: QueryClient): () => void {
     if (message.type !== 'notification') return;
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
     queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['my-clocks'] });
   };
   listeners.add(listener);
   connect();
@@ -72,7 +80,9 @@ export function startLive(queryClient: QueryClient): () => void {
   };
 }
 
+// Say what this tab has open: a section ("comments") or an object by id ("finding:<id>"), never content
 export function announce(incident: string, focus: string, editing: boolean): void {
+  current.set(incident, { focus, editing });
   send({ type: 'presence', incident, focus, editing });
 }
 
@@ -94,16 +104,21 @@ export function useLiveIncident(incidentId: string | undefined, queryClient: Que
           queryClient.invalidateQueries({ queryKey: keys.section(incidentId, s) }),
         );
         if (event.entity_type === 'task') queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+        if (event.entity_type === 'clock') queryClient.invalidateQueries({ queryKey: ['my-clocks'] });
       }
     };
     listeners.add(listener);
     joined.add(incidentId);
     connect().then(() => send({ type: 'join', incident: incidentId }));
-    const heartbeat = setInterval(() => send({ type: 'presence', incident: incidentId }), 30_000);
+    const heartbeat = setInterval(
+      () => send({ type: 'presence', incident: incidentId, ...(current.get(incidentId) ?? {}) }),
+      30_000,
+    );
     return () => {
       clearInterval(heartbeat);
       listeners.delete(listener);
       joined.delete(incidentId);
+      current.delete(incidentId);
       send({ type: 'leave', incident: incidentId });
       setPeople([]);
     };

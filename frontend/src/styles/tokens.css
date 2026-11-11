@@ -56,6 +56,20 @@
   --sev-medium: #a15c07;
   --sev-low: #475467;
   --ok: #067647;
+  /* Regulator clock states (pages/incident/Clocks.tsx): urgency borrows the severity scale, so it
+     reads the same in every palette */
+  --clock-running: var(--accent);
+  --clock-near: var(--sev-medium);
+  --clock-closing: var(--sev-high);
+  --clock-breached: var(--sev-critical);
+  --clock-met: var(--ok);
+  --clock-waiting: var(--muted);
+  /* The incident graph's node kinds, the same in every palette, like severity */
+  --graph-asset: #0e7490;
+  --graph-observable: #a15c07;
+  --graph-evidence: #4d7c0f;
+  --graph-finding: #3d4fd6;
+  --graph-technique: #7a2e8f;
 
   color-scheme: light;
 }
@@ -68,6 +82,11 @@
     --sev-medium: #fdb022;
     --sev-low: #98a2b3;
     --ok: #47cd89;
+    --graph-asset: #22b8cf;
+    --graph-observable: #fdb022;
+    --graph-evidence: #a3d65c;
+    --graph-finding: #8c9bff;
+    --graph-technique: #d38ce8;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
     --mark-clay: none;
     --mark-limestone: block;
@@ -83,6 +102,11 @@
   --sev-medium: #fdb022;
   --sev-low: #98a2b3;
   --ok: #47cd89;
+  --graph-asset: #22b8cf;
+  --graph-observable: #fdb022;
+  --graph-evidence: #a3d65c;
+  --graph-finding: #8c9bff;
+  --graph-technique: #d38ce8;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
   --mark-clay: none;
   --mark-limestone: block;

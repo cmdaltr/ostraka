@@ -70,6 +70,11 @@ async def test_the_sample_ransomware_incident_reports_in_full_and_in_brief(
     assert "203[.]0[.]113[.]45" in report and "203.0.113.45" not in brief
     assert "9d3c7a1e5b2f48c06e1a7d4b9f3c2e8a1d6b5f4c3a2e1d0f9b8c7a6e5d4c3b2a" not in brief
     assert "What We Know" in brief and "What We'll Change" in brief and "Appendix C" not in brief
+    # The custody section: the exhibit's hash and its handover, in the report only
+    assert "Evidence and Chain of Custody" in report
+    assert "4b1f0e7c9a2d83e65f1c0b9a7e4d2c8f6a3b5e1d9c7f0a2b4e6d8c1a3f5b7e9d" in report
+    assert "seal intact. Re-hashed" in report and "SHA-256 re-checked: matches" in report
+    assert "Evidence and Chain of Custody" not in brief
 
 
 async def test_only_people_who_worked_on_it_export_and_each_export_is_recorded(db, client, people):  # noqa: F811

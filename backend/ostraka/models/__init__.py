@@ -17,6 +17,10 @@ from ostraka.models.analysis import (
     Rating,
     Weight,
 )
+from ostraka.models.clocks import Clock, ClockMilestone, RegimeKey
+from ostraka.models.evidence import CustodyEntry, CustodyKind, EvidenceItem, FindingEvidence, HashCheck
+from ostraka.models.exports import MispSettings
+from ostraka.models.handover import HandoverNote, IncidentView
 from ostraka.models.incidents import (
     PHASES_OF,
     ActivityEvent,
@@ -51,6 +55,14 @@ from ostraka.models.incidents import (
     VerificationMethod,
 )
 from ostraka.models.installation import InstalledLicence, ReportBrand, Webhook, WebhookDelivery
+from ostraka.models.integrations import (
+    DetectionGap,
+    GapStatus,
+    Integration,
+    Product,
+    RowanholtCitation,
+    RowanholtLink,
+)
 from ostraka.models.people import (
     ApiToken,
     Availability,
@@ -64,6 +76,13 @@ from ostraka.models.people import (
     User,
     clock,
     utcnow,
+)
+from ostraka.models.updates import (
+    Stakeholder,
+    StakeholderUpdate,
+    UpdatePlan,
+    UpdateRevision,
+    UpdateStatus,
 )
 from ostraka.models.work import (
     FINISHED,
@@ -80,6 +99,8 @@ from ostraka.models.work import (
 )
 
 __all__ = [
+    "HandoverNote",
+    "IncidentView",
     "AchEvidence",
     "AchHypothesis",
     "AchRating",
@@ -108,6 +129,9 @@ __all__ = [
     "AssetStatus",
     "BackupCode",
     "ChecklistItem",
+    "Clock",
+    "ClockMilestone",
+    "RegimeKey",
     "Comment",
     "Finding",
     "FindingKind",
@@ -126,6 +150,7 @@ __all__ = [
     "Invitation",
     "LinkKind",
     "Mention",
+    "MispSettings",
     "Notification",
     "NotificationKind",
     "Observable",
@@ -153,4 +178,20 @@ __all__ = [
     "VerificationMethod",
     "Webhook",
     "WebhookDelivery",
+    "DetectionGap",
+    "GapStatus",
+    "Integration",
+    "Product",
+    "RowanholtCitation",
+    "RowanholtLink",
+    "CustodyEntry",
+    "CustodyKind",
+    "EvidenceItem",
+    "FindingEvidence",
+    "HashCheck",
+    "Stakeholder",
+    "StakeholderUpdate",
+    "UpdatePlan",
+    "UpdateRevision",
+    "UpdateStatus",
 ]

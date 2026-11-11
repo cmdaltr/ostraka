@@ -10,6 +10,7 @@ import type { Me, Person, Team } from '../../api/types';
 import { severities } from '../../brand';
 import { Notice, formatDate } from '../../components/ui';
 import { Workflow } from '../../components/Workflow';
+import { Watching, useRecordPresence } from '../../live/presence';
 import { Rich, fromLocalInput, toLocalInput, useSave, useSection } from './shared';
 
 const statuses: TaskStatus[] = ['open', 'in_progress', 'blocked', 'done', 'cancelled'];
@@ -158,7 +159,11 @@ function Checklist({ incident, task }: { incident: Incident; task: Task }) {
                 type="checkbox"
                 checked={item.done}
                 disabled={!incident.can_edit}
-                onChange={(e) => save.run(() => api(`${base}/${item.id}`, { method: 'PATCH', json: { done: e.target.checked } }))}
+                onChange={(e) =>
+                  save.run(() =>
+                    api(`${base}/${item.id}`, { method: 'PATCH', json: { version: item.version, done: e.target.checked } }),
+                  )
+                }
               />
               <span className={item.done ? 'ticked' : undefined}>{item.text}</span>
               {item.done_by && <span className="hint">{item.done_by.name}</span>}
@@ -360,11 +365,14 @@ function TaskCard({
   const canRelease = (mine || incident.can_manage) && !!task.assignee && !!task.team && !finished(task.status);
   const canNudge = !finished(task.status) && !mine;
   const owner = task.assignee ? task.assignee.name : `${task.team?.name}’s queue`;
+  const focus = `task:${task.id}`;
+  const presence = useRecordPresence(focus, adding || waiting || blocking || nudging);
 
   return (
-    <li className={`record task task-${task.status}${task.overdue ? ' task-overdue' : ''}`} id={task.ref}>
+    <li className={`record task task-${task.status}${task.overdue ? ' task-overdue' : ''}`} id={task.ref} {...presence}>
       <div className="record-head">
         <span className="mono ref">{task.ref}</span>
+        <Watching focus={focus} />
         <span className={`status status-${task.status}`}>{taskStatusNames[task.status]}</span>
         <span className="chip">{owner}</span>
         {task.assignee && task.team && <span className="hint">{task.team.name}</span>}
@@ -397,7 +405,7 @@ function TaskCard({
       {incident.can_edit && (
         <div className="actions">
           {canClaim && (
-            <button className="btn btn-primary" type="button" onClick={() => save.run(() => api(`${base}/claim`, { method: 'POST' }))}>
+            <button className="btn btn-primary" type="button" onClick={() => save.run(() => api(`${base}/claim`, { method: 'POST', json: { version: task.version } }))}>
               Claim
             </button>
           )}
@@ -432,7 +440,7 @@ function TaskCard({
             }}
           />
           {canRelease && (
-            <button className="link-button" type="button" onClick={() => save.run(() => api(`${base}/release`, { method: 'POST' }))}>
+            <button className="link-button" type="button" onClick={() => save.run(() => api(`${base}/release`, { method: 'POST', json: { version: task.version } }))}>
               Return to queue
             </button>
           )}

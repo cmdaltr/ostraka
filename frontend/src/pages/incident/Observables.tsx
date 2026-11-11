@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import { label } from '../../api/incidents';
+import type { Working } from '../../api/handover';
+import { keys, label } from '../../api/incidents';
 import type { Asset, Extracted, Incident, IncidentObservable, Verdict } from '../../api/incidents';
 import type { Me } from '../../api/types';
 import { Notice, formatDate } from '../../components/ui';
+import { Watching, useRecordPresence } from '../../live/presence';
 import { Tags, fromLocalInput, useSave, useSection } from './shared';
 
 const verdicts: Verdict[] = ['unknown', 'suspicious', 'malicious', 'benign'];
@@ -98,9 +101,20 @@ function Extract({ incident, onDone }: { incident: Incident; onDone: () => void 
   );
 }
 
-function Sightings({ incident, item, assets }: { incident: Incident; item: IncidentObservable; assets: Asset[] }) {
+function Sightings({
+  incident,
+  item,
+  assets,
+  onOpen,
+}: {
+  incident: Incident;
+  item: IncidentObservable;
+  assets: Asset[];
+  onOpen: (open: boolean) => void;
+}) {
   const save = useSave(incident, ['observables', 'timeline']);
   const [open, setOpen] = useState(false);
+  useEffect(() => onOpen(open), [open, onOpen]);
   const host = (id: string | null) => assets.find((a) => a.id === id)?.hostname;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -195,21 +209,60 @@ function Elsewhere({ item }: { item: IncidentObservable }) {
   );
 }
 
-function Row({ incident, item, assets }: { incident: Incident; item: IncidentObservable; assets: Asset[] }) {
+// Someone else is on this indicator in another incident now; incidents you can't open are only counted
+function WorkingElsewhere({ working }: { working?: Working }) {
+  if (!working) return null;
+  return (
+    <div className="working-elsewhere" role="note" aria-label="Being worked elsewhere">
+      {working.visible.map((w) => (
+        <p key={w.incident_id}>
+          <strong>{w.people.join(', ')}</strong> {w.editing ? 'editing' : 'working'} this in{' '}
+          <Link className="ref-link mono" to={`/incidents/${w.ref}`}>
+            #{w.ref}
+          </Link>{' '}
+          {w.last_at ? <span className="hint">(last change {formatDate(w.last_at)})</span> : <span className="hint">(open now)</span>}
+        </p>
+      ))}
+      {working.hidden > 0 && (
+        <p>
+          Being worked now in {working.hidden} incident{working.hidden === 1 ? '' : 's'} you can’t open
+          {working.ask.length > 0 && <>; ask {working.ask.join(' or ')}</>}.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Row({
+  incident,
+  item,
+  assets,
+  working,
+}: {
+  incident: Incident;
+  item: IncidentObservable;
+  assets: Asset[];
+  working?: Working;
+}) {
   const save = useSave(incident, ['observables']);
   const base = `/api/incidents/${incident.id}/observables/${item.id}`;
+  const [editing, setEditing] = useState(false);
+  const focus = `observable:${item.id}`;
+  const presence = useRecordPresence(focus, editing);
   return (
-    <li className="record" id={item.ref}>
+    <li className="record" id={item.ref} {...presence}>
       <div className="record-head">
         <span className="mono ref">{item.ref}</span>
         <span className="chip">{label(item.kind)}</span>
         <span className={`verdict verdict-${item.verdict}`}>{item.verdict}</span>
         <Tags tags={item.tags} />
+        <Watching focus={focus} />
       </div>
       <div className="mono value">{item.masked ? <span className="masked">[{label(item.kind)}]</span> : item.value}</div>
       {item.note && <p className="prose">{item.note}</p>}
       <Elsewhere item={item} />
-      <Sightings incident={incident} item={item} assets={assets} />
+      <WorkingElsewhere working={working} />
+      <Sightings incident={incident} item={item} assets={assets} onOpen={setEditing} />
       {incident.can_edit && (
         <div className="actions">
           <select
@@ -239,6 +292,13 @@ function Row({ incident, item, assets }: { incident: Incident; item: IncidentObs
 export function Observables({ incident, me }: { incident: Incident; me: Me }) {
   const list = useSection<IncidentObservable[]>(incident, 'observables');
   const assets = useSection<Asset[]>(incident, 'assets');
+  // Presence in other incidents isn't broadcast here, so this is asked for again every half minute
+  const working = useQuery({
+    queryKey: keys.section(incident.id, 'observables-working'),
+    queryFn: () => api<Working[]>(`/api/incidents/${incident.id}/observables/working`),
+    refetchInterval: 30_000,
+    retry: false,
+  });
   const save = useSave(incident, ['observables']);
   const [extracting, setExtracting] = useState(false);
 
@@ -281,7 +341,15 @@ export function Observables({ incident, me }: { incident: Incident; me: Me }) {
       )}
       {list.data?.length === 0 && <p className="hint">No observables yet.</p>}
       <ul className="records" aria-label="Observables">
-        {list.data?.map((item) => <Row key={item.id} incident={incident} item={item} assets={assets.data ?? []} />)}
+        {list.data?.map((item) => (
+          <Row
+            key={item.id}
+            incident={incident}
+            item={item}
+            assets={assets.data ?? []}
+            working={working.data?.find((w) => w.item_id === item.id)}
+          />
+        ))}
       </ul>
     </>
   );

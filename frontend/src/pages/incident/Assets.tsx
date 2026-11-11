@@ -160,6 +160,7 @@ function Links({ incident, assets }: { incident: Incident; assets: Asset[] }) {
           kind: form.get('kind'),
           seen_at: fromLocalInput(form.get('seen_at')),
           technique: form.get('technique'),
+          source: form.get('seen_in'),
           note: form.get('note'),
         },
       }),
@@ -171,7 +172,7 @@ function Links({ incident, assets }: { incident: Incident; assets: Asset[] }) {
     <section className="panel">
       <header>
         <h2>Movement between assets</h2>
-        <p>Each link is a step the attacker took from one asset to another.</p>
+        <p>Each connection is a step the attacker took from one asset to another: lateral movement, C2 or exfiltration.</p>
       </header>
       {links.data?.length ? (
         <ul className="links">
@@ -184,6 +185,7 @@ function Links({ incident, assets }: { incident: Incident; assets: Asset[] }) {
               <span>{name(l.target_id)}</span>
               {l.technique && <strong className="mono">{l.technique}</strong>}
               <span className="hint num">{formatDate(l.seen_at)}</span>
+              {l.source && <span className="hint">{l.source}</span>}
               {incident.can_edit && (
                 <button
                   className="link-button"
@@ -235,6 +237,10 @@ function Links({ incident, assets }: { incident: Incident; assets: Asset[] }) {
           <label className="field">
             <span>Technique</span>
             <input name="technique" className="mono" placeholder="T1021.001" />
+          </label>
+          <label className="field">
+            <span>Seen in</span>
+            <input name="seen_in" placeholder="Defender XDR, FW01 logs" />
           </label>
           <label className="field">
             <span>Note</span>

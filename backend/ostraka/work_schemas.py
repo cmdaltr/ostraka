@@ -70,6 +70,7 @@ class ChecklistItemIn(BaseModel):
 
 
 class ChecklistItemPatch(BaseModel):
+    version: int  # each item has its own, so two people ticking different items never collide
     text: str | None = Field(default=None, min_length=1, max_length=300)
     done: bool | None = None
 
@@ -80,6 +81,7 @@ class ChecklistItemOut(BaseModel):
     done: bool
     done_by: Person | None
     done_at: datetime | None
+    version: int = 1
 
 
 class TaskLink(BaseModel):

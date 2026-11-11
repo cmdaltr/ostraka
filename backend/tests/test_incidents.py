@@ -292,9 +292,13 @@ async def test_asset_links_and_the_timeline(db, client, people):
             "kind": "lateral_movement",
             "seen_at": "2026-11-09T09:00:00Z",
             "technique": "t1021.002",
+            "note": "SMB session after the beacon to 185.220.101.47",
         },
     )
     assert r.status_code == 201 and r.json()["technique"] == "T1021.002"
+    # An observer gets the link, with the note's indicators masked
+    seen = (await client.get(f"{base}/asset-links", headers=p["exec"].headers)).json()[0]
+    assert seen["note"] == "SMB session after the beacon to [ip address]"
     await client.post(
         f"{base}/observables",
         headers=p["soc"].headers,
@@ -456,7 +460,9 @@ async def test_threads_mentions_and_withdrawal(db, client, people):
     assert nested.status_code == 422
 
     assert (
-        await client.patch(f"{base}/{first['id']}", json={"body": "edit"}, headers=p["lead"].headers)
+        await client.patch(
+            f"{base}/{first['id']}", json={"version": 1, "body": "edit"}, headers=p["lead"].headers
+        )
     ).status_code == 403
     assert (await client.delete(f"{base}/{first['id']}", headers=p["soc"].headers)).status_code == 204
     listed = (await client.get(base, headers=p["soc"].headers)).json()

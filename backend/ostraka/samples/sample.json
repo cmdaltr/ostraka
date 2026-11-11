@@ -1438,6 +1438,85 @@
           }
         },
         {
+          "at": "-6d 14:40",
+          "by": "amara",
+          "do": "clock",
+          "key": "clk_ico",
+          "with": {
+            "regime": "uk_gdpr",
+            "owner": "nina",
+            "title": "Payroll share: staff bank details and NI numbers"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "amara",
+          "do": "clock",
+          "key": "clk_insurer",
+          "with": {
+            "regime": "custom",
+            "owner": "george",
+            "title": "Cyber insurer (policy CY-20817)",
+            "milestones": [
+              {
+                "name": "Call the insurer's breach line",
+                "amount": 48,
+                "unit": "hours",
+                "basis": "aware"
+              },
+              {
+                "name": "Proof of loss",
+                "amount": 30,
+                "unit": "days",
+                "basis": "previous"
+              }
+            ]
+          }
+        },
+        {
+          "at": "-5d 07:45",
+          "by": "jun",
+          "do": "exhibit",
+          "key": "x_disk",
+          "with": {
+            "label": "FIN-WS-0142 disk image (E01)",
+            "description": "Full physical image of the patient-zero workstation's NVMe drive, taken with the machine isolated but powered on. Write-blocked; verified against the acquisition log.",
+            "sha256": "4b1f0e7c9a2d83e65f1c0b9a7e4d2c8f6a3b5e1d9c7f0a2b4e6d8c1a3f5b7e9d",
+            "md5": "7c2e9f4a1b8d3e6c5f0a9b2d4e7c1f83",
+            "size_bytes": 512110190592,
+            "location": "Evidence safe 2, Forensics lab, sealed bag SB-40117",
+            "acquired": "-6d 11:20"
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "jun",
+          "do": "cite_exhibit",
+          "finding": "f_p0",
+          "exhibit": "x_disk"
+        },
+        {
+          "at": "+10m",
+          "by": "jun",
+          "do": "custody_offer",
+          "exhibit": "x_disk",
+          "to": "tom",
+          "with": {
+            "purpose": "Peer review of the patient-zero timeline before it goes in the report",
+            "location": "Tom's analysis workstation, Forensics lab"
+          }
+        },
+        {
+          "at": "+25m",
+          "by": "tom",
+          "do": "custody_accept",
+          "exhibit": "x_disk",
+          "with": {
+            "acknowledgement": "Received in sealed bag SB-40117, seal intact. Re-hashed on the write-blocker before opening.",
+            "sha256": "4b1f0e7c9a2d83e65f1c0b9a7e4d2c8f6a3b5e1d9c7f0a2b4e6d8c1a3f5b7e9d"
+          }
+        },
+        {
           "at": "-5d 09:00",
           "by": "amara",
           "do": "update",
@@ -1523,6 +1602,15 @@
           }
         },
         {
+          "at": "-5d 11:30",
+          "by": "george",
+          "do": "clock_met",
+          "clock": "clk_insurer",
+          "milestone": "m1",
+          "reference": "Claim NWD-CY-20817-04",
+          "note": "Breach line called. The insurer's panel forensics firm is on standby; we keep running the response ourselves."
+        },
+        {
           "at": "-4d 08:30",
           "by": "jun",
           "do": "claim",
@@ -1545,6 +1633,15 @@
           "items": [
             0
           ]
+        },
+        {
+          "at": "-4d 15:40",
+          "by": "nina",
+          "do": "clock_met",
+          "clock": "clk_ico",
+          "milestone": "report",
+          "reference": "ICO case IC-412873-K9Q2",
+          "note": "Submitted through the ICO's online form after the DPO signed it off: 1,140 staff records were on the payroll share. Further information to follow as the scope settles."
         },
         {
           "at": "-2d 09:00",
@@ -1581,6 +1678,12 @@
           "do": "comment",
           "on": "t_restore",
           "body": "@{amara} vendor says tomorrow morning. #{t_restore} can't start until #{kr3} is unblocked."
+        },
+        {
+          "at": "-1d 18:30",
+          "by": "oliver",
+          "do": "handover",
+          "add": "Overnight: @{jun} has the restore. Ring the backup vendor at 07:00 if the snapshot isn't in; #{t_restore} waits on it."
         },
         {
           "at": "-3h",
@@ -2268,6 +2371,11 @@
             "phase": "recover",
             "summary": "A haulage supplier's compromised mailbox asked us to change bank details for INV-88412 (£48,210). Our AP clerk's account had been taken over the night before by MFA fatigue (#{f_signin}), and an inbox rule hid the supplier's replies (#{f_rule}). No payment was made. The rule is gone, sessions revoked, and number matching is now on for every account."
           }
+        },
+        {
+          "at": "+1h",
+          "by": "lucia",
+          "do": "handover"
         }
       ]
     },

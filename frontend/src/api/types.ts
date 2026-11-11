@@ -32,6 +32,8 @@ export interface Person {
   timezone: string;
   // Blank for observers, who don't see out-of-hours numbers
   phone: string | null;
+  // An admin's changes to the account carry it
+  version?: number;
 }
 
 export type Availability = 'available' | 'busy' | 'away';
