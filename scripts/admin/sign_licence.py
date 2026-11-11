@@ -154,7 +154,8 @@ def main() -> int:
         not_before=args.not_before,
         expires=expires,
     )
-    line = licence.sign(key, lic)
+    head = licence.head_of(lic)
+    line = licence.line_of(head, key.sign(head.encode()))
     licence.parse(line)  # signed by the key Ostraka trusts, or this stops here
     seats = lic.seats or "unlimited"
     summary = f"{lic.edition.value} for {lic.licensee}, {seats} seats, to {lic.expires or 'no end date'}"

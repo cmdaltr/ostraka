@@ -90,12 +90,9 @@ async def get_terms(user: User = Depends(current_user)) -> TermsOut:
 
 def _parsed(text: str) -> licence.Licence:
     try:
-        lic = licence.parse(text)
+        return licence.check_installable(licence.parse(text))
     except licence.LicenceProblem as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
-    if licence.standing(lic).state == "lapsed":
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"That licence ran out on {lic.expires}.")
-    return lic
 
 
 @router.post("/licence/check", response_model=LicencePreview)
