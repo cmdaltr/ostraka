@@ -2,9 +2,11 @@
 
 Ostraka, Shikari and Rowanholt share one licensing model (Ben, 11 November 2026). The first part of
 this file is that shared specification, kept identical in each product's `docs/LICENSING_MODEL.md`;
-the second is Ostraka's own split. Ostraka is the reference implementation. The canonical copy of
-the shared part, the issued licences and the prompts for applying it are in the private
-`cmdaltr/licensing` repo.
+the second is Ostraka's own split. The format is implemented once, in the shared `samarkand` package
+(`samarkand.licence` for the licence line, `samarkand.webhooks` for the webhook envelope), which
+each product binds with its own id, public keys and free seats; its test vectors are the reference.
+The canonical copy of the shared part, the issued licences and the prompts for applying it are in
+the private `cmdaltr/licensing` repo.
 
 ## Shared across Ostraka, Shikari and Rowanholt
 
@@ -40,7 +42,7 @@ differs:
 | `automation` | Pro | Signed webhooks: the product calls the customer's systems when something happens. Checked when a webhook is sent, so one configured on Free is kept but doesn't fire |
 | `managed-service` | Services | The right in `COMMERCIAL-LICENSE.md` section 3 to run the product for clients. Not a switch |
 
-Webhooks work the same everywhere, as Shikari's (`shikari/webhooks.py`, the reference for them): an
+Webhooks work the same everywhere, as `samarkand.webhooks` sends and checks them: an
 admin registers a URL and the events it wants; each delivery is a POST of
 `{"event", "sent_at", "data"}` with `X-<Product>-Event` and, when the webhook has a secret,
 `X-<Product>-Signature: sha256=<hex HMAC-SHA256 of the raw body>`; three tries with backoff; the last
