@@ -12,7 +12,7 @@ from ostraka.auth.deps import current_user
 from ostraka.db import get_session
 from ostraka.incident_schemas import AssetIn, AssetLinkIn, AssetLinkOut, AssetOut, AssetPatch
 from ostraka.incidents import access, activity, views
-from ostraka.incidents.masking import hides_iocs
+from ostraka.incidents.masking import for_viewer, hides_iocs
 from ostraka.models import Asset, AssetLink, Incident, User
 
 router = APIRouter(prefix="/api/incidents/{incident_id}", tags=["assets"])
@@ -28,6 +28,12 @@ def _out(user: User, asset: Asset) -> AssetOut:
     )
     if hides_iocs(user):
         out.ip = out.public_ip = ""
+    return out
+
+
+def _link_out(user: User, link: AssetLink) -> AssetLinkOut:
+    out = AssetLinkOut.model_validate(link, from_attributes=True)
+    out.note = for_viewer(user, out.note)
     return out
 
 
@@ -130,7 +136,7 @@ async def list_links(
     rows = await db.scalars(
         select(AssetLink).where(AssetLink.incident_id == incident_id).order_by(AssetLink.seen_at)
     )
-    return [AssetLinkOut.model_validate(link, from_attributes=True) for link in rows.all()]
+    return [_link_out(user, link) for link in rows.all()]
 
 
 @router.post("/asset-links", response_model=AssetLinkOut, status_code=status.HTTP_201_CREATED)
@@ -156,7 +162,7 @@ async def add_link(
         entity_id=link.id,
     )
     await activity.finish(db, user)
-    return AssetLinkOut.model_validate(link, from_attributes=True)
+    return _link_out(user, link)
 
 
 @router.delete("/asset-links/{link_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
