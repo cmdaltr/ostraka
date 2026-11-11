@@ -8,6 +8,7 @@ import type { Brand, Licence, LicencePreview, LogoSlot, Terms } from '../api/ins
 import { Loading } from '../components/sherd/Ostrakon';
 import { Progress } from '../components/sherd/Progress';
 import { Notice, messageOf } from '../components/ui';
+import { IntegrationsTab } from './InstallationIntegrations';
 import { WebhooksTab } from './InstallationWebhooks';
 import './Installation.css';
 
@@ -594,6 +595,7 @@ const tabs = [
   { key: 'licence', label: 'Licence' },
   { key: 'brands', label: 'Report brands' },
   { key: 'webhooks', label: 'Webhooks' },
+  { key: 'integrations', label: 'Rowanholt and Shikari' },
 ] as const;
 type Tab = (typeof tabs)[number]['key'];
 
@@ -605,7 +607,7 @@ export function Installation() {
       <div className="page-head">
         <div>
           <h1>Installation</h1>
-          <p className="hint">The licence, how exported reports look, and webhooks.</p>
+          <p className="hint">The licence, how exported reports look, webhooks, and Rowanholt and Shikari.</p>
         </div>
       </div>
       <nav className="tabs" aria-label="Installation sections">
@@ -620,7 +622,15 @@ export function Installation() {
           </button>
         ))}
       </nav>
-      {tab === 'licence' ? <LicencePanel /> : tab === 'brands' ? <Brands /> : <WebhooksTab />}
+      {tab === 'licence' ? (
+        <LicencePanel />
+      ) : tab === 'brands' ? (
+        <Brands />
+      ) : tab === 'webhooks' ? (
+        <WebhooksTab />
+      ) : (
+        <IntegrationsTab />
+      )}
     </>
   );
 }

@@ -62,6 +62,12 @@ def can_manage_webhooks(actor: User) -> str | None:
     return None if actor.role is Role.ADMIN else "Only admins can manage webhooks."
 
 
+def can_manage_integrations(actor: User) -> str | None:
+    """Connect, change or remove the Rowanholt and Shikari servers: admins only, since their tokens
+    act in those products and their answers become part of incidents."""
+    return None if actor.role is Role.ADMIN else "Only admins can connect Rowanholt and Shikari."
+
+
 def can_manage_invitations_of(actor: User, team_id: uuid.UUID | None) -> bool:
     """See or revoke invitations into a team."""
     return actor.role is Role.ADMIN or (actor.role is Role.TEAM_LEAD and team_id == actor.team_id)

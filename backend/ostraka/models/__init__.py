@@ -52,6 +52,14 @@ from ostraka.models.incidents import (
     VerificationMethod,
 )
 from ostraka.models.installation import InstalledLicence, ReportBrand, Webhook, WebhookDelivery
+from ostraka.models.integrations import (
+    DetectionGap,
+    GapStatus,
+    Integration,
+    Product,
+    RowanholtCitation,
+    RowanholtLink,
+)
 from ostraka.models.people import (
     ApiToken,
     Availability,
@@ -156,4 +164,10 @@ __all__ = [
     "VerificationMethod",
     "Webhook",
     "WebhookDelivery",
+    "DetectionGap",
+    "GapStatus",
+    "Integration",
+    "Product",
+    "RowanholtCitation",
+    "RowanholtLink",
 ]

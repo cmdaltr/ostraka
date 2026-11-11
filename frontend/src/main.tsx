@@ -12,6 +12,7 @@ import { AppShell } from './components/AppShell';
 import { Loading } from './components/sherd/Ostrakon';
 import { AcceptInvite } from './pages/AcceptInvite';
 import { DesignSystem } from './pages/DesignSystem';
+import { DetectionGapsPage } from './pages/DetectionGapsPage';
 import { HelpLicence } from './pages/HelpLicence';
 import { IncidentPage } from './pages/incident/IncidentPage';
 import { Installation } from './pages/Installation';
@@ -69,6 +70,7 @@ function App() {
             <Route index element={<Incidents me={session.me} />} />
             <Route path="incidents/:ref" element={<IncidentPage me={session.me} />} />
             <Route path="work" element={<Work me={session.me} />} />
+            <Route path="detection-gaps" element={<DetectionGapsPage />} />
             <Route path="playbooks" element={<Playbooks me={session.me} />} />
             <Route path="people" element={<People me={session.me} />} />
             <Route path="profile" element={<Profile me={session.me} />} />

@@ -12,6 +12,7 @@ from ostraka.auth.deps import current_user
 from ostraka.db import get_session
 from ostraka.incident_schemas import DecisionIn, FindingIn, FindingOut, FindingPatch, VerificationIn
 from ostraka.incidents import access, activity, views
+from ostraka.integrations import gaps
 from ostraka.models import (
     Asset,
     Finding,
@@ -194,6 +195,12 @@ async def _decide(
         )
     if decision is FindingStatus.REFUTED and not body.note.strip():
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Say why it's refuted.")
+    # Shikari is asked about the finding's techniques before anything is locked
+    plan = (
+        await gaps.prepare(db, incident, finding.techniques or [])
+        if decision is FindingStatus.CONFIRMED
+        else None
+    )
     finding.status = decision
     finding.decided_by = user.id if decision is not FindingStatus.LEAD else None
     finding.decided_at = utcnow() if decision is not FindingStatus.LEAD else None
@@ -210,6 +217,8 @@ async def _decide(
         entity_id=finding.id,
         note=finding.decision_note,
     )
+    if plan is not None:
+        await gaps.open_gaps(db, incident, finding, user, plan)
     await activity.finish(db, user)
     return await views.finding_out(db, user, finding)
 

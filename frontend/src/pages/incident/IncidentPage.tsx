@@ -18,11 +18,13 @@ import { Activity } from './Activity';
 import { Assessments } from './Assessments';
 import { Assets } from './Assets';
 import { Comments } from './Comments';
+import { DetectionGaps } from './DetectionGaps';
 import { Findings } from './Findings';
 import { Handover, SinceYouLeftBanner } from './Handover';
 import { Lessons } from './Lessons';
 import { Observables } from './Observables';
 import { Overview } from './Overview';
+import { Rowanholt } from './Rowanholt';
 import { Tasks } from './Tasks';
 import { Timeline } from './Timeline';
 import './incident.css';
@@ -33,6 +35,8 @@ const sections = [
   ['observables', 'Observables'],
   ['assets', 'Assets'],
   ['findings', 'Findings'],
+  ['rowanholt', 'Rowanholt'],
+  ['detection-gaps', 'Detection gaps'],
   ['assessments', 'Assessments'],
   ['ach', 'ACH'],
   ['timeline', 'Timeline'],
@@ -281,6 +285,8 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'observables' && <Observables incident={incident} me={me} />}
           {section === 'assets' && <Assets incident={incident} />}
           {section === 'findings' && <Findings incident={incident} />}
+          {section === 'rowanholt' && <Rowanholt incident={incident} />}
+          {section === 'detection-gaps' && <DetectionGaps incident={incident} me={me} />}
           {section === 'assessments' && <Assessments incident={incident} />}
           {section === 'ach' && <AchMatrix incident={incident} me={me} />}
           {section === 'timeline' && <Timeline incident={incident} />}
