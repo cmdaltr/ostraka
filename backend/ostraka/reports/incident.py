@@ -43,7 +43,7 @@ from ostraka.models import (
     User,
     utcnow,
 )
-from ostraka.reports import attack, charts
+from ostraka.reports import attack, charts, custody
 from ostraka.reports.branded import SEVERITY, STATUS, Cover
 from ostraka.reports.theme import pal
 from ostraka.standard import ach as ach_maths
@@ -113,6 +113,7 @@ class Record:
     chain_events: int
     chain_head: str
     exported_at: datetime = field(default_factory=utcnow)
+    exhibits: list = field(default_factory=list)  # (EvidenceItem, [citing finding refs])
 
     def name(self, user_id: uuid.UUID | None) -> str:
         return self.names.get(user_id, "Former member") if user_id else "—"
@@ -182,6 +183,7 @@ async def gather(db: AsyncSession, incident: Incident, viewer: User) -> Record:
         chain_ok=check.ok,
         chain_events=check.events,
         chain_head=head or activity.GENESIS,
+        exhibits=await custody.gather(db, of),
     )
 
 
@@ -447,6 +449,7 @@ def technical(record: Record) -> tuple[Cover, list[tuple]]:
             ),
         ]
 
+    blocks += custody.blocks(record.exhibits)
     blocks += _response(record)
     blocks += _lessons(record, keep)
     blocks += _conclusions(record)

@@ -17,7 +17,9 @@ import { Activity } from './Activity';
 import { Assessments } from './Assessments';
 import { Assets } from './Assets';
 import { Comments } from './Comments';
+import { Evidence } from './Evidence';
 import { Findings } from './Findings';
+import { Graph } from './Graph';
 import { Lessons } from './Lessons';
 import { Observables } from './Observables';
 import { Overview } from './Overview';
@@ -31,6 +33,8 @@ const sections = [
   ['observables', 'Observables'],
   ['assets', 'Assets'],
   ['findings', 'Findings'],
+  ['evidence', 'Evidence'],
+  ['graph', 'Graph'],
   ['assessments', 'Assessments'],
   ['ach', 'ACH'],
   ['timeline', 'Timeline'],
@@ -275,6 +279,8 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'observables' && <Observables incident={incident} me={me} />}
           {section === 'assets' && <Assets incident={incident} />}
           {section === 'findings' && <Findings incident={incident} />}
+          {section === 'evidence' && <Evidence incident={incident} />}
+          {section === 'graph' && <Graph incident={incident} />}
           {section === 'assessments' && <Assessments incident={incident} />}
           {section === 'ach' && <AchMatrix incident={incident} me={me} />}
           {section === 'timeline' && <Timeline incident={incident} />}

@@ -17,6 +17,7 @@ from ostraka.models.analysis import (
     Rating,
     Weight,
 )
+from ostraka.models.evidence import CustodyEntry, CustodyKind, EvidenceItem, FindingEvidence, HashCheck
 from ostraka.models.incidents import (
     PHASES_OF,
     ActivityEvent,
@@ -153,4 +154,9 @@ __all__ = [
     "VerificationMethod",
     "Webhook",
     "WebhookDelivery",
+    "CustodyEntry",
+    "CustodyKind",
+    "EvidenceItem",
+    "FindingEvidence",
+    "HashCheck",
 ]

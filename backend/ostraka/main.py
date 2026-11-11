@@ -15,7 +15,9 @@ from ostraka.api import (
     assets,
     auth,
     comments,
+    evidence,
     findings,
+    graph,
     incidents,
     installation,
     invitations,
@@ -91,6 +93,8 @@ def create_app() -> FastAPI:
         tags,
         webhooks_api,
         live_api,
+        evidence,
+        graph,
     ):
         app.include_router(module.router)
     for extra in (incidents.refs_router, tasks.mine_router, playbooks.incident_router):
