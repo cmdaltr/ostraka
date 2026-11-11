@@ -102,6 +102,8 @@ export interface AssetLink {
   kind: LinkKind;
   seen_at: string | null;
   technique: string;
+  // Where the connection was seen
+  source: string;
   note: string;
 }
 
@@ -223,12 +225,14 @@ export const keys = {
 export function sectionsFor(entityType: string): string[] {
   switch (entityType) {
     case 'observable':
-      return ['observables', 'timeline', 'observables-working'];
+      return ['observables', 'timeline', 'observables-working', 'graph'];
     case 'asset':
     case 'asset_link':
-      return ['assets', 'links', 'timeline'];
+      return ['assets', 'links', 'timeline', 'graph'];
     case 'finding':
-      return ['findings', 'timeline', 'rowanholt', 'detection-gaps'];
+      return ['findings', 'timeline', 'rowanholt', 'detection-gaps', 'graph', 'exhibits'];
+    case 'exhibit':
+      return ['exhibits', 'graph'];
     case 'comment':
       return ['comments'];
     case 'task':

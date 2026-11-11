@@ -328,7 +328,8 @@ class Asset(Base):
 
 
 class AssetLink(Base):
-    """Movement between assets: lateral movement, command and control, exfiltration."""
+    """An asset connection: lateral movement, command and control or exfiltration between two assets,
+    with when it was seen and where."""
 
     __tablename__ = "asset_links"
 
@@ -339,6 +340,8 @@ class AssetLink(Base):
     kind: Mapped[LinkKind] = mapped_column(_enum(LinkKind, "link_kind"))
     seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     technique: Mapped[str] = mapped_column(String(16), default="")
+    # Where the connection was seen: "Defender XDR", "FW01 logs", "Rowanholt job 41"
+    source: Mapped[str] = mapped_column(String(255), default="")
     note: Mapped[str] = mapped_column(Text, default="")
     created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

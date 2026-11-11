@@ -1,0 +1,174 @@
+/* The incident graph and the exhibits section. Colours are tokens only. */
+
+/* A grid item in the incident page: without this the drawing's width would push the page wider */
+.graph-section {
+  min-width: 0;
+}
+
+.graph-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+.graph-key .swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--kind);
+}
+.graph-key-asset, .gnode-asset { --kind: var(--graph-asset); }
+.graph-key-observable, .gnode-observable { --kind: var(--graph-observable); }
+.graph-key-evidence, .gnode-evidence { --kind: var(--graph-evidence); }
+.graph-key-finding, .gnode-finding { --kind: var(--graph-finding); }
+.graph-key-technique, .gnode-technique { --kind: var(--graph-technique); }
+
+.graph-body {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+.graph-canvas {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+.graph-canvas svg {
+  display: block;
+  font-family: var(--font-ui);
+}
+.graph-detail {
+  width: 300px;
+  flex-shrink: 0;
+}
+.graph-detail h3 {
+  margin: 0;
+  font-size: var(--text-md);
+}
+.graph-links {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-sm);
+}
+.graph-techniques {
+  margin-top: var(--space-4);
+}
+
+.gcolumn {
+  fill: var(--muted);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.gnode {
+  cursor: pointer;
+  outline: none;
+}
+.gnode rect:first-of-type {
+  fill: var(--raised);
+  stroke: var(--kind);
+  stroke-width: 1;
+}
+.gnode .gband {
+  fill: var(--kind);
+}
+.gnode .gref {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.gnode .glabel {
+  fill: var(--ink);
+  font-size: 12px;
+}
+.gnode.status-lead rect:first-of-type {
+  stroke-dasharray: 4 3;
+}
+.gnode.status-refuted {
+  opacity: 0.55;
+}
+.gnode.flagged rect:first-of-type {
+  stroke-width: 2.5;
+}
+.gnode:focus-visible rect:first-of-type,
+.gnode.selected rect:first-of-type {
+  stroke: var(--focus);
+  stroke-width: 2.5;
+}
+.gnode.far {
+  opacity: 0.3;
+}
+
+.gedge {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.gedge-connection {
+  stroke: var(--graph-asset);
+  stroke-width: 2;
+}
+.gedge-connection_technique {
+  stroke-dasharray: 2 4;
+}
+.gedge.refuted {
+  stroke-dasharray: 3 3;
+}
+.gedge.lit {
+  stroke: var(--focus);
+  stroke-width: 2;
+}
+.gedge.dim {
+  opacity: 0.25;
+}
+.garrow {
+  fill: var(--graph-asset);
+}
+
+/* ---- exhibits --------------------------------------------------------------------------------- */
+
+.hashes {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px var(--space-3);
+  margin: var(--space-2) 0;
+  font-size: var(--text-sm);
+}
+.hashes dt {
+  color: var(--muted);
+}
+.hashes dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+.custody {
+  width: 100%;
+  font-size: var(--text-sm);
+}
+.custody .hash {
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+.chain-ok {
+  color: var(--ok);
+}
+.chain-broken {
+  color: var(--sev-critical);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .graph-body {
+    flex-direction: column;
+  }
+  .graph-detail {
+    width: 100%;
+  }
+}

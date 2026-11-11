@@ -306,6 +306,7 @@ class AssetLinkIn(BaseModel):
     kind: LinkKind
     seen_at: datetime | None = None
     technique: str = Field(default="", max_length=16)
+    source: str = Field(default="", max_length=255, description="Where the connection was seen")
     note: str = Field(default="", max_length=5000)
 
     @field_validator("technique")

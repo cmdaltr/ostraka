@@ -1474,6 +1474,49 @@
           }
         },
         {
+          "at": "-5d 07:45",
+          "by": "jun",
+          "do": "exhibit",
+          "key": "x_disk",
+          "with": {
+            "label": "FIN-WS-0142 disk image (E01)",
+            "description": "Full physical image of the patient-zero workstation's NVMe drive, taken with the machine isolated but powered on. Write-blocked; verified against the acquisition log.",
+            "sha256": "4b1f0e7c9a2d83e65f1c0b9a7e4d2c8f6a3b5e1d9c7f0a2b4e6d8c1a3f5b7e9d",
+            "md5": "7c2e9f4a1b8d3e6c5f0a9b2d4e7c1f83",
+            "size_bytes": 512110190592,
+            "location": "Evidence safe 2, Forensics lab, sealed bag SB-40117",
+            "acquired": "-6d 11:20"
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "jun",
+          "do": "cite_exhibit",
+          "finding": "f_p0",
+          "exhibit": "x_disk"
+        },
+        {
+          "at": "+10m",
+          "by": "jun",
+          "do": "custody_offer",
+          "exhibit": "x_disk",
+          "to": "tom",
+          "with": {
+            "purpose": "Peer review of the patient-zero timeline before it goes in the report",
+            "location": "Tom's analysis workstation, Forensics lab"
+          }
+        },
+        {
+          "at": "+25m",
+          "by": "tom",
+          "do": "custody_accept",
+          "exhibit": "x_disk",
+          "with": {
+            "acknowledgement": "Received in sealed bag SB-40117, seal intact. Re-hashed on the write-blocker before opening.",
+            "sha256": "4b1f0e7c9a2d83e65f1c0b9a7e4d2c8f6a3b5e1d9c7f0a2b4e6d8c1a3f5b7e9d"
+          }
+        },
+        {
           "at": "-5d 09:00",
           "by": "amara",
           "do": "update",

@@ -23,6 +23,8 @@ import { DetectionGaps } from './DetectionGaps';
 import { Findings } from './Findings';
 import { Handover, SinceYouLeftBanner } from './Handover';
 import { IntelExports } from './IntelExports';
+import { Evidence } from './Evidence';
+import { Graph } from './Graph';
 import { Lessons } from './Lessons';
 import { Observables } from './Observables';
 import { Overview } from './Overview';
@@ -40,6 +42,8 @@ const sections = [
   ['findings', 'Findings'],
   ['rowanholt', 'Rowanholt'],
   ['detection-gaps', 'Detection gaps'],
+  ['evidence', 'Evidence'],
+  ['graph', 'Graph'],
   ['assessments', 'Assessments'],
   ['ach', 'ACH'],
   ['timeline', 'Timeline'],
@@ -292,6 +296,8 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'findings' && <Findings incident={incident} />}
           {section === 'rowanholt' && <Rowanholt incident={incident} />}
           {section === 'detection-gaps' && <DetectionGaps incident={incident} me={me} />}
+          {section === 'evidence' && <Evidence incident={incident} />}
+          {section === 'graph' && <Graph incident={incident} />}
           {section === 'assessments' && <Assessments incident={incident} />}
           {section === 'ach' && <AchMatrix incident={incident} me={me} />}
           {section === 'timeline' && <Timeline incident={incident} />}

@@ -18,6 +18,7 @@ from ostraka.models.analysis import (
     Weight,
 )
 from ostraka.models.clocks import Clock, ClockMilestone, RegimeKey
+from ostraka.models.evidence import CustodyEntry, CustodyKind, EvidenceItem, FindingEvidence, HashCheck
 from ostraka.models.exports import MispSettings
 from ostraka.models.handover import HandoverNote, IncidentView
 from ostraka.models.incidents import (
@@ -176,4 +177,9 @@ __all__ = [
     "Product",
     "RowanholtCitation",
     "RowanholtLink",
+    "CustodyEntry",
+    "CustodyKind",
+    "EvidenceItem",
+    "FindingEvidence",
+    "HashCheck",
 ]

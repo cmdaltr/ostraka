@@ -175,3 +175,60 @@ def can_manage_misp(actor: User) -> str | None:
     """Set or remove the installation's MISP instance: admins only, since a push sends incident
     indicators to a system outside ostraka."""
     return None if actor.role is Role.ADMIN else "Only admins can set up MISP."
+
+
+# ---- evidence and the chain of custody ------------------------------------------------------------
+
+
+def can_add_evidence(actor: User, *, can_edit: bool) -> str | None:
+    """Record an exhibit in an incident, or cite one from a finding: anyone working the incident;
+    observers never."""
+    if actor.role is Role.OBSERVER:
+        return "Observers can read the chain of custody but not add to it."
+    if not can_edit:
+        return "Only people working this incident can record evidence in it."
+    return None
+
+
+def can_offer_custody(
+    actor: User, *, holder_id: uuid.UUID | None, can_manage: bool, pending: bool
+) -> str | None:
+    """Offer an exhibit to someone else: its holder, or the commander, a lead of a team involved or an
+    admin when the holder can't (the entry names who made the offer as well as who held it)."""
+    if actor.role is Role.OBSERVER:
+        return "Observers can't hold or hand over evidence."
+    if pending:
+        return "A handover is already waiting to be answered: withdraw it first."
+    if actor.id == holder_id or can_manage:
+        return None
+    return "Only the person holding this exhibit can hand it over."
+
+
+def can_receive_custody(recipient: User, *, can_view: bool, holder_id: uuid.UUID | None) -> str | None:
+    """Whether `recipient` may be offered an exhibit: an active account working the incident, other
+    than the person holding it."""
+    if not recipient.is_active:
+        return f"{recipient.name}'s account isn't active."
+    if recipient.role is Role.OBSERVER:
+        return "Observers can't take custody of evidence."
+    if not can_view:
+        return f"{recipient.name} isn't working this incident: add them or their team first."
+    if recipient.id == holder_id:
+        return f"{recipient.name} already holds it."
+    return None
+
+
+def can_answer_custody(actor: User, *, recipient_id: uuid.UUID | None) -> str | None:
+    """Accept or decline a handover: the person it was offered to, and nobody on their behalf."""
+    if actor.id != recipient_id:
+        return "Only the person it was offered to can accept or decline a handover."
+    return None
+
+
+def can_withdraw_custody(
+    actor: User, *, offered_by: uuid.UUID | None, holder_id: uuid.UUID | None, can_manage: bool
+) -> str | None:
+    """Take back an unanswered offer: whoever made it, the holder, or someone who manages the incident."""
+    if actor.id in (offered_by, holder_id) or can_manage:
+        return None
+    return "Only the person who offered it, its holder, or the incident commander can withdraw a handover."

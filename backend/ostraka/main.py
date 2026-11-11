@@ -17,8 +17,10 @@ from ostraka.api import (
     clocks,
     comments,
     detection_gaps,
+    evidence,
     exports,
     findings,
+    graph,
     handover,
     incidents,
     installation,
@@ -105,6 +107,8 @@ def create_app() -> FastAPI:
         detection_gaps,
         live_api,
         handover,
+        evidence,
+        graph,
     ):
         app.include_router(module.router)
     for extra in (incidents.refs_router, tasks.mine_router, playbooks.incident_router, clocks.mine_router):

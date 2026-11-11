@@ -23,12 +23,14 @@ describe('references', () => {
     expect(refTarget('fnd-12')).toEqual({ search: '?s=findings', hash: '#FND-12' });
     expect(refTarget('AST-3').search).toBe('?s=assets');
     expect(refTarget('OBS-9').search).toBe('?s=observables');
+    expect(refTarget('EXH-2')).toEqual({ search: '?s=evidence', hash: '#EXH-2' });
   });
 });
 
 describe('live invalidation', () => {
   it('refreshes the sections an event touches', () => {
-    expect(sectionsFor('asset_link')).toEqual(['assets', 'links', 'timeline']);
+    expect(sectionsFor('asset_link')).toEqual(['assets', 'links', 'timeline', 'graph']);
+    expect(sectionsFor('exhibit')).toEqual(['exhibits', 'graph']);
     expect(sectionsFor('comment')).toEqual(['comments']);
     expect(sectionsFor('user')).toEqual([]);
   });
