@@ -1438,6 +1438,42 @@
           }
         },
         {
+          "at": "-6d 14:40",
+          "by": "amara",
+          "do": "clock",
+          "key": "clk_ico",
+          "with": {
+            "regime": "uk_gdpr",
+            "owner": "nina",
+            "title": "Payroll share: staff bank details and NI numbers"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "amara",
+          "do": "clock",
+          "key": "clk_insurer",
+          "with": {
+            "regime": "custom",
+            "owner": "george",
+            "title": "Cyber insurer (policy CY-20817)",
+            "milestones": [
+              {
+                "name": "Call the insurer's breach line",
+                "amount": 48,
+                "unit": "hours",
+                "basis": "aware"
+              },
+              {
+                "name": "Proof of loss",
+                "amount": 30,
+                "unit": "days",
+                "basis": "previous"
+              }
+            ]
+          }
+        },
+        {
           "at": "-5d 09:00",
           "by": "amara",
           "do": "update",
@@ -1523,6 +1559,15 @@
           }
         },
         {
+          "at": "-5d 11:30",
+          "by": "george",
+          "do": "clock_met",
+          "clock": "clk_insurer",
+          "milestone": "m1",
+          "reference": "Claim NWD-CY-20817-04",
+          "note": "Breach line called. The insurer's panel forensics firm is on standby; we keep running the response ourselves."
+        },
+        {
           "at": "-4d 08:30",
           "by": "jun",
           "do": "claim",
@@ -1545,6 +1590,15 @@
           "items": [
             0
           ]
+        },
+        {
+          "at": "-4d 15:40",
+          "by": "nina",
+          "do": "clock_met",
+          "clock": "clk_ico",
+          "milestone": "report",
+          "reference": "ICO case IC-412873-K9Q2",
+          "note": "Submitted through the ICO's online form after the DPO signed it off: 1,140 staff records were on the payroll share. Further information to follow as the scope settles."
         },
         {
           "at": "-2d 09:00",

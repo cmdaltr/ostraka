@@ -56,6 +56,8 @@ EMAIL_KINDS = frozenset(
         NotificationKind.MENTION,
         NotificationKind.COMMANDER,
         NotificationKind.NEW_DEVICE,
+        NotificationKind.CLOCK_DUE,
+        NotificationKind.CLOCK_BREACHED,
     }
 )
 URGENT_KINDS = frozenset(
@@ -64,6 +66,7 @@ URGENT_KINDS = frozenset(
         NotificationKind.ESCALATED,
         NotificationKind.NUDGE,
         NotificationKind.NEW_DEVICE,
+        NotificationKind.CLOCK_BREACHED,
     }
 )
 
@@ -79,6 +82,8 @@ KIND_WORDS = {
     NotificationKind.COMMANDER: "You're now incident commander",
     NotificationKind.UNBLOCKED: "A task you hold is no longer waiting",
     NotificationKind.NEW_DEVICE: "Your account signed in from a new browser",
+    NotificationKind.CLOCK_DUE: "A regulator deadline is approaching",
+    NotificationKind.CLOCK_BREACHED: "A regulator deadline has passed",
 }
 
 

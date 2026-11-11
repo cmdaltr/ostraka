@@ -135,7 +135,9 @@ export type NotificationKind =
   | 'mention'
   | 'reply'
   | 'commander'
-  | 'unblocked';
+  | 'unblocked'
+  | 'clock_due'
+  | 'clock_breached';
 
 export interface Notification {
   id: string;

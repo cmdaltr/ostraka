@@ -8,6 +8,7 @@ import type { Me } from '../api/types';
 import { SeverityPill } from '../components/Pills';
 import { Loading } from '../components/sherd/Ostrakon';
 import { Notice, messageOf } from '../components/ui';
+import { WorkDeadlines } from './WorkDeadlines';
 import './incident/incident.css';
 
 function Row({ task, onClaimed }: { task: MyTask; onClaimed: () => void }) {
@@ -70,6 +71,7 @@ export function Work({ me }: { me: Me }) {
       </div>
       {tasks.error && <Notice kind="error">{messageOf(tasks.error)}</Notice>}
       <Loading ready={!tasks.isPending} label="Loading your work">
+        <WorkDeadlines />
         <section className="stack" aria-label="Assigned to you">
           <h2 className="label">Assigned to you</h2>
           {tasks.data && mine.length === 0 && <p className="hint">Nothing assigned to you.</p>}

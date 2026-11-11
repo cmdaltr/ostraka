@@ -16,6 +16,7 @@ import { AchMatrix } from './AchMatrix';
 import { Activity } from './Activity';
 import { Assessments } from './Assessments';
 import { Assets } from './Assets';
+import { Clocks } from './Clocks';
 import { Comments } from './Comments';
 import { Findings } from './Findings';
 import { Lessons } from './Lessons';
@@ -28,6 +29,7 @@ import './incident.css';
 const sections = [
   ['overview', 'Overview'],
   ['tasks', 'Tasks'],
+  ['clocks', 'Clocks'],
   ['observables', 'Observables'],
   ['assets', 'Assets'],
   ['findings', 'Findings'],
@@ -272,6 +274,7 @@ export function IncidentPage({ me }: { me: Me }) {
         <div className="incident-main">
           {section === 'overview' && <Overview incident={incident} me={me} />}
           {section === 'tasks' && <Tasks incident={incident} me={me} />}
+          {section === 'clocks' && <Clocks incident={incident} me={me} />}
           {section === 'observables' && <Observables incident={incident} me={me} />}
           {section === 'assets' && <Assets incident={incident} />}
           {section === 'findings' && <Findings incident={incident} />}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from ostraka.models import Role, User
+from ostraka.models import IncidentRole, Role, User
 
 # Roles a team lead may hand out. Only admins create team leads and admins.
 LEAD_INVITABLE = frozenset({Role.RESPONDER, Role.OBSERVER})
@@ -103,3 +103,29 @@ def can_export(viewer: User, *, worked_on: bool, is_commander: bool, sensitive: 
     if worked_on or is_commander:
         return None
     return "Only people who have worked on this incident can export its reports."
+
+
+# The incident roles that answer for a regulator's deadlines
+CLOCK_ROLES = frozenset({IncidentRole.COMMANDER, IncidentRole.COMMS})
+
+
+def can_manage_clocks(actor: User, incident_role: IncidentRole | None) -> str | None:
+    """Add, change, close or reopen a regulator clock: the incident's commander or comms, or an
+    admin. Observers never."""
+    if actor.role is Role.OBSERVER:
+        return "Observers can see regulator clocks but not change them."
+    if actor.role is Role.ADMIN or incident_role in CLOCK_ROLES:
+        return None
+    return "Only the incident commander, comms or an admin can add, change or close regulator clocks."
+
+
+def can_mark_milestone(actor: User, incident_role: IncidentRole | None, *, is_owner: bool) -> str | None:
+    """Record a clock's milestone as met (or undo that): whoever may manage the clock, and its owner."""
+    if actor.role is not Role.OBSERVER and is_owner:
+        return None
+    refusal = can_manage_clocks(actor, incident_role)
+    if refusal is None:
+        return None
+    if actor.role is Role.OBSERVER:
+        return refusal
+    return "Only the clock's owner, the incident commander, comms or an admin can mark its milestones."

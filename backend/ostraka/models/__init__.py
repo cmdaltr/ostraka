@@ -17,6 +17,7 @@ from ostraka.models.analysis import (
     Rating,
     Weight,
 )
+from ostraka.models.clocks import Clock, ClockMilestone, RegimeKey
 from ostraka.models.incidents import (
     PHASES_OF,
     ActivityEvent,
@@ -108,6 +109,9 @@ __all__ = [
     "AssetStatus",
     "BackupCode",
     "ChecklistItem",
+    "Clock",
+    "ClockMilestone",
+    "RegimeKey",
     "Comment",
     "Finding",
     "FindingKind",

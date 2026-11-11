@@ -52,6 +52,8 @@ class NotificationKind(StrEnum):
     COMMANDER = "commander"  # you're now incident commander
     UNBLOCKED = "unblocked"  # a task you hold was waiting on another, which has finished
     NEW_DEVICE = "new_device"  # your account signed in from a browser it hasn't used before
+    CLOCK_DUE = "clock_due"  # a regulator clock you own (or command) is running down
+    CLOCK_BREACHED = "clock_breached"  # a regulator deadline passed unmet
 
 
 class Task(Base):

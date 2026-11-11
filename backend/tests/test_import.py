@@ -53,6 +53,12 @@ async def test_the_sample_loads_with_every_feature_it_shows(
     assert any(t["parent_id"] for t in tasks) and any(t["overdue"] for t in tasks)
     findings = (await client.get(f"/api/incidents/{ransomware['id']}/findings", headers=admin.headers)).json()
     assert {f["status"] for f in findings} == {"confirmed", "lead"}
+    ico, insurer = (
+        await client.get(f"/api/incidents/{ransomware['id']}/clocks", headers=admin.headers)
+    ).json()
+    assert ico["regime"] == "uk_gdpr" and ico["owner"]["name"] == "Nina Patel"
+    assert ico["milestones"][0]["state"] == "met" and ico["milestones"][0]["reference"].startswith("ICO case")
+    assert [m["state"] for m in insurer["milestones"]] == ["met", "running"]
 
     hunt = by_title["Kerberoasting against service accounts"]
     assert hunt["kind"] == "hunt" and hunt["status"] == "closed" and hunt["phase"] == "conclude"
