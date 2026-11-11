@@ -43,8 +43,9 @@ async def make_comms(client, commander, incident, person):
 
 
 async def kinds(client, person) -> list[str]:
+    # The same ticks fall due for stakeholder updates (tests/test_updates.py); these tests are about clocks
     r = await client.get("/api/notifications", headers=person.headers)
-    return [n["kind"] for n in r.json()["items"]]
+    return [n["kind"] for n in r.json()["items"] if n["kind"] != "update_due"]
 
 
 async def activity(client, person, incident) -> list[dict]:
@@ -318,6 +319,7 @@ async def test_the_owner_then_the_commander_hear_as_the_deadline_approaches(
     await settle()
     assert await kinds(client, p["soc"]) == ["clock_due"]
     notes = (await client.get("/api/notifications", headers=p["soc"].headers)).json()["items"]
+    notes = [n for n in notes if n["kind"] != "update_due"]
     assert "due in 7 h (90% of the time gone)" in notes[0]["title"]
     assert "as incident commander" in notes[0]["body"]
     assert notes[0]["link"].endswith("?s=clocks#" + notes[0]["link"].split("#")[1])
