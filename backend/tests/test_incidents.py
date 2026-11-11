@@ -456,7 +456,9 @@ async def test_threads_mentions_and_withdrawal(db, client, people):
     assert nested.status_code == 422
 
     assert (
-        await client.patch(f"{base}/{first['id']}", json={"body": "edit"}, headers=p["lead"].headers)
+        await client.patch(
+            f"{base}/{first['id']}", json={"version": 1, "body": "edit"}, headers=p["lead"].headers
+        )
     ).status_code == 403
     assert (await client.delete(f"{base}/{first['id']}", headers=p["soc"].headers)).status_code == 204
     listed = (await client.get(base, headers=p["soc"].headers)).json()

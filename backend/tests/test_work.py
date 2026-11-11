@@ -174,9 +174,17 @@ async def test_checklist_items_are_ticked_independently(db, client, people, outb
     added = (await client.post(base, json={"text": "Hash the export"}, headers=p["soc"].headers)).json()
     first, second = added["checklist"]
     ticked = (
-        await client.patch(f"{base}/{first['id']}", json={"done": True}, headers=p["soc"].headers)
+        await client.patch(
+            f"{base}/{first['id']}", json={"version": 1, "done": True}, headers=p["soc"].headers
+        )
     ).json()
     assert ticked["checklist"][0]["done"] and ticked["checklist"][0]["done_by"]["name"] == "Sam Soc"
+    assert ticked["checklist"][0]["version"] == 2 and ticked["checklist"][1]["version"] == 1
+    # The other item keeps its own version; a stale one on the ticked item is refused
+    stale = await client.patch(
+        f"{base}/{first['id']}", json={"version": 1, "done": False}, headers=p["soc"].headers
+    )
+    assert stale.status_code == 409
     left = (await client.delete(f"{base}/{second['id']}", headers=p["soc"].headers)).json()
     assert [i["text"] for i in left["checklist"]] == ["Export"]
 

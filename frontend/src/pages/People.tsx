@@ -130,7 +130,7 @@ function AccountRow({
   const editable = me.role === 'admin' && person.id !== me.id;
 
   const change = (json: Record<string, unknown>) =>
-    api(`/api/users/${person.id}`, { method: 'PATCH', json })
+    api(`/api/users/${person.id}`, { method: 'PATCH', json: { version: person.version ?? 1, ...json } })
       .then(() => {
         setError(null);
         onChanged();

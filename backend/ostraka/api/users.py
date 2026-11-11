@@ -13,6 +13,7 @@ from ostraka.auth import policy, sessions, totp
 from ostraka.auth.deps import Caller, current_caller, current_user
 from ostraka.auth.secrets import decrypt, encrypt, hash_password, password_problem, verify_password
 from ostraka.db import get_session
+from ostraka.incidents.views import check_version
 from ostraka.models import BackupCode, Role, SecurityEvent, Session, Team, User, utcnow
 from ostraka.schemas import (
     AcceptEnrol,
@@ -310,7 +311,8 @@ async def change_account(
     db: AsyncSession = Depends(get_session),
 ) -> User:
     target = await _target(db, actor, user_id)
-    changes = body.model_dump(exclude_unset=True)
+    check_version(target.version, body.version, "account")
+    changes = body.model_dump(exclude_unset=True, exclude={"version"})
     role = changes.get("role", target.role)
     team_id = changes.get("team_id", target.team_id)
     if role is not Role.ADMIN and team_id is None:
@@ -331,6 +333,8 @@ async def change_account(
 
     for field, value in changes.items():
         setattr(target, field, value)
+    if changes:
+        target.version += 1
     if changes.get("is_active") is False:
         await sessions.revoke_all(db, target.id)
     audit.record(

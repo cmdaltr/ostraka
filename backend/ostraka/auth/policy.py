@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from ostraka.models import Role, User
+from ostraka.models import Role, Tlp, User
 
 # Roles a team lead may hand out. Only admins create team leads and admins.
 LEAD_INVITABLE = frozenset({Role.RESPONDER, Role.OBSERVER})
@@ -103,3 +103,15 @@ def can_export(viewer: User, *, worked_on: bool, is_commander: bool, sensitive: 
     if worked_on or is_commander:
         return None
     return "Only people who have worked on this incident can export its reports."
+
+
+# TLP levels whose incidents never signal, to anyone outside them, that they are being worked
+_SILENT_TLP = frozenset({Tlp.RED, Tlp.AMBER_STRICT})
+
+
+def may_signal_work_elsewhere(*, can_view: bool, tlp: Tlp) -> bool:
+    """Whether someone working an indicator in another incident is mentioned to this viewer. An
+    incident they can see always is (by name). One they can't is already counted in the overlap, so
+    they're told only that it's being worked and whom to ask, and not even that for TLP:RED or
+    TLP:AMBER+STRICT, whose activity stays inside the incident."""
+    return can_view or tlp not in _SILENT_TLP

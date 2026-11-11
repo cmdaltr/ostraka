@@ -61,6 +61,7 @@ class Team(Base):
     # The team channel's Workflows webhook URL, encrypted: anyone holding it can post to the channel
     teams_webhook: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    version: Mapped[int] = mapped_column(Integer, default=1)
 
     members: Mapped[list[User]] = relationship(back_populates="team")
 
@@ -113,6 +114,8 @@ class User(Base):
     new_device_alerts: Mapped[bool] = mapped_column(Boolean, default=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    # An admin's changes to the account carry this (the person's own preferences don't)
+    version: Mapped[int] = mapped_column(Integer, default=1)
 
     team: Mapped[Team | None] = relationship(back_populates="members", lazy="joined")
     backup_codes: Mapped[list[BackupCode]] = relationship(cascade="all, delete-orphan")

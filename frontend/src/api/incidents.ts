@@ -156,6 +156,7 @@ export interface Comment {
   edited_at: string | null;
   deleted: boolean;
   resolved_at: string | null;
+  version: number;
 }
 
 export interface ActivityEvent {
@@ -222,7 +223,7 @@ export const keys = {
 export function sectionsFor(entityType: string): string[] {
   switch (entityType) {
     case 'observable':
-      return ['observables', 'timeline'];
+      return ['observables', 'timeline', 'observables-working'];
     case 'asset':
     case 'asset_link':
       return ['assets', 'links', 'timeline'];
@@ -241,6 +242,8 @@ export function sectionsFor(entityType: string): string[] {
       return ['lessons'];
     case 'link':
       return ['record-links'];
+    case 'handover':
+      return ['handover'];
     default:
       return [];
   }

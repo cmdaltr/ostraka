@@ -99,11 +99,15 @@ async def test_imported_people_hold_no_place_until_they_are_given_a_way_in(
 async def test_reactivating_someone_needs_a_free_place(db, client, make_person, sign_in, free_edition):
     admin = await sign_in(await make_person("admin@example.org", Role.ADMIN, None))
     gone = await make_person("gone@example.org", Role.RESPONDER, "SOC")
-    r = await client.patch(f"/api/users/{gone.id}", json={"is_active": False}, headers=admin.headers)
+    r = await client.patch(
+        f"/api/users/{gone.id}", json={"version": 1, "is_active": False}, headers=admin.headers
+    )
     assert r.status_code == 200
     for email in ("a@example.org", "b@example.org", "c@example.org"):
         assert (await invite(client, admin, email)).status_code == 201
-    r = await client.patch(f"/api/users/{gone.id}", json={"is_active": True}, headers=admin.headers)
+    r = await client.patch(
+        f"/api/users/{gone.id}", json={"version": 2, "is_active": True}, headers=admin.headers
+    )
     assert r.status_code == 402
 
 

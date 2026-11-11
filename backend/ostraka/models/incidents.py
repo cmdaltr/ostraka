@@ -434,6 +434,7 @@ class Comment(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     resolved_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    version: Mapped[int] = mapped_column(Integer, default=1)
 
     author: Mapped[User | None] = relationship(lazy="joined", foreign_keys=[author_id])
 

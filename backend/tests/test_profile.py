@@ -125,7 +125,9 @@ async def test_signed_in_browsers_are_listed_and_can_be_signed_out(db, client, m
 async def test_your_security_log_shows_your_events_and_an_admins_changes(db, client, make_person, sign_in):
     sam = await sign_in(await make_person("sam@example.org", Role.RESPONDER, "SOC", name="Sam"))
     admin = await sign_in(await make_person("admin@example.org", Role.ADMIN, None, name="Ada"))
-    r = await client.patch(f"/api/users/{sam.user.id}", json={"role": "team_lead"}, headers=admin.headers)
+    r = await client.patch(
+        f"/api/users/{sam.user.id}", json={"version": 1, "role": "team_lead"}, headers=admin.headers
+    )
     assert r.status_code == 200, r.text
     r = await client.post("/api/auth/login", json={"email": "sam@example.org", "password": "wrong password!"})
 

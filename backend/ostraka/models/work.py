@@ -131,6 +131,7 @@ class ChecklistItem(Base):
     done: Mapped[bool] = mapped_column(Boolean, default=False)
     done_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     done_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    version: Mapped[int] = mapped_column(Integer, default=1)
 
 
 class Playbook(Base):

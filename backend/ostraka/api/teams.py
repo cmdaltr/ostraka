@@ -16,6 +16,7 @@ from ostraka.auth.deps import current_user, require_role
 from ostraka.auth.secrets import decrypt, encrypt
 from ostraka.config import get_settings
 from ostraka.db import get_session
+from ostraka.incidents.views import check_version
 from ostraka.models import Role, Team, User
 from ostraka.notify import channels
 from ostraka.schemas import TeamIn, TeamOut, TeamPatch
@@ -65,8 +66,10 @@ async def update_team(
     team = await db.get(Team, team_id)
     if team is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such team.")
-    for field, value in body.model_dump(exclude_unset=True, exclude_none=True).items():
+    check_version(team.version, body.version, "team")
+    for field, value in body.model_dump(exclude_unset=True, exclude_none=True, exclude={"version"}).items():
         setattr(team, field, value.strip() if isinstance(value, str) else value)
+    team.version += 1
     audit.record(db, "team_changed", actor_id=actor.id, ip=sessions.client_ip(request), team=team.name)
     return await _save(db, team)
 

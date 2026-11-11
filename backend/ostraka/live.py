@@ -162,6 +162,16 @@ class Hub:
                 entry["focus"] = viewer.focus
         return sorted(merged.values(), key=lambda p: p["name"])
 
+    def focused(self, incident: str, focus: str) -> list[Viewer]:
+        """Who has one object open in an incident right now, one entry per person."""
+        now = time.monotonic()
+        found: dict[str, Viewer] = {}
+        for viewer in self.presence.get(incident, {}).values():
+            if viewer.focus == focus and now - viewer.seen <= PRESENCE_SECONDS:
+                if viewer.user_id not in found or viewer.editing:
+                    found[viewer.user_id] = viewer
+        return list(found.values())
+
     def anyone_editing(self) -> bool:
         now = time.monotonic()
         return any(

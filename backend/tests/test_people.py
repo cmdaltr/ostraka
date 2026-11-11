@@ -312,7 +312,9 @@ async def test_deactivating_someone_ends_their_sessions(db, client, make_person,
     leaver_headers = {"Authorization": f"Bearer {granted.json()['access_token']}"}
     assert (await client.get("/api/users/me", headers=leaver_headers)).status_code == 200
 
-    r = await client.patch(f"/api/users/{leaver.id}", json={"is_active": False}, headers=admin.headers)
+    r = await client.patch(
+        f"/api/users/{leaver.id}", json={"version": 1, "is_active": False}, headers=admin.headers
+    )
     assert r.status_code == 200
     assert (await client.get("/api/users/me", headers=leaver_headers)).status_code == 401
 
@@ -320,7 +322,10 @@ async def test_deactivating_someone_ends_their_sessions(db, client, make_person,
 async def test_admins_cannot_demote_or_deactivate_themselves(db, client, make_person, sign_in):
     """So ostraka always keeps at least one admin: removing one takes another."""
     admin = await sign_in(await make_person("admin@example.org", Role.ADMIN, None))
-    for change in ({"is_active": False}, {"role": "responder", "team_id": await team_id(db, "SOC")}):
+    for change in (
+        {"version": 1, "is_active": False},
+        {"version": 1, "role": "responder", "team_id": await team_id(db, "SOC")},
+    ):
         assert (
             await client.patch(f"/api/users/{admin.id}", json=change, headers=admin.headers)
         ).status_code == 403
@@ -331,11 +336,13 @@ async def test_admins_cannot_demote_or_deactivate_themselves(db, client, make_pe
 async def test_team_needed_for_everyone_but_admins(db, client, make_person, sign_in):
     admin = await sign_in(await make_person("admin@example.org", Role.ADMIN, None))
     other_admin = await make_person("admin2@example.org", Role.ADMIN, None)
-    r = await client.patch(f"/api/users/{other_admin.id}", json={"role": "responder"}, headers=admin.headers)
+    r = await client.patch(
+        f"/api/users/{other_admin.id}", json={"version": 1, "role": "responder"}, headers=admin.headers
+    )
     assert r.status_code == 422
     r = await client.patch(
         f"/api/users/{other_admin.id}",
-        json={"role": "team_lead", "team_id": await team_id(db, "Forensics")},
+        json={"version": 1, "role": "team_lead", "team_id": await team_id(db, "Forensics")},
         headers=admin.headers,
     )
     assert r.status_code == 200 and r.json()["role"] == "team_lead"

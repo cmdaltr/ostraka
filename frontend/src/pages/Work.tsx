@@ -38,7 +38,10 @@ function Row({ task, onClaimed }: { task: MyTask; onClaimed: () => void }) {
             className="btn btn-primary"
             type="button"
             onClick={() =>
-              api(`/api/incidents/${task.incident.id}/tasks/${task.id}/claim`, { method: 'POST' })
+              api(`/api/incidents/${task.incident.id}/tasks/${task.id}/claim`, {
+                method: 'POST',
+                json: { version: task.version },
+              })
                 .then(onClaimed)
                 .catch((e) => setError(messageOf(e)))
             }

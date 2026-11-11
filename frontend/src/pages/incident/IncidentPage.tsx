@@ -12,12 +12,14 @@ import { Assembling, Loading, useFinishing } from '../../components/sherd/Ostrak
 import { Notice, messageOf } from '../../components/ui';
 import { useLiveIncident } from '../../live/live';
 import type { Present } from '../../live/live';
+import { PresenceProvider } from '../../live/presence';
 import { AchMatrix } from './AchMatrix';
 import { Activity } from './Activity';
 import { Assessments } from './Assessments';
 import { Assets } from './Assets';
 import { Comments } from './Comments';
 import { Findings } from './Findings';
+import { Handover, SinceYouLeftBanner } from './Handover';
 import { Lessons } from './Lessons';
 import { Observables } from './Observables';
 import { Overview } from './Overview';
@@ -35,6 +37,7 @@ const sections = [
   ['ach', 'ACH'],
   ['timeline', 'Timeline'],
   ['lessons', 'Lessons'],
+  ['handover', 'Handover'],
   ['activity', 'Activity'],
 ] as const;
 type Section = (typeof sections)[number][0];
@@ -251,6 +254,8 @@ export function IncidentPage({ me }: { me: Me }) {
 
       {promoting && <Promote hunt={incident} onClose={() => setPromoting(false)} />}
 
+      <SinceYouLeftBanner incident={incident} />
+
       <nav className="tabs" aria-label="Incident sections">
         {sections.map(([key, name]) => {
           const count = (incident.counts as Record<string, number>)[key];
@@ -268,6 +273,7 @@ export function IncidentPage({ me }: { me: Me }) {
         })}
       </nav>
 
+      <PresenceProvider value={{ incidentId: incident.id, meId: me.id, people }}>
       <div className="incident-body">
         <div className="incident-main">
           {section === 'overview' && <Overview incident={incident} me={me} />}
@@ -279,12 +285,14 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'ach' && <AchMatrix incident={incident} me={me} />}
           {section === 'timeline' && <Timeline incident={incident} />}
           {section === 'lessons' && <Lessons incident={incident} me={me} />}
+          {section === 'handover' && <Handover incident={incident} me={me} />}
           {section === 'activity' && <Activity incident={incident} />}
         </div>
         <aside className="incident-rail" aria-label="Discussion">
           <Comments incident={incident} me={me} />
         </aside>
       </div>
+      </PresenceProvider>
     </div>
       )}
     </Loading>

@@ -26,6 +26,7 @@ class TeamOut(_Out):
     aliases: list[str] = Field(default_factory=list)
     description: str
     has_channel: bool = False  # a Teams channel is connected; the URL itself is never sent back
+    version: int = 1
 
 
 TEAM_CODE = r"^[A-Z]{2,8}$"
@@ -54,6 +55,7 @@ class TeamIn(BaseModel):
 
 
 class TeamPatch(BaseModel):
+    version: int
     name: str | None = Field(default=None, min_length=1, max_length=80)
     code: str | None = Field(default=None, pattern=TEAM_CODE)
     aliases: list[str] | None = None
@@ -78,6 +80,7 @@ class UserOut(_Out):
     availability: Availability = Availability.AVAILABLE
     timezone: str = "Europe/London"
     phone: str | None = Field(default=None, description="Out of hours. Withheld from observers.")
+    version: int = 1
 
 
 class MeOut(UserOut):
@@ -182,6 +185,7 @@ class AuthenticatorStart(BaseModel):
 class AccountPatch(BaseModel):
     """An admin's change to someone else's account."""
 
+    version: int
     role: Role | None = None
     team_id: uuid.UUID | None = None
     is_active: bool | None = None

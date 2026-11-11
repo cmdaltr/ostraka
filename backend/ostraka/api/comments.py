@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ostraka import notify, work
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
-from ostraka.incident_schemas import TARGETS, CommentIn, CommentOut, CommentPatch, Person
-from ostraka.incidents import access, activity
+from ostraka.incident_schemas import TARGETS, CommentIn, CommentOut, CommentPatch, MaybeVersioned, Person
+from ostraka.incidents import access, activity, views
 from ostraka.incidents.masking import for_viewer
 from ostraka.incidents.refs import mentions, plain
 from ostraka.models import (
@@ -48,6 +48,7 @@ def _out(user: User, comment: Comment) -> CommentOut:
         edited_at=comment.edited_at,
         deleted=deleted,
         resolved_at=comment.resolved_at,
+        version=comment.version,
     )
 
 
@@ -191,8 +192,10 @@ async def edit_comment(
     comment = await _comment(db, incident, comment_id)
     if comment.author_id != user.id or comment.deleted_at:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the author can edit a comment.")
+    views.check_version(comment.version, body.version, "comment")
     comment.body = body.body.strip()
     comment.edited_at = utcnow()
+    comment.version += 1
     await activity.record(
         db,
         incident,
@@ -236,17 +239,22 @@ async def delete_comment(
 async def resolve(
     incident_id: uuid.UUID,
     comment_id: uuid.UUID,
+    body: MaybeVersioned | None = None,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_session),
 ) -> CommentOut:
-    """Mark a thread resolved, or reopen it if it already is."""
+    """Mark a thread resolved, or reopen it if it already is. A toggle, so the version matters: two
+    people resolving at once would otherwise reopen it."""
     incident = await access.load(db, user, incident_id, edit=True)
     comment = await _comment(db, incident, comment_id)
     if comment.parent_id is not None:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY, "Resolve the thread from its first comment."
         )
+    if body is not None and body.version is not None:
+        views.check_version(comment.version, body.version, "thread")
     reopening = comment.resolved_at is not None
+    comment.version += 1
     comment.resolved_at = None if reopening else utcnow()
     comment.resolved_by = None if reopening else user.id
     await activity.record(

@@ -94,7 +94,12 @@ async def task_out(db: AsyncSession, task: Task, viewer: User | None = None) -> 
         overdue=is_overdue(task),
         checklist=[
             ChecklistItemOut(
-                id=i.id, text=i.text, done=i.done, done_by=views.person(lookup, i.done_by), done_at=i.done_at
+                id=i.id,
+                text=i.text,
+                done=i.done,
+                done_by=views.person(lookup, i.done_by),
+                done_at=i.done_at,
+                version=i.version,
             )
             for i in task.checklist
         ],

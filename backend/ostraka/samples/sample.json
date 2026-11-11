@@ -1583,6 +1583,12 @@
           "body": "@{amara} vendor says tomorrow morning. #{t_restore} can't start until #{kr3} is unblocked."
         },
         {
+          "at": "-1d 18:30",
+          "by": "oliver",
+          "do": "handover",
+          "add": "Overnight: @{jun} has the restore. Ring the backup vendor at 07:00 if the snapshot isn't in; #{t_restore} waits on it."
+        },
+        {
           "at": "-3h",
           "by": "george",
           "do": "comment",
@@ -2268,6 +2274,11 @@
             "phase": "recover",
             "summary": "A haulage supplier's compromised mailbox asked us to change bank details for INV-88412 (£48,210). Our AP clerk's account had been taken over the night before by MFA fatigue (#{f_signin}), and an inbox rule hid the supplier's replies (#{f_rule}). No payment was made. The rule is gone, sessions revoked, and number matching is now on for every account."
           }
+        },
+        {
+          "at": "+1h",
+          "by": "lucia",
+          "do": "handover"
         }
       ]
     },

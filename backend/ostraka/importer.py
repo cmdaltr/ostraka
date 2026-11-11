@@ -33,7 +33,7 @@ mention, "@{team:Northwind SOC}" a team mention, and "#{f1}" the reference of wh
 
 Steps ("do"): update, member, team, playbook, observable, sighting, asset, asset_update, asset_link,
 finding, verify, confirm, refute, task, task_update, tick, claim, release, nudge, wait_on, comment,
-link, promote, decide, assess, hypothesis, evidence, rate, reject, lesson. Their fields are the
+link, promote, decide, assess, hypothesis, evidence, rate, reject, lesson, handover. Their fields are the
 API's, with keys in place of ids; see `_STEPS`. A playbook step's "keys" name its steps, and each
 becomes a task once its step opens.
 """
@@ -591,11 +591,25 @@ class _Run:
         for index in step.body.get("items", [step.body.get("item", 0)]):
             item = current["checklist"][index]
             await self.call(
-                "PATCH", f"{self._task_path(step.body['task'])}/checklist/{item['id']}", {"done": True}
+                "PATCH",
+                f"{self._task_path(step.body['task'])}/checklist/{item['id']}",
+                {"version": item["version"], "done": True},
             )
 
     async def claim(self, step: _Step) -> None:
-        await self.call("POST", f"{self._task_path(step.body['task'])}/{step.do}")
+        current = await self.task(step.body["task"])
+        await self.call(
+            "POST", f"{self._task_path(step.body['task'])}/{step.do}", {"version": current["version"]}
+        )
+
+    async def handover(self, step: _Step) -> None:
+        """Ostraka's draft for the stretch since the last handover, with anything the file adds."""
+        made = await self.call("GET", f"{self.base(step)}/handover/draft")
+        body = made["text"]
+        if extra := step.body.get("add"):
+            body = f"{body}\n\n{self.text(extra)}"
+        covers = {k: made[k] for k in ("from_position", "through_position")}
+        await self.call("POST", f"{self.base(step)}/handover", {"body": body, **covers})
 
     async def nudge(self, step: _Step) -> None:
         await self.call(
@@ -690,6 +704,7 @@ _STEPS: dict[str, Callable[[_Run, _Step], Awaitable[None]]] = {
     "rate": _Run.rate,
     "reject": _Run.reject,
     "lesson": _Run.lesson,
+    "handover": _Run.handover,
 }
 
 

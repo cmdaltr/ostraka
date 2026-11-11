@@ -21,6 +21,7 @@ export interface ChecklistItem {
   done: boolean;
   done_by: PersonRef | null;
   done_at: string | null;
+  version: number;
 }
 
 // Another task this one waits on, or that waits on it, possibly in another incident

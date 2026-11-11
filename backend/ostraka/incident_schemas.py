@@ -462,8 +462,15 @@ class CommentIn(BaseModel):
     parent_id: uuid.UUID | None = None
 
 
-class CommentPatch(BaseModel):
+class CommentPatch(Versioned):
     body: str = Field(min_length=1, max_length=20_000)
+
+
+class MaybeVersioned(BaseModel):
+    """A state change with no other fields. Ostraka's own clients always send the version; a stale one
+    is refused."""
+
+    version: int | None = None
 
 
 class CommentOut(BaseModel):
@@ -477,6 +484,7 @@ class CommentOut(BaseModel):
     edited_at: datetime | None
     deleted: bool
     resolved_at: datetime | None
+    version: int
 
 
 class ActivityOut(BaseModel):

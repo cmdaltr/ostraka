@@ -17,6 +17,7 @@ from ostraka.models.analysis import (
     Rating,
     Weight,
 )
+from ostraka.models.handover import HandoverNote, IncidentView
 from ostraka.models.incidents import (
     PHASES_OF,
     ActivityEvent,
@@ -80,6 +81,8 @@ from ostraka.models.work import (
 )
 
 __all__ = [
+    "HandoverNote",
+    "IncidentView",
     "AchEvidence",
     "AchHypothesis",
     "AchRating",
