@@ -81,6 +81,8 @@ Colour directions: https://claude.ai/artifact/N5V8BUNbGEBcgWsCjX7Lpk
 ## Features that set Ostraka apart
 
 1. **Handover and presence**: a "since you left" view and a generated shift-handover note; live presence on each object; optimistic concurrency (a version check on every write); cross-incident warnings when someone else is working on the same IOC.
+
+   Built 11 November 2026 (`ostraka/handover.py`, `incidents/presence.py`). The note is drafted without AI from the activity log; the person handing over edits it before posting, and both texts are kept. Presence names objects by id only. "Working elsewhere" never mentions a TLP:RED or TLP:AMBER+STRICT incident to anyone outside it.
 2. **Regulator clocks**: count from the time you became aware, each with an owner and nudges.
 
    | Regime | Deadline |
@@ -95,8 +97,8 @@ Colour directions: https://claude.ai/artifact/N5V8BUNbGEBcgWsCjX7Lpk
 
 3. **Stakeholder updates**: drafted on a fixed rhythm set by severity, from what changed since the last update. Comms approves each one before it goes out. Observers get a read-only briefing view.
    Every update is written to the assessment standard below.
-4. **Graph and chain of custody**: as described in the core model.
-5. **Detection-gap follow-through**: a follow-up for every confirmed technique without a detection. A gap only closes when Shikari has a detection for it.
+4. **Graph and chain of custody**: as described in the core model. Built 11 November 2026 (`ostraka/graph.py`, `ostraka/custody.py`): the graph is read from the record each time and masked per viewer; exhibits carry their hashes, and each handover is offered, then accepted with a re-hash by the person receiving it, in a hash chain the technical report verifies at export. Still to do: `#EXH-n` references in text (`incidents/refs.py` and the frontend's token pattern know FND, AST, OBS and TSK only). Acceptance uses the session, not a TOTP step-up.
+5. **Detection-gap follow-through**: a follow-up for every confirmed technique without a detection. A gap only closes when Shikari has a detection for it. Built 11 November 2026 (`ostraka/integrations/gaps.py`): a confirmed finding's techniques are checked with Shikari, each gap opens a task for the detection team, and Shikari's signed `run.completed` webhook (an `automation` feature) re-checks the open ones.
 
 ## Assessment standard for reports and updates
 
@@ -151,8 +153,8 @@ An update meets the standard with AI switched off, and AI never decides whether 
 | 3 | Work | Team and individual tasks, playbooks, nudges, notifications and delivery channels |
 | 3a | Hunts and links | Hunt records and promotion, links between records, subtasks, task blocking, seed playbooks, workflow playbooks with decisions and hand-offs |
 | 3b | Everywhere | Built 11 November 2026: the host `ostraka` CLI (`start`, `status`, `first-admin`, `server init`, `app install`) and its PowerShell twin, local and central modes, desktop launchers for macOS (Swift, `.dmg`), Windows (Edge app mode, `.msi`) and Linux (browser app mode, `.deb`, or the source tarball where there's no apt), install and uninstall scripts, the `ost` responder client and server setup for Linux and Windows (WSL 2) in Bash and PowerShell, Help → Licence, `make release` with SHA256SUMS. Some of it still needs real hardware (below) |
-| 4 | What sets Ostraka apart | In this order: presence and handover, regulator clocks, graph and custody, stakeholder updates |
-| 5 | Integrations | Rowanholt link, Shikari follow-ups and webhooks, STIX/MISP export, Navigator layer (the PDF and Word reports were built early, 11 November 2026) |
+| 4 | What sets Ostraka apart | In this order: presence and handover, regulator clocks, graph and custody, stakeholder updates. The first three built 11 November 2026 |
+| 5 | Integrations | Built 11 November 2026: Rowanholt link and row citations, Shikari detection gaps and its signed webhooks, STIX 2.1 and MISP export (and a MISP push, `automation`), the ATT&CK Navigator layer (the PDF and Word reports were built early, the same day). VECTR stays with Shikari, which exports its threat library and emulation plans for MACAT and VECTR: adversary emulation is detection work, not the incident record |
 
 ## Phase 3b on real hardware
 
