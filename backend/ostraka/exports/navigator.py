@@ -1,12 +1,11 @@
 """An incident's techniques as an ATT&CK Navigator layer.
 
-Built to Rowanholt's layer (rowanholt post/mitre/layers.py `build_layer`, and the confirmed-findings
-layer in web/backend/case_routes.py `navigator_layer`), so a layer from Ostraka opens beside one from
-Rowanholt and reads the same: layer format 4.5 for Navigator 5.3.2, the ATT&CK major version of the
-bundled data, Enterprise with every platform it has (cloud included, or cloud-only techniques would
-be filtered out of sight), colour and comment per technique with no score, IDs shown, and the
-confirmed colour Rowanholt uses. Shikari's assessment layer hard-codes ATT&CK 17, so it isn't
-followed. Technique IDs the bundled ATT&CK release doesn't have are left out, as in Rowanholt.
+Built by `samarkand.navigator.build_layer`, which is Rowanholt's layer (rowanholt post/mitre/
+layers.py), so a layer from Ostraka opens beside one from Rowanholt and reads the same: layer
+format 4.5 for Navigator 5.3.2, the ATT&CK major version of the bundled data, Enterprise with every
+platform it has (cloud included, or cloud-only techniques would be filtered out of sight), colour
+and comment per technique with no score, IDs shown, and the confirmed colour Rowanholt uses.
+Technique IDs the bundled ATT&CK release doesn't have are left out, as in Rowanholt.
 
 By default the layer is the confirmed findings' techniques only, as Rowanholt's is: a layer is often
 shared as "what happened", and a lead on it would read as established. With `leads=True`, techniques
@@ -21,16 +20,20 @@ from __future__ import annotations
 
 from typing import Any
 
+from samarkand import navigator as shared
+from samarkand.navigator import (  # noqa: F401  (re-exported for the API and tests)
+    COMMENT_LIMIT,
+    CONFIRMED_COLOUR,
+    LAYER_VERSION,
+    LEAD_COLOUR,
+    NAVIGATOR_VERSION,
+)
+
 from ostraka.exports.record import CONFIRMED, IntelRecord
 from ostraka.observables.detect import ObservableType
 from ostraka.reports import attack
 
-NAVIGATOR_VERSION = "5.3.2"  # Rowanholt's (its docker-compose.yml's navigator service)
-LAYER_VERSION = "4.5"
-DOMAIN = "enterprise-attack"
-CONFIRMED_COLOUR = "#ed5565"  # Rowanholt's confirmed-finding colour
-LEAD_COLOUR = "#ffce54"
-COMMENT_LIMIT = 1000  # as Rowanholt cuts them
+DOMAIN = shared.ENTERPRISE
 # Every platform Enterprise's techniques name (Rowanholt's attack_lookup.platforms("enterprise-attack")
 # over ATT&CK v20); the bundled attack.json doesn't carry platforms
 PLATFORMS = [
@@ -50,7 +53,7 @@ PLATFORMS = [
 
 def attack_major() -> str:
     """The bundled release's major version ("20"), the one Navigator layers name."""
-    return (attack.VERSION or "").split(".")[0]
+    return shared.attack_major(attack.VERSION or "")
 
 
 def layer(record: IntelRecord, *, leads: bool = False) -> dict[str, Any]:
@@ -62,7 +65,7 @@ def layer(record: IntelRecord, *, leads: bool = False) -> dict[str, Any]:
         if o.kind is ObservableType.MITRE_TECHNIQUE and tid not in named:
             named[tid] = []
 
-    techniques: dict[str, tuple[str, str, list[dict[str, str]]]] = {}
+    techniques: dict[str, shared.Mark] = {}
     for tid, findings in named.items():
         if not attack.technique(tid)[0]:
             continue
@@ -75,17 +78,18 @@ def layer(record: IntelRecord, *, leads: bool = False) -> dict[str, Any]:
             or "Recorded as an observable (lead)"
         )
         links = [{"label": f.ref, "url": f.url} for f in shown if f.url]
-        techniques[tid] = (CONFIRMED_COLOUR if confirmed else LEAD_COLOUR, comment[:COMMENT_LIMIT], links)
+        techniques[tid] = shared.Mark(CONFIRMED_COLOUR if confirmed else LEAD_COLOUR, comment, links)
 
-    parents = {tid.split(".")[0] for tid in techniques if "." in tid}
     legend = [{"label": "Confirmed finding", "color": CONFIRMED_COLOUR}]
     if leads:
         legend.append({"label": "Lead, not confirmed", "color": LEAD_COLOUR})
-    return {
-        "name": f"{record.ref} ({'confirmed and leads' if leads else 'confirmed'})",
-        "versions": {"attack": attack_major(), "navigator": NAVIGATOR_VERSION, "layer": LAYER_VERSION},
-        "domain": DOMAIN,
-        "description": (
+    return shared.build_layer(
+        f"{record.ref} ({'confirmed and leads' if leads else 'confirmed'})",
+        DOMAIN,
+        techniques,
+        attack_version=attack.VERSION or "",
+        platforms=PLATFORMS,
+        description=(
             f"{record.ref}: {record.title}. "
             + (
                 "Techniques behind confirmed findings, and leads in their own colour"
@@ -94,39 +98,12 @@ def layer(record: IntelRecord, *, leads: bool = False) -> dict[str, Any]:
             )
             + f". TLP:{record.tlp.value.upper()}."
         ),
-        "filters": {"platforms": PLATFORMS},
-        "sorting": 0,
-        "layout": {
-            "layout": "side",
-            "aggregateFunction": "average",
-            "showID": True,
-            "showName": True,
-            "showAggregateScores": False,
-            "countUnscored": False,
-        },
-        "hideDisabled": False,
-        "techniques": [
-            {
-                "techniqueID": tid,
-                "color": colour,
-                "comment": comment,
-                "enabled": True,
-                "metadata": [],
-                "links": links,
-                "showSubtechniques": tid in parents,
-            }
-            for tid, (colour, comment, links) in sorted(techniques.items())
-        ],
-        "gradient": {"colors": ["#ff6666ff", "#ffe766ff", "#8ec843ff"], "minValue": 0, "maxValue": 100},
-        "legendItems": legend,
-        "metadata": [
+        legend=legend,
+        show_ids=True,
+        metadata=[
             {"name": "TLP", "value": f"TLP:{record.tlp.value.upper()}"},
             {"name": "Incident", "value": record.ref},
             {"name": "Source", "value": record.url},
         ],
-        "links": [],
-        "showTacticRowBackground": False,
-        "tacticRowBackground": "#dddddd",
-        "selectTechniquesAcrossTactics": True,
-        "selectSubtechniquesWithParent": False,
-    }
+        links=[],
+    )
