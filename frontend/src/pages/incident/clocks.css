@@ -1,0 +1,110 @@
+/* Regulator clocks: colours from the --clock-* tokens only */
+
+.clock {
+  border-left: 3px solid var(--clock-tone, var(--line));
+}
+.clock-closed {
+  opacity: 0.8;
+}
+.clock .record-head h3 {
+  margin: 0;
+}
+.clock-milestones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.clock-milestone {
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raised);
+  display: grid;
+  gap: var(--space-2);
+}
+.clock-milestone p {
+  margin: 0;
+}
+.clock-countdown {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--clock-tone, var(--ink));
+}
+.clock-bar {
+  height: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--line);
+  overflow: hidden;
+}
+.clock-bar span {
+  display: block;
+  height: 100%;
+  background: var(--clock-tone, var(--accent));
+}
+.clock-state {
+  font: 600 var(--text-xs) / 1 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 7px;
+  border-radius: var(--radius-sm);
+  color: var(--clock-tone);
+  background: color-mix(in srgb, var(--clock-tone) 12%, transparent);
+}
+
+.clock-running,
+.clock-state-running {
+  --clock-tone: var(--clock-running);
+}
+.clock-near,
+.clock-state-near {
+  --clock-tone: var(--clock-near);
+}
+.clock-closing,
+.clock-state-closing {
+  --clock-tone: var(--clock-closing);
+}
+.clock-breached,
+.clock-state-breached {
+  --clock-tone: var(--clock-breached);
+}
+.clock-met,
+.clock-met_late,
+.clock-state-met,
+.clock-state-met_late {
+  --clock-tone: var(--clock-met);
+}
+.clock-state-met_late {
+  --clock-tone: var(--clock-near);
+}
+.clock-waiting,
+.clock-state-waiting {
+  --clock-tone: var(--clock-waiting);
+}
+.clock-breached {
+  border-color: var(--clock-breached);
+}
+
+.clock-rules {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: grid;
+  gap: var(--space-1);
+}
+.clock-edit {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+.clock-milestones-edit {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+}
+.clock-milestones-edit legend {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}

@@ -256,6 +256,8 @@ const kindNames: Record<string, string> = {
   reply: 'Someone replies to my comment',
   commander: 'I’m made incident commander',
   unblocked: 'A task I hold stops waiting',
+  clock_due: 'A regulator deadline I answer for is approaching',
+  clock_breached: 'A regulator deadline I answer for has passed',
 };
 
 function Kinds({ me }: { me: Me }) {

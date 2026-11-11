@@ -68,6 +68,7 @@ export function startLive(queryClient: QueryClient): () => void {
     if (message.type !== 'notification') return;
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
     queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['my-clocks'] });
   };
   listeners.add(listener);
   connect();
@@ -103,6 +104,7 @@ export function useLiveIncident(incidentId: string | undefined, queryClient: Que
           queryClient.invalidateQueries({ queryKey: keys.section(incidentId, s) }),
         );
         if (event.entity_type === 'task') queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+        if (event.entity_type === 'clock') queryClient.invalidateQueries({ queryKey: ['my-clocks'] });
       }
     };
     listeners.add(listener);

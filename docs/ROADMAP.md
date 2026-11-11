@@ -91,6 +91,8 @@ Colour directions: https://claude.ai/artifact/N5V8BUNbGEBcgWsCjX7Lpk
    | DORA | Initial within 4 h of classification and no later than 24 h of awareness, intermediate 72 h, final 1 month |
    | Custom | User-defined (contractual, insurer, board) |
 
+   Built 11 November 2026 (`ostraka/clocks/`). Later reports count from the report before them, as the texts say: NIS2's final report is a month after the notification (Art. 23(4)(d)), DORA's intermediate 72 h after the initial notification and its final a month after the intermediate (Delegated Regulation 2025/301, Art. 5). Until the earlier report is in, the deadline is counted from that report's own deadline and marked provisional. Hours are elapsed time; days and months are on the calendar in the clock's time zone. The owner is nudged at 50%, 75% and 90% and on breach, the commander too from 90%. Clocks run until met or closed, even after the incident closes. Not modelled: DORA's next-working-day rule for reports falling at a weekend.
+
 3. **Stakeholder updates**: drafted on a fixed rhythm set by severity, from what changed since the last update. Comms approves each one before it goes out. Observers get a read-only briefing view.
    Every update is written to the assessment standard below.
 4. **Graph and chain of custody**: as described in the core model.

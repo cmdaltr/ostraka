@@ -195,6 +195,8 @@ export async function stubApi(page: Page, who = me(), handle: Api['handle'] = ()
     'GET /api/incidents/i-1/links': noLinks,
     'GET /api/playbooks': [],
     'GET /api/tasks/mine': [],
+    'GET /api/clocks/mine': [],
+    'GET /api/incidents/i-1/clocks': [],
     'GET /api/notifications': { items: [], unread: 0 },
     'GET /api/licence': licence(),
     'GET /api/brands': [],

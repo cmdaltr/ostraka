@@ -14,6 +14,7 @@ from ostraka.api import (
     assessments,
     assets,
     auth,
+    clocks,
     comments,
     detection_gaps,
     findings,
@@ -87,6 +88,7 @@ def create_app() -> FastAPI:
         assessments,
         ach,
         lessons,
+        clocks,
         reports,
         installation,
         comments,
@@ -103,7 +105,7 @@ def create_app() -> FastAPI:
         handover,
     ):
         app.include_router(module.router)
-    for extra in (incidents.refs_router, tasks.mine_router, playbooks.incident_router):
+    for extra in (incidents.refs_router, tasks.mine_router, playbooks.incident_router, clocks.mine_router):
         app.include_router(extra)
     # MCP over HTTP, as the bearer token's owner (ostraka/mcp_server.py)
     app.router.routes.append(Route("/mcp", endpoint=mcp_server.app, methods=["GET", "POST", "DELETE"]))

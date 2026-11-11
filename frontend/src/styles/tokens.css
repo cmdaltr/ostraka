@@ -56,6 +56,14 @@
   --sev-medium: #a15c07;
   --sev-low: #475467;
   --ok: #067647;
+  /* Regulator clock states (pages/incident/Clocks.tsx): urgency borrows the severity scale, so it
+     reads the same in every palette */
+  --clock-running: var(--accent);
+  --clock-near: var(--sev-medium);
+  --clock-closing: var(--sev-high);
+  --clock-breached: var(--sev-critical);
+  --clock-met: var(--ok);
+  --clock-waiting: var(--muted);
 
   color-scheme: light;
 }

@@ -33,8 +33,9 @@ mention, "@{team:Northwind SOC}" a team mention, and "#{f1}" the reference of wh
 
 Steps ("do"): update, member, team, playbook, observable, sighting, asset, asset_update, asset_link,
 finding, verify, confirm, refute, task, task_update, tick, claim, release, nudge, wait_on, comment,
-link, promote, decide, assess, hypothesis, evidence, rate, reject, lesson, handover. Their fields are the
-API's, with keys in place of ids; see `_STEPS`. A playbook step's "keys" name its steps, and each
+link, promote, decide, assess, hypothesis, evidence, rate, reject, lesson, handover, and the regulator
+clocks' clock, clock_met and clock_close (`ostraka.clocks.importing`). Their fields are the API's, with
+keys in place of ids; see `_STEPS`. A playbook step's "keys" name its steps, and each
 becomes a task once its step opens.
 """
 
@@ -55,6 +56,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka import accounts, audit, branding, live, notify, webhooks
 from ostraka.auth.secrets import new_token, token_hash
+from ostraka.clocks import importing as clock_steps
 from ostraka.db import sessions
 from ostraka.log import get_logger
 from ostraka.models import (
@@ -705,6 +707,9 @@ _STEPS: dict[str, Callable[[_Run, _Step], Awaitable[None]]] = {
     "reject": _Run.reject,
     "lesson": _Run.lesson,
     "handover": _Run.handover,
+    "clock": clock_steps.add,  # regulator clocks: ostraka/clocks/importing.py
+    "clock_met": clock_steps.met,
+    "clock_close": clock_steps.close,
 }
 
 

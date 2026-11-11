@@ -17,6 +17,7 @@ from ostraka.models.analysis import (
     Rating,
     Weight,
 )
+from ostraka.models.clocks import Clock, ClockMilestone, RegimeKey
 from ostraka.models.handover import HandoverNote, IncidentView
 from ostraka.models.incidents import (
     PHASES_OF,
@@ -119,6 +120,9 @@ __all__ = [
     "AssetStatus",
     "BackupCode",
     "ChecklistItem",
+    "Clock",
+    "ClockMilestone",
+    "RegimeKey",
     "Comment",
     "Finding",
     "FindingKind",

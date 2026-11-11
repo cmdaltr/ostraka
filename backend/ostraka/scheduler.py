@@ -17,6 +17,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka import notify, work
+from ostraka.clocks import nudges as clock_nudges
 from ostraka.config import get_settings
 from ostraka.db import sessions
 from ostraka.incidents import access, activity
@@ -46,7 +47,8 @@ async def _remind_owners(
 
 
 async def tick(db: AsyncSession, now: datetime | None = None) -> int:
-    """One pass over tasks that are due soon or overdue. Returns how many tasks it acted on."""
+    """One pass over tasks that are due soon or overdue, and regulator clocks running down. Returns how
+    many tasks and clock milestones it acted on."""
     if not await db.scalar(select(func.pg_try_advisory_xact_lock(LOCK_ID))):
         return 0  # another process has this tick
     settings = get_settings()
@@ -125,6 +127,7 @@ async def tick(db: AsyncSession, now: datetime | None = None) -> int:
             task.escalated_commander_at = now
             acted += 1
 
+    acted += await clock_nudges.tick(db, now)  # regulator clocks (ostraka/clocks/nudges.py)
     await activity.finish(db)
     return acted
 
