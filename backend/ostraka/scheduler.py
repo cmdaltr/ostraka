@@ -23,6 +23,7 @@ from ostraka.db import sessions
 from ostraka.incidents import access, activity
 from ostraka.log import get_logger
 from ostraka.models import FINISHED, Incident, IncidentStatus, NotificationKind, Task, User, utcnow
+from ostraka.updates import drafts
 
 log = get_logger(__name__)
 
@@ -128,6 +129,7 @@ async def tick(db: AsyncSession, now: datetime | None = None) -> int:
             acted += 1
 
     acted += await clock_nudges.tick(db, now)  # regulator clocks (ostraka/clocks/nudges.py)
+    await drafts.tick(db, now)  # stakeholder updates on their rhythm (not counted: tasks only)
     await activity.finish(db)
     return acted
 

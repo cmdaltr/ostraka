@@ -246,6 +246,8 @@ export function sectionsFor(entityType: string): string[] {
       return ['lessons'];
     case 'clock':
       return ['clocks'];
+    case 'update':
+      return ['updates', 'briefing'];
     case 'link':
       return ['record-links'];
     case 'handover':

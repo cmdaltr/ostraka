@@ -67,6 +67,7 @@ const sectionOf: Record<string, string> = {
   LSN: 'lessons',
   CLK: 'clocks',
   EXH: 'evidence',
+  UPD: 'updates',
 };
 
 // Where a reference within this incident lives: its section, scrolled to the record

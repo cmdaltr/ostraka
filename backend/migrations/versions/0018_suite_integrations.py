@@ -2,7 +2,7 @@
 findings citing Rowanholt rows, and detection gaps.
 
 Revision ID: 0018
-Revises: 0016
+Revises: 0017
 Created: 2026-11-11
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0018"
-down_revision: str | None = "0016"
+down_revision: str | None = "0017"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

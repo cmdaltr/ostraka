@@ -31,6 +31,7 @@ import { Overview } from './Overview';
 import { Rowanholt } from './Rowanholt';
 import { Tasks } from './Tasks';
 import { Timeline } from './Timeline';
+import { Updates } from './Updates';
 import './incident.css';
 
 const sections = [
@@ -45,6 +46,7 @@ const sections = [
   ['evidence', 'Evidence'],
   ['graph', 'Graph'],
   ['assessments', 'Assessments'],
+  ['updates', 'Updates'],
   ['ach', 'ACH'],
   ['timeline', 'Timeline'],
   ['lessons', 'Lessons'],
@@ -299,6 +301,7 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'evidence' && <Evidence incident={incident} />}
           {section === 'graph' && <Graph incident={incident} />}
           {section === 'assessments' && <Assessments incident={incident} />}
+          {section === 'updates' && <Updates incident={incident} />}
           {section === 'ach' && <AchMatrix incident={incident} me={me} />}
           {section === 'timeline' && <Timeline incident={incident} />}
           {section === 'lessons' && <Lessons incident={incident} me={me} />}

@@ -77,6 +77,13 @@ from ostraka.models.people import (
     clock,
     utcnow,
 )
+from ostraka.models.updates import (
+    Stakeholder,
+    StakeholderUpdate,
+    UpdatePlan,
+    UpdateRevision,
+    UpdateStatus,
+)
 from ostraka.models.work import (
     FINISHED,
     ChecklistItem,
@@ -182,4 +189,9 @@ __all__ = [
     "EvidenceItem",
     "FindingEvidence",
     "HashCheck",
+    "Stakeholder",
+    "StakeholderUpdate",
+    "UpdatePlan",
+    "UpdateRevision",
+    "UpdateStatus",
 ]

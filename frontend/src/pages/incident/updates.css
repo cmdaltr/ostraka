@@ -1,0 +1,81 @@
+/* ---- stakeholder updates and the briefing --------------------------------------------------- */
+.update-preview {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--raised);
+  border: 1px solid var(--line);
+}
+.update-body {
+  display: grid;
+  gap: var(--space-3);
+}
+.update-section h3 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.update-section p,
+.update-section ul {
+  margin: 0 0 var(--space-1);
+}
+.update-section .bluf {
+  font-weight: 600;
+}
+.update-section ul {
+  padding-left: var(--space-4);
+}
+/* A lead is never read as a fact: it carries its label and a dashed rule */
+.update-lead {
+  border-left: 2px dashed var(--line);
+  padding-left: var(--space-2);
+  list-style: none;
+  margin-left: calc(-1 * var(--space-3));
+}
+.update-next,
+.update-position {
+  font-size: var(--text-sm);
+}
+.briefing {
+  display: grid;
+  gap: var(--space-4);
+}
+.briefing-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+}
+.briefing-figures div {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.briefing-figures dt {
+  font-size: var(--text-sm);
+}
+.briefing-figures dd {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+.stakeholders {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.stakeholders .link-button {
+  margin-left: var(--space-2);
+}
+.wording {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-1);
+}
+.revisions {
+  font-size: var(--text-sm);
+}

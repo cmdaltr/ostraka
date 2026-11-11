@@ -54,6 +54,8 @@ class NotificationKind(StrEnum):
     NEW_DEVICE = "new_device"  # your account signed in from a browser it hasn't used before
     CLOCK_DUE = "clock_due"  # a regulator clock you own (or command) is running down
     CLOCK_BREACHED = "clock_breached"  # a regulator deadline passed unmet
+    UPDATE_DUE = "update_due"  # an incident's stakeholder update is due, and its draft is ready
+    STAKEHOLDER_UPDATE = "stakeholder_update"  # an approved update, to its stakeholders
 
 
 class Task(Base):

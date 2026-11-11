@@ -258,6 +258,8 @@ const kindNames: Record<string, string> = {
   unblocked: 'A task I hold stops waiting',
   clock_due: 'A regulator deadline I answer for is approaching',
   clock_breached: 'A regulator deadline I answer for has passed',
+  update_due: 'A stakeholder update I handle is due',
+  stakeholder_update: 'A stakeholder update is sent to me',
 };
 
 function Kinds({ me }: { me: Me }) {

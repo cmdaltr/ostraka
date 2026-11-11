@@ -38,6 +38,7 @@ from ostraka.api import (
     tasks,
     teams,
     tokens,
+    updates,
     users,
 )
 from ostraka.api import live as live_api
@@ -105,6 +106,7 @@ def create_app() -> FastAPI:
         integrations,
         rowanholt,
         detection_gaps,
+        updates,
         live_api,
         handover,
         evidence,

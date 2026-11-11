@@ -45,6 +45,12 @@ class Settings(BaseSettings):
     # Who reports are prepared for, on their cover ("Contoso Ltd"); left off when empty
     organisation: str = ""
     ai_provider: str = Field(default="none", pattern="^(none|ollama|anthropic)$")
+    # The AI rephrase of a finished draft. TLP:RED and TLP:AMBER+STRICT only ever use Ollama.
+    ollama_url: str = "http://localhost:11434"
+    ollama_model: str = ""
+    anthropic_api_key: str = ""
+    anthropic_model: str = ""
+    ai_timeout_seconds: float = 60
 
     access_token_minutes: int = 15
     session_days: int = 14

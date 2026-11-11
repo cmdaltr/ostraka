@@ -138,7 +138,9 @@ export type NotificationKind =
   | 'commander'
   | 'unblocked'
   | 'clock_due'
-  | 'clock_breached';
+  | 'clock_breached'
+  | 'update_due'
+  | 'stakeholder_update';
 
 export interface Notification {
   id: string;
