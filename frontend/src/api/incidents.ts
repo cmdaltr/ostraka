@@ -227,7 +227,7 @@ export function sectionsFor(entityType: string): string[] {
     case 'asset_link':
       return ['assets', 'links', 'timeline'];
     case 'finding':
-      return ['findings', 'timeline'];
+      return ['findings', 'timeline', 'rowanholt', 'detection-gaps'];
     case 'comment':
       return ['comments'];
     case 'task':
@@ -241,6 +241,10 @@ export function sectionsFor(entityType: string): string[] {
       return ['lessons'];
     case 'link':
       return ['record-links'];
+    case 'rowanholt':
+      return ['rowanholt'];
+    case 'detection_gap':
+      return ['detection-gaps', 'tasks'];
     default:
       return [];
   }

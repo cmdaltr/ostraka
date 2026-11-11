@@ -15,9 +15,11 @@ from ostraka.api import (
     assets,
     auth,
     comments,
+    detection_gaps,
     findings,
     incidents,
     installation,
+    integrations,
     invitations,
     lessons,
     links,
@@ -25,6 +27,7 @@ from ostraka.api import (
     observables,
     playbooks,
     reports,
+    rowanholt,
     system,
     tags,
     tasks,
@@ -37,6 +40,7 @@ from ostraka.api import (
     webhooks as webhooks_api,
 )
 from ostraka.config import get_settings
+from ostraka.integrations import gaps
 from ostraka.log import configure
 
 
@@ -45,6 +49,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await live.startup()
     notify.startup()
     webhooks.startup()
+    gaps.startup()
     scheduler.startup()
     try:
         yield
@@ -90,6 +95,9 @@ def create_app() -> FastAPI:
         notifications,
         tags,
         webhooks_api,
+        integrations,
+        rowanholt,
+        detection_gaps,
         live_api,
     ):
         app.include_router(module.router)
