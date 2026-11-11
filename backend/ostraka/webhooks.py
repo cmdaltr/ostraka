@@ -11,6 +11,8 @@ Events, each read from the activity log after its commit:
 Each delivery is {"event", "sent_at", "data"}, with X-Ostraka-Event and, when the webhook has a
 secret, X-Ostraka-Signature: sha256=<hex HMAC-SHA256 of the raw body>, so the receiver can check it
 came from this server. Three tries with backoff; the last KEEP_DELIVERIES are kept per webhook.
+The body, the signature, the URL rules and the tries are samarkand's (`samarkand.webhooks`), shared
+with Shikari and Rowanholt; which events exist, what they say, and where results are kept are ours.
 
 `data` goes through `notify.outward_data` like every other message that leaves ostraka:
 indicators masked, and a TLP:RED or TLP:AMBER+STRICT record named by its reference only.
@@ -22,16 +24,14 @@ its webhooks, and they start firing again when a licence with `automation` is in
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import hmac
-import ipaddress
-import json
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
-from urllib.parse import urlsplit
 
+from samarkand import webhooks as shared
+from samarkand.webhooks import sign, url_problem  # noqa: F401  (re-exported for the API and tests)
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,45 +56,20 @@ from ostraka.notify import channels
 log = get_logger(__name__)
 
 EVENTS = ("incident.created", "incident.status_changed", "incident.closed", "task.assigned", "hunt.completed")
-KEEP_DELIVERIES = 20
-TRIES = 3
-BACKOFF = 2.0  # seconds, times the attempt number
+PREFIX = "X-Ostraka"
+USER_AGENT = "ostraka-webhook/1"  # samarkand's default would be Ostraka-Webhook/1
+KEEP_DELIVERIES = shared.KEEP_DELIVERIES
+TRIES = shared.TRIES
+BACKOFF = shared.BACKOFF  # seconds, times the attempt number
+TIMEOUT = 15.0  # as every other message Ostraka sends (notify.channels.fetch)
 _TASK_ACTIONS = frozenset({"task_added", "task_updated", "task_claimed"})
 _ACTIONS = frozenset({"declared", "incident_updated"}) | _TASK_ACTIONS
 _background: set[asyncio.Task] = set()
-# RFC 1918. ipaddress's is_private also counts documentation and other reserved ranges.
-_PRIVATE = tuple(ipaddress.ip_network(n) for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"))
-
-
-def url_problem(url: str) -> str | None:
-    """Why a webhook can't use this URL, or None. https, except http to this machine or a private
-    network, where receivers often have no certificate. Link-local addresses (cloud metadata) never."""
-    parts = urlsplit(url.strip())
-    host = (parts.hostname or "").lower()
-    if parts.scheme not in ("http", "https") or not host:
-        return "The URL must start with https://."
-    try:
-        address = ipaddress.ip_address(host)
-    except ValueError:
-        address = None
-    if address is not None and address.is_link_local:
-        return "Ostraka doesn't send webhooks to link-local addresses."
-    if parts.scheme == "http":
-        local = host == "localhost" or host.endswith(".localhost")
-        nearby = address is not None and (address.is_loopback or any(address in n for n in _PRIVATE))
-        if not (local or nearby):
-            return "Use https://. Plain http:// is only allowed to localhost and private network addresses."
-    return None
 
 
 def events_problem(events: list[str]) -> str | None:
-    if not events or set(events) - set(EVENTS):
-        return f"Choose events from {', '.join(EVENTS)}."
-    return None
-
-
-def sign(secret: str, body: bytes) -> str:
-    return "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    """Why a webhook can't subscribe to `events`, or None."""
+    return shared.events_problem(events, EVENTS)
 
 
 def events_for(action: str, data: dict[str, Any], kind: RecordKind) -> list[str]:
@@ -205,40 +180,42 @@ async def _describe(db: AsyncSession, incident: Incident, event: str, item: _Hap
 
 
 def body_of(event: str, data: dict[str, Any], sent_at: datetime | None = None) -> bytes:
-    return json.dumps(
-        {"event": event, "sent_at": (sent_at or utcnow()).isoformat(), "data": data}, default=str
-    ).encode()
+    """The bytes sent and signed."""
+    return shared.body(event, data, sent_at or utcnow())
+
+
+async def _post(url: str, raw: bytes, headers: Mapping[str, str], _timeout: float) -> int:
+    # Through notify.channels, Ostraka's one way out, which tests replace; its fetch has the same
+    # TIMEOUT and doesn't follow redirects
+    return await channels.post(url, content=raw, headers=dict(headers))
 
 
 async def deliver(
     db: AsyncSession, hook: Webhook, event: str, data: dict[str, Any], *, tries: int = TRIES
 ) -> WebhookDelivery:
-    """POST one event to one webhook and keep the result. The caller commits."""
-    body = body_of(event, data)
-    headers = {
-        "Content-Type": "application/json",
-        "User-Agent": "ostraka-webhook/1",
-        "X-Ostraka-Event": event,
-    }
-    if hook.secret:
-        headers["X-Ostraka-Signature"] = sign(decrypt(hook.secret), body)
-    result = WebhookDelivery(
-        id=uuid.uuid4(), webhook_id=hook.id, event=event, at=utcnow(), ok=False, error=""
+    """POST one event to one webhook and keep the result. The caller commits. A URL that the rules
+    no longer allow (one saved before they tightened) isn't sent, and the result says why."""
+    at = utcnow()
+    outgoing = shared.prepare(
+        hook.url,
+        event,
+        data,
+        prefix=PREFIX,
+        secret=decrypt(hook.secret) if hook.secret else None,
+        user_agent=USER_AGENT,
+        sent_at=at,
     )
-    for attempt in range(tries):
-        result.tries = attempt + 1
-        try:
-            result.status = await channels.post(hook.url, content=body, headers=headers)
-            if result.status < 300:
-                result.ok, result.error = True, ""
-                break
-            result.error = f"HTTP {result.status}"
-            if result.status < 500 and result.status != 429:
-                break  # the receiver refused it; trying again won't change that
-        except Exception as exc:  # noqa: BLE001 (any failure to reach the receiver is recorded, not raised)
-            result.status, result.error = None, str(exc)[:200] or type(exc).__name__
-        if attempt < tries - 1:
-            await asyncio.sleep(BACKOFF * (attempt + 1))
+    sent = await shared.send_async(outgoing, tries=tries, backoff=BACKOFF, timeout=TIMEOUT, post=_post)
+    result = WebhookDelivery(
+        id=uuid.uuid4(),
+        webhook_id=hook.id,
+        event=event,
+        at=at,
+        ok=sent.ok,
+        status=sent.status,
+        error=sent.error[:200],
+        tries=sent.tries,
+    )
     db.add(result)
     await db.flush()
     await _trim(db, hook.id)

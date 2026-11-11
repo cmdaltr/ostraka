@@ -7,7 +7,8 @@ it. Sub-techniques count only for themselves, as Shikari counts them.
 Shikari's webhooks (`shikari/webhooks.py`) are `{"event", "sent_at", "data"}` with `X-Shikari-Event`
 and `X-Shikari-Signature: sha256=<hex HMAC-SHA256 of the raw body>`. Shikari has no
 `detection.created` event: `run.completed` is the one that means new detections may exist, so it
-makes Ostraka ask the coverage API again. A webhook never closes a gap by itself saying so.
+makes Ostraka ask the coverage API again. A webhook never closes a gap by itself saying so. Checking
+the signature and reading the body are samarkand's (`samarkand.webhooks.verify` and `parse`).
 """
 
 from __future__ import annotations
@@ -15,13 +16,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from samarkand.webhooks import headers_for, sign
+from samarkand.webhooks import verify as signature_ok
+
 from ostraka.integrations import base_url, token_of
 from ostraka.integrations.http import get_json
-from ostraka.integrations.signing import headers_for, sign, signature_ok
 from ostraka.models import Integration
 
 NAME = "Shikari"
-EVENT, SIGNATURE = headers_for("shikari")
+EVENT, SIGNATURE = headers_for("X-Shikari")
 RECHECK_EVENTS = frozenset({"run.completed"})
 CHUNK = 100
 __all__ = ["EVENT", "SIGNATURE", "Covered", "Shikari", "sign", "signature_ok"]

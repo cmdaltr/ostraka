@@ -7,7 +7,7 @@ import httpx
 import pytest
 
 from ostraka.auth import policy
-from ostraka.integrations import http, on_own_network, rowanholt, shikari, signing, tlp_refusal, url_problem
+from ostraka.integrations import http, on_own_network, rowanholt, shikari, tlp_refusal, url_problem
 from ostraka.integrations.gaps import attack_url
 from ostraka.models import Incident, Integration, Product, RecordKind, Role, Severity, Tlp, User
 
@@ -154,19 +154,3 @@ async def test_a_row_is_found_by_reference_in_the_page_around_it(answering):
     assert found["hash"] == "h250"
     assert seen[0].url.path == "/api/jobs/J/case/rows" and seen[0].url.params["host"] == "DC02"
     assert await rowanholt.Rowanholt("https://r.example.org", "").row("J", "DC02", "a.jsonl", "9999") is None
-
-
-def test_signing_is_standard_library_only_and_reads_the_shared_envelope():
-    import ast
-    from pathlib import Path
-
-    tree = ast.parse(Path(signing.__file__).read_text())
-    imported = {n.module or "" for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
-    imported |= {a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
-    assert not any(m.startswith("ostraka") for m in imported)
-    assert signing.headers_for("rowanholt") == ("X-Rowanholt-Event", "X-Rowanholt-Signature")
-    delivery = signing.parse(b'{"event": "run.completed", "sent_at": 1.5, "data": {"run": "FIN7"}}')
-    assert delivery.event == "run.completed" and delivery.data == {"run": "FIN7"}
-    for bad in (b"nope", b"[]", b'{"data": {}}'):
-        with pytest.raises(signing.NotADelivery):
-            signing.parse(bad)

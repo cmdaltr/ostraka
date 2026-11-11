@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
+from samarkand import webhooks
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka import audit, licence, notify
@@ -30,7 +31,7 @@ from ostraka.integration_schemas import (
     IntegrationOut,
     IntegrationsOut,
 )
-from ostraka.integrations import NAMES, gaps, rowanholt, shikari, signing, url_problem
+from ostraka.integrations import NAMES, gaps, rowanholt, shikari, url_problem
 from ostraka.integrations.http import Refused, Unreachable
 from ostraka.models import Integration, Product, Team, User, utcnow
 
@@ -264,8 +265,8 @@ async def shikari_webhook(request: Request, db: AsyncSession = Depends(get_sessi
         await db.commit()
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Bad or missing signature.")
     try:
-        delivery = signing.parse(body)
-    except signing.NotADelivery:
+        delivery = webhooks.parse(body)
+    except webhooks.NotADelivery:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Not a Shikari webhook.") from None
     event, data = delivery.event, delivery.data
     if event not in shikari.RECHECK_EVENTS:
