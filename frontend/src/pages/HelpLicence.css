@@ -1,0 +1,13 @@
+.help-licence {
+  display: grid;
+  gap: var(--space-4);
+  max-inline-size: 60rem;
+}
+.help-licence .panel p {
+  margin: 0;
+}
+.legal-text {
+  white-space: pre-wrap;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}

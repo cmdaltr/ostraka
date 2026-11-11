@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ostraka's Windows Installer package, built by package-msi.sh with wixl (msitools), so it keeps to
+  the part of the WiX 3 schema wixl understands: no UI tables, no RemoveFile, no extensions.
+
+  Per-user, no elevation: files under %LOCALAPPDATA%\Programs\Ostraka, shortcuts in the user's Start
+  menu, registry under HKCU. Released as Ostraka-<version>-windows-universal.msi: the Intel template
+  runs on x64 and ARM64, since the app is a PowerShell launcher and a zip of the source, with nothing
+  compiled.
+
+  Preprocessor variables (wixl -D):
+    Version    the product version, n.n.n: Windows Installer's, so a pre-release's numbers only
+               (n.n.n.N for a workflow's manual build, n.n.n-dev.N)
+    FullVersion  the release's own version (1.0.0-rc1), shown and recorded
+    StageDir   the folder package-msi.sh staged the payload in (ostraka.ico among it), relative to
+               this file: wixl resolves sources against the .wxs and refuses absolute paths
+
+  Silent install, with a team server set by IT:
+    msiexec /i Ostraka-<version>-windows-universal.msi /qn SERVERURL=https://ostraka.example.org
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <!-- The UpgradeCode is fixed for the product (desktop/README.md); Id="*" makes each build a new product
+       so MajorUpgrade below replaces the one before it -->
+  <Product Id="*"
+           Name="Ostraka"
+           Language="1033"
+           Version="$(var.Version)"
+           Manufacturer="cmdaltr"
+           UpgradeCode="7A1F0C3E-5B2D-4E8A-9C61-0D3F8E2B4A17">
+
+    <Package Description="Ostraka: incident management and response"
+             Comments="Ostraka $(var.FullVersion). Using Ostraka is accepting its licence (LICENSE, COMMERCIAL-LICENSE.md)."
+             Manufacturer="cmdaltr"
+             InstallerVersion="500"
+             Compressed="yes"
+             InstallScope="perUser" />
+
+    <!-- A pre-release (1.0.0-rc1) and its release are both 1.0.0 to Windows Installer, so the release
+         has to replace one at the same version rather than install beside it. wixl ignores
+         AllowSameVersionUpgrades, so package-msi.sh sets the Upgrade row's VersionMaxInclusive itself -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Ostraka is already installed." />
+
+    <Media Id="1" Cabinet="ostraka.cab" EmbedCab="yes" />
+
+    <!-- An install for all users would still land in one user's profile, so refuse it -->
+    <Condition Message="Ostraka installs for the current user only: leave ALLUSERS unset.">NOT ALLUSERS</Condition>
+
+    <!-- Kept across upgrades: an upgrade run without SERVERURL keeps the server the last install set.
+         RegistrySearch fills SAVEDSERVERURL, and SetServerUrl copies it only when SERVERURL wasn't given,
+         since AppSearch would otherwise overwrite a value from the command line. Sequence 51, straight
+         after AppSearch (50) in both sequences: wixl ignores After= and appends the action at the end -->
+    <Property Id="SAVEDSERVERURL">
+      <RegistrySearch Id="SavedServerUrl" Root="HKCU" Key="SOFTWARE\cmdaltr\Ostraka" Name="ServerURL" Type="raw" />
+    </Property>
+    <CustomAction Id="SetServerUrl" Property="SERVERURL" Value="[SAVEDSERVERURL]" />
+    <InstallExecuteSequence>
+      <Custom Action="SetServerUrl" Sequence="51">SAVEDSERVERURL AND NOT SERVERURL</Custom>
+    </InstallExecuteSequence>
+    <InstallUISequence>
+      <Custom Action="SetServerUrl" Sequence="51">SAVEDSERVERURL AND NOT SERVERURL</Custom>
+    </InstallUISequence>
+
+    <Icon Id="ostraka.ico" SourceFile="$(var.StageDir)/ostraka.ico" />
+    <Property Id="ARPPRODUCTICON" Value="ostraka.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/cmdaltr/ostraka" />
+    <Property Id="ARPCOMMENTS" Value="Incident management and response. Your data in %USERPROFILE%\Ostraka stays when the app is removed." />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="LocalAppDataFolder">
+        <Directory Id="UserProgramsDir" Name="Programs">
+          <Directory Id="INSTALLDIR" Name="Ostraka" />
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="StartMenuDir" Name="Ostraka" />
+      </Directory>
+    </Directory>
+
+    <!-- A per-user component's key path is an HKCU value, not a file (ICE38) -->
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="App" Guid="0583C60B-B317-4979-9C29-0FBEAC1C5F3F">
+        <RegistryValue Root="HKCU" Key="SOFTWARE\cmdaltr\Ostraka" Name="Version" Type="string"
+                       Value="$(var.FullVersion)" KeyPath="yes" />
+        <RegistryValue Root="HKCU" Key="SOFTWARE\cmdaltr\Ostraka" Name="InstallDir" Type="string"
+                       Value="[INSTALLDIR]" />
+        <!-- The server IT set at install time (SERVERURL), empty when none: wixl has no component
+             conditions. Not under SOFTWARE\Policies, which standard users can only read, so a per-user
+             install without elevation couldn't write it and would roll back. Ostraka.ps1 treats a
+             value here as locked, the same as the policy keys -->
+        <RegistryValue Root="HKCU" Key="SOFTWARE\cmdaltr\Ostraka" Name="ServerURL" Type="string"
+                       Value="[SERVERURL]" />
+        <File Id="Launcher" Name="Ostraka.ps1" Source="$(var.StageDir)/Ostraka.ps1" />
+        <File Id="VersionFile" Name="version.txt" Source="$(var.StageDir)/version.txt" />
+        <File Id="SourceZip" Name="source.zip" Source="$(var.StageDir)/source.zip" />
+        <!-- The terms ship with the app whichever way it's used, a server connection too -->
+        <File Id="Licence" Name="LICENSE" Source="$(var.StageDir)/LICENSE" />
+        <File Id="CommercialLicence" Name="COMMERCIAL-LICENSE.md" Source="$(var.StageDir)/COMMERCIAL-LICENSE.md" />
+        <RemoveFolder Id="RemoveInstallDir" On="uninstall" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- Shortcuts stand in for the menus the other platforms' windows have. powershell.exe through
+         [WindowsFolder]System32 rather than [SystemFolder], which is SysWOW64 for this 32-bit package:
+         Explorer resolves System32 to the native PowerShell on x64 and ARM64 -->
+    <DirectoryRef Id="StartMenuDir">
+      <Component Id="Shortcuts" Guid="3662C591-3E85-4EF5-B8AC-BA5342CF7309">
+        <Shortcut Id="OpenShortcut" Name="Ostraka" Description="Incident management and response"
+                  Target="[WindowsFolder]System32\WindowsPowerShell\v1.0\powershell.exe"
+                  Arguments="-NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]Ostraka.ps1&quot;"
+                  WorkingDirectory="INSTALLDIR" Icon="ostraka.ico" />
+        <Shortcut Id="StopShortcut" Name="Stop Ostraka" Description="Stop Ostraka on this computer (your data stays)"
+                  Target="[WindowsFolder]System32\WindowsPowerShell\v1.0\powershell.exe"
+                  Arguments="-NoProfile -ExecutionPolicy Bypass -WindowStyle Minimized -File &quot;[INSTALLDIR]Ostraka.ps1&quot; -Stop"
+                  WorkingDirectory="INSTALLDIR" Icon="ostraka.ico" />
+        <Shortcut Id="ChangeServerShortcut" Name="Change Server" Description="Connect Ostraka to another server, or run it here"
+                  Target="[WindowsFolder]System32\WindowsPowerShell\v1.0\powershell.exe"
+                  Arguments="-NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]Ostraka.ps1&quot; -ChangeServer"
+                  WorkingDirectory="INSTALLDIR" Icon="ostraka.ico" />
+        <Shortcut Id="LicenceShortcut" Name="Ostraka Licence" Description="Ostraka's licence and commercial terms"
+                  Target="[WindowsFolder]System32\WindowsPowerShell\v1.0\powershell.exe"
+                  Arguments="-NoProfile -ExecutionPolicy Bypass -WindowStyle Minimized -File &quot;[INSTALLDIR]Ostraka.ps1&quot; -Licence"
+                  WorkingDirectory="INSTALLDIR" Icon="ostraka.ico" />
+        <RemoveFolder Id="RemoveStartMenuDir" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="SOFTWARE\cmdaltr\Ostraka" Name="Shortcuts" Type="integer" Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="Ostraka" Title="Ostraka" Level="1">
+      <ComponentRef Id="App" />
+      <ComponentRef Id="Shortcuts" />
+    </Feature>
+  </Product>
+</Wix>

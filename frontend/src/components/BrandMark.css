@@ -1,0 +1,24 @@
+.brandmark {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+.brandmark-sherd {
+  filter: drop-shadow(0 10px 16px var(--board-shadow));
+}
+.brandmark p {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--backdrop-ink);
+  letter-spacing: 0.01em;
+}
+.cipher-field {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* behind everything in the card, above the page's backdrop */
+  z-index: -1;
+  pointer-events: none;
+}

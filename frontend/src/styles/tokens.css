@@ -1,0 +1,173 @@
+/*
+ * ostraka design tokens. Components use these variables only, never literal colours.
+ *
+ * <html data-palette="cobalt|ostrakon|ledger" data-mode="light|dark">. With no data-mode the
+ * OS setting decides. Cobalt is the default. Palettes change colour only: type, spacing and
+ * radii are identical everywhere, so a screen looks the same shape in every theme.
+ * Severity and TLP never change with the palette.
+ */
+
+:root {
+  --font-ui: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.625rem;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* FIRST TLP 2.0: black ground, standard text colours, in every theme */
+  --tlp-ground: #000000;
+  --tlp-red: #ff2b2b;
+  --tlp-amber: #ffc000;
+  --tlp-green: #33ff00;
+  --tlp-clear: #ffffff;
+
+  /* Cobalt, light: the default */
+  --bg: #eef0f3;
+  --surface: #ffffff;
+  --raised: #f6f7f9;
+  --ink: #171a1f;
+  --muted: #5b6370;
+  --line: #d9dde3;
+  --accent: #3d4fd6;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6e9fb;
+  --focus: #3d4fd6;
+  --shadow: 0 1px 2px rgb(16 18 23 / 0.06), 0 4px 12px rgb(16 18 23 / 0.05);
+
+  /* Severity follows Shikari's four-step scale */
+  --sev-critical: #b42318;
+  --sev-high: #c4320a;
+  --sev-medium: #a15c07;
+  --sev-low: #475467;
+  --ok: #067647;
+
+  color-scheme: light;
+}
+
+/* Dark severity values, shared by every palette */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode='light']) {
+    --sev-critical: #f97066;
+    --sev-high: #fd853a;
+    --sev-medium: #fdb022;
+    --sev-low: #98a2b3;
+    --ok: #47cd89;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+    --mark-clay: none;
+    --mark-limestone: block;
+    --sherd-image: url('/brand/ostrakon-limestone.png');
+    --sherd-glow: rgb(255 232 190 / 0.65);
+    --sherd-opacity: 0.1;
+    color-scheme: dark;
+  }
+}
+:root[data-mode='dark'] {
+  --sev-critical: #f97066;
+  --sev-high: #fd853a;
+  --sev-medium: #fdb022;
+  --sev-low: #98a2b3;
+  --ok: #47cd89;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+  --mark-clay: none;
+  --mark-limestone: block;
+  --sherd-image: url('/brand/ostrakon-limestone.png');
+  --sherd-glow: rgb(255 232 190 / 0.65);
+  --sherd-opacity: 0.1;
+  color-scheme: dark;
+}
+
+/* ---- The backdrop behind sign-in and invitation pages: each palette's darkest ground, in every mode --- */
+:root {
+  --backdrop: radial-gradient(120% 90% at 50% 0%, #2a3a7c 0%, #141c45 55%, #0b1029 100%);
+  --backdrop-ink: #d6dcf5;
+  --backdrop-glyph: #9db2ff;
+  /* the departures board is an object, not a surface: limestone tiles in a clay frame, the same in
+     every palette and mode */
+  --board-frame: #a95c42;
+  --board-frame-edge: #7e3f2b;
+  --board-tile: #ece7dc;
+  --board-tile-shade: #d9d1c1;
+  --board-seam: rgb(126 63 43 / 0.45);
+  --board-ink: #3d2217;
+  --board-name: #a33a24;
+  --board-malware: #e0261c;
+  --board-shadow: rgb(0 0 0 / 0.45);
+  /* the mark: the clay sherd by day, the limestone one by night (see the mode blocks below) */
+  --mark-clay: block;
+  --mark-limestone: none;
+  /* the same mark broken into fragments (components/sherd): its artwork, the glow when it's mended,
+     and how faint the loose sherds behind the app are */
+  --sherd-image: url('/brand/ostrakon-clay.png');
+  --sherd-glow: rgb(226 128 72 / 0.7);
+  --sherd-opacity: 0.14;
+}
+:root[data-palette='ostrakon'] {
+  --backdrop: radial-gradient(120% 90% at 50% 0%, #5a3324 0%, #2e1b14 55%, #1a0f0b 100%);
+  --backdrop-ink: #f1e7d6;
+  --backdrop-glyph: #e0a27f;
+}
+:root[data-palette='ledger'] {
+  --backdrop: radial-gradient(120% 90% at 50% 0%, #245246 0%, #14302a 55%, #0b1a17 100%);
+  --backdrop-ink: #d7e8e1;
+  --backdrop-glyph: #8fdcc0;
+}
+
+/* ---- Cobalt ---------------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode='light']):not([data-palette='ostrakon']):not([data-palette='ledger']) {
+    --bg: #101217; --surface: #171a21; --raised: #1e222b; --ink: #e7e9ee; --muted: #959cab;
+    --line: #272b35; --accent: #8c9bff; --accent-ink: #101217; --accent-soft: #232846; --focus: #8c9bff;
+  }
+}
+:root[data-mode='dark']:not([data-palette='ostrakon']):not([data-palette='ledger']) {
+  --bg: #101217; --surface: #171a21; --raised: #1e222b; --ink: #e7e9ee; --muted: #959cab;
+  --line: #272b35; --accent: #8c9bff; --accent-ink: #101217; --accent-soft: #232846; --focus: #8c9bff;
+}
+
+/* ---- Ostrakon: limestone, fired clay and iron-gall ink, from the mark -------------------- */
+:root[data-palette='ostrakon'] {
+  --bg: #f1ede4; --surface: #faf7f1; --raised: #f4f0e8; --ink: #33241b; --muted: #6e5a4a;
+  --line: #ddd3c3; --accent: #a0492f; --accent-ink: #faf7f1; --accent-soft: #f1ddd2; --focus: #a0492f;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette='ostrakon']:not([data-mode='light']) {
+    --bg: #1e1612; --surface: #271d18; --raised: #30241e; --ink: #efe6d8; --muted: #bcaa97;
+    --line: #3e2f27; --accent: #e08d6d; --accent-ink: #1e1612; --accent-soft: #43291f; --focus: #e08d6d;
+  }
+}
+:root[data-palette='ostrakon'][data-mode='dark'] {
+  --bg: #1e1612; --surface: #271d18; --raised: #30241e; --ink: #efe6d8; --muted: #bcaa97;
+  --line: #3e2f27; --accent: #e08d6d; --accent-ink: #1e1612; --accent-soft: #43291f; --focus: #e08d6d;
+}
+
+/* ---- Ledger: paper, graphite and ink green --------------------------------------------- */
+:root[data-palette='ledger'] {
+  --bg: #fafaf7; --surface: #ffffff; --raised: #f4f4f0; --ink: #23262a; --muted: #6a6f76;
+  --line: #e3e3dd; --accent: #1f6b55; --accent-ink: #ffffff; --accent-soft: #e2efe9; --focus: #1f6b55;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette='ledger']:not([data-mode='light']) {
+    --bg: #15171a; --surface: #1c1f23; --raised: #23272c; --ink: #e6e7e3; --muted: #9298a0;
+    --line: #2e3238; --accent: #5fb394; --accent-ink: #15171a; --accent-soft: #1f3129; --focus: #5fb394;
+  }
+}
+:root[data-palette='ledger'][data-mode='dark'] {
+  --bg: #15171a; --surface: #1c1f23; --raised: #23272c; --ink: #e6e7e3; --muted: #9298a0;
+  --line: #2e3238; --accent: #5fb394; --accent-ink: #15171a; --accent-soft: #1f3129; --focus: #5fb394;
+}

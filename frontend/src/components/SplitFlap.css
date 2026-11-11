@@ -1,0 +1,93 @@
+.splitflap {
+  --flap-w: 44px;
+  display: inline-flex;
+  gap: 4px;
+  padding: 10px;
+  border-radius: var(--radius-lg);
+  background: var(--board-frame);
+  box-shadow:
+    inset 0 0 0 1px var(--board-frame-edge),
+    0 12px 24px var(--board-shadow);
+}
+.splitflap-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--flap-w);
+  height: calc(var(--flap-w) * 1.36);
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, var(--board-tile) 0 49%, var(--board-tile-shade) 51% 100%);
+  font: 700 30px / 1 var(--font-mono);
+  color: var(--board-ink);
+}
+/* the split between the upper and lower flap */
+.splitflap-tile::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--board-seam);
+}
+/* each new character drops in as the upper flap falls */
+.splitflap-tile > span {
+  display: inline-block;
+  animation: splitflap-drop 70ms ease-out;
+  transform-origin: 50% 100%;
+}
+@keyframes splitflap-drop {
+  from {
+    transform: scaleY(0.15);
+    opacity: 0.5;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+/* Landing on the name: the letters turn red ochre */
+.splitflap-named .splitflap-tile {
+  color: var(--board-name);
+  transition: color 250ms 150ms;
+}
+.splitflap-glyph,
+.splitflap-malware .splitflap-tile {
+  color: var(--board-malware);
+}
+.splitflap-malware {
+  animation: splitflap-flicker 2.2s steps(1) 400ms infinite;
+}
+@keyframes splitflap-flicker {
+  0%,
+  100% {
+    filter: none;
+  }
+  8% {
+    filter: brightness(1.6);
+  }
+  10% {
+    filter: none;
+  }
+  56% {
+    filter: brightness(1.4) saturate(1.4);
+  }
+  58% {
+    filter: none;
+  }
+}
+@media (max-width: 420px) {
+  .splitflap {
+    --flap-w: 34px;
+  }
+  .splitflap-tile {
+    font-size: 23px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splitflap-tile > span,
+  .splitflap-malware {
+    animation: none;
+  }
+}

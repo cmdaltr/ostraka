@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- The drawn sherd for small sizes: clay by day, limestone by night -->
+  <style>
+    .a{fill:#b8684c}.b{fill:#a95c42}.c{fill:#c27556}.d{fill:#f1e7d6}
+    @media (prefers-color-scheme: dark){.a{fill:#e4ded1}.b{fill:#d6cebd}.c{fill:#ece7dc}.d{fill:#a33a24}}
+  </style>
+  <path class="a" d="M10 100 L20 76 L22 52 L48 30 L70 34 L96 12 L84 74 Z"/>
+  <path class="c" d="M96 12 L128 22 L150 16 L176 44 L138 82 L110 72 L84 74 Z"/>
+  <path class="b" d="M176 44 L170 70 L192 104 L138 82 Z"/>
+  <path class="a" d="M192 104 L178 138 L158 150 L120 130 L138 82 Z"/>
+  <path class="c" d="M158 150 L150 182 L112 176 L120 130 Z"/>
+  <path class="b" d="M112 176 L86 192 L58 170 L66 122 L92 132 L120 130 Z"/>
+  <path class="a" d="M58 170 L30 160 L34 128 L66 122 Z"/>
+  <path class="c" d="M34 128 L10 100 L84 74 L66 122 Z"/>
+  <path class="b" d="M84 74 L110 72 L138 82 L120 130 L92 132 L66 122 Z"/>
+  <circle class="d" cx="102" cy="104" r="20"/>
+</svg>

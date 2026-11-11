@@ -1,0 +1,440 @@
+#!/usr/bin/env bash
+# ostraka - drives the Ostraka stack from the host: the commands in desktop/README.md (the contract
+# the desktop launchers rely on). Anything it doesn't know goes to the backend's own CLI.
+# Written for macOS's Bash 3.2 as well as Linux's Bash 5: no associative arrays, no ${x,,}.
+
+# Follow symlinks to the real file, so a link in ~/.local/bin still finds the source tree
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+    DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+ROOT="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+# Exit codes the launchers read (desktop/README.md)
+EXIT_STOPPED=3
+EXIT_NO_DOCKER=4
+EXIT_ADMIN_EXISTS=5  # first-admin: the backend's bootstrap-admin says so, and it's passed on as it is
+
+# Compose names a project after its folder, so an unpacked ~/Ostraka and a checkout called ostraka
+# would share volumes. An unpacked tree (it has .ostraka-version) is project ostraka-app instead.
+UNPACKED_PROJECT=ostraka-app
+
+PROGRESS=false
+
+usage() {
+    cat <<EOF
+Usage: ostraka <command> [options]
+
+  start [--progress]        Start Ostraka (writes .env with random secrets the first time)
+  stop                      Stop it; the data stays
+  status [--json]           Exit 0 running, 3 stopped, 4 Docker missing or not running
+  url                       The local address, $(local_url)
+  first-admin EMAIL         On a fresh install: the first admin's invitation link
+                            (exit $EXIT_ADMIN_EXISTS when there's an admin already)
+  logs [service]            Follow the logs
+  server init [options]     Set this Linux machine up as a central server
+  app install | uninstall   A desktop entry for this source tree
+  version                   The version of this source tree
+  help                      This list
+
+Anything else goes to the backend's own CLI, for example:
+  ostraka licence install FILE --accept-terms "Name <email>"
+  ostraka import --sample
+EOF
+}
+
+# ── Output ────────────────────────────────────────────────────────────────────
+# With --progress, stdout carries only `progress N message` lines for a launcher to parse, so
+# everything meant for a person goes to stderr instead
+say() {
+    if $PROGRESS; then echo "$*" >&2; else echo "$*"; fi
+}
+
+progress() {
+    $PROGRESS && echo "progress $1 $2"
+    return 0
+}
+
+fail() {  # <exit code> <message...>
+    local code="$1"
+    shift
+    echo "Error: $*" >&2
+    exit "$code"
+}
+
+# ── Settings ──────────────────────────────────────────────────────────────────
+env_value() {  # <name>: its value in .env, if there is one
+    [ -f "$ROOT/.env" ] && sed -n "s/^$1=//p" "$ROOT/.env" | tail -1
+}
+
+port() {
+    local value="${OSTRAKA_PORT:-}"
+    [ -n "$value" ] || value="$(env_value OSTRAKA_PORT)"
+    echo "${value:-24747}"
+}
+
+local_url() {
+    echo "http://127.0.0.1:$(port)"
+}
+
+tree_version() {
+    sed -n 's/^__version__ = "\(.*\)"/\1/p' "$ROOT/backend/ostraka/__init__.py" 2>/dev/null | head -1
+}
+
+random_hex() {  # <bytes>
+    if command -v openssl >/dev/null 2>&1; then
+        openssl rand -hex "$1"
+    else
+        od -An -N"$1" -tx1 /dev/urandom | tr -d ' \n'
+    fi
+}
+
+# As `make env`, but a local install's links (invitations, emails) point at this computer on
+# its own port (OSTRAKA_PORT). An existing .env is never touched: it holds
+# the secrets the data volumes were created with.
+write_env() {
+    [ -e "$ROOT/.env" ] && return 0
+    [ -f "$ROOT/.env.example" ] || fail 1 "there's no .env or .env.example in $ROOT"
+    local tmp="$ROOT/.env.tmp.$$"
+    (
+        umask 077
+        sed -e "s|^POSTGRES_PASSWORD=$|POSTGRES_PASSWORD=$(random_hex 24)|" \
+            -e "s|^OSTRAKA_SECRET_KEY=$|OSTRAKA_SECRET_KEY=$(random_hex 32)|" \
+            -e "s|^OSTRAKA_PUBLIC_URL=.*|OSTRAKA_PUBLIC_URL=$(local_url)|" \
+            "$ROOT/.env.example" > "$tmp" || exit 1
+        if unpacked && ! grep -q '^COMPOSE_PROJECT_NAME=' "$tmp"; then
+            printf '\nCOMPOSE_PROJECT_NAME=%s\n' "$UNPACKED_PROJECT" >> "$tmp"
+        fi
+    ) || { rm -f "$tmp"; fail 1 "couldn't write $ROOT/.env"; }
+    if [ -e "$ROOT/.env" ]; then
+        rm -f "$tmp"
+        return 0
+    fi
+    mv "$tmp" "$ROOT/.env" && chmod 600 "$ROOT/.env"
+    say "Wrote $ROOT/.env with new secrets."
+}
+
+unpacked() {
+    [ -f "$ROOT/.ostraka-version" ]
+}
+
+# .env is where the project name lives, so plain `docker compose` and the uninstallers see the same
+# project as this script. An unpacked tree's .env that predates the line gets it; a checkout's .env
+# is left alone, and so is a name .env already has (a server's setup writes ostraka). The name is
+# exported only when neither the environment nor .env has one: the environment beats .env in
+# compose, so exporting would override a server's own choice.
+settle_project() {
+    unpacked || return 0
+    [ -n "$(env_value COMPOSE_PROJECT_NAME)" ] && return 0
+    if [ -f "$ROOT/.env" ] && [ -w "$ROOT/.env" ]; then
+        # A file that doesn't end in a newline would join the new line to its last one
+        [ -n "$(tail -c 1 "$ROOT/.env")" ] && echo >> "$ROOT/.env"
+        echo "COMPOSE_PROJECT_NAME=$UNPACKED_PROJECT" >> "$ROOT/.env"
+        [ -n "$(env_value COMPOSE_PROJECT_NAME)" ] && return 0
+    fi
+    [ -n "${COMPOSE_PROJECT_NAME:-}" ] || export COMPOSE_PROJECT_NAME="$UNPACKED_PROJECT"
+}
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+# Prints ok, missing or stopped
+docker_state() {
+    if ! command -v docker >/dev/null 2>&1; then
+        echo missing
+    elif ! docker info >/dev/null 2>&1; then
+        echo stopped
+    else
+        echo ok
+    fi
+}
+
+docker_help() {
+    case "$(uname -s)" in
+        Darwin) echo "  Install OrbStack (https://orbstack.dev) or Docker Desktop (https://www.docker.com/products/docker-desktop/)." >&2 ;;
+        Linux)  echo "  Install Docker Engine with the compose plugin: https://docs.docker.com/engine/install/" >&2 ;;
+        *)      echo "  Install Docker Desktop: https://www.docker.com/products/docker-desktop/" >&2 ;;
+    esac
+}
+
+# Starts the engine the Docker context points at, headless (no window, nothing in the Dock).
+# Only on a Mac: on Linux the engine is a system service, which isn't ours to start.
+wake_docker() {
+    [ "$(uname -s)" = Darwin ] || return 1
+    case "$(docker context show 2>/dev/null)" in
+        orbstack) orb start >/dev/null 2>&1 || open -g -j -a OrbStack ;;
+        desktop-linux) docker desktop start --detach >/dev/null 2>&1 || open -g -j -a Docker ;;
+        *)
+            if [ -d /Applications/OrbStack.app ] || command -v orb >/dev/null 2>&1; then
+                orb start >/dev/null 2>&1 || open -g -j -a OrbStack
+            else
+                docker desktop start --detach >/dev/null 2>&1 || open -g -j -a Docker
+            fi
+            ;;
+    esac
+    local waited=0 limit="${OSTRAKA_DOCKER_WAIT:-120}"
+    while [ "$waited" -lt "$limit" ]; do
+        docker info >/dev/null 2>&1 && return 0
+        sleep 1
+        waited=$((waited + 1))
+    done
+    return 1
+}
+
+# Exits 4 unless Docker and its compose plugin answer. `wake` lets start bring the engine up.
+need_docker() {
+    case "$(docker_state)" in
+        missing)
+            echo "Error: Docker isn't installed. Ostraka runs in Docker on this computer." >&2
+            docker_help
+            exit $EXIT_NO_DOCKER
+            ;;
+        stopped)
+            local stopped="Docker is installed but not running. Start it and try again."
+            [ "${1:-}" = wake ] || fail $EXIT_NO_DOCKER "$stopped"
+            progress 2 "Starting Docker"
+            say "Docker isn't running; starting it..."
+            wake_docker || fail $EXIT_NO_DOCKER "$stopped"
+            ;;
+    esac
+    # Asked after a wake too: an engine that starts can still lack the plugin
+    docker compose version >/dev/null 2>&1 \
+        || fail $EXIT_NO_DOCKER "Docker's compose plugin is missing (https://docs.docker.com/compose/install/)."
+}
+
+compose() {
+    settle_project
+    # cd for compose's project directory only; the caller's directory is left alone
+    (cd "$ROOT" && docker compose "$@")
+}
+
+# ── Health ────────────────────────────────────────────────────────────────────
+HEALTH=""
+
+http_get() {
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsS --max-time 3 "$1" 2>/dev/null
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO- -T 3 "$1" 2>/dev/null
+    else
+        return 1
+    fi
+}
+
+# True when /api/health answers {"status": "ok"}; the body is left in HEALTH
+healthy() {
+    HEALTH="$(http_get "$(local_url)/api/health")" || return 1
+    printf '%s' "$HEALTH" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"ok"'
+}
+
+health_version() {
+    printf '%s' "$HEALTH" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+}
+
+# ── Commands ──────────────────────────────────────────────────────────────────
+cmd_start() {
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+            --progress) PROGRESS=true ;;
+            *) fail 2 "unknown option for start: $arg" ;;
+        esac
+    done
+    if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+        fail 1 "start needs curl or wget to check Ostraka has come up."
+    fi
+    progress 0 "Checking Docker"
+    need_docker wake
+    progress 5 "Preparing settings"
+    write_env
+    progress 10 "Building and starting the containers"
+    say "Starting Ostraka (the first start builds the images, which takes a few minutes)..."
+
+    # Compose's own output goes to stderr in both modes: under --progress it would break the
+    # line format, and otherwise it's the same output a person would see from compose
+    compose up -d --build >&2 &
+    local pid=$! percent=10 ticks=0 status
+    while kill -0 "$pid" 2>/dev/null; do
+        sleep 1
+        ticks=$((ticks + 1))
+        # Creeps towards 70 without reaching it: a build's length can't be known in advance
+        if [ "$percent" -lt 69 ] && [ $((ticks % 3)) -eq 0 ]; then
+            percent=$((percent + 1))
+            progress "$percent" "Building and starting the containers"
+        fi
+    done
+    wait "$pid"
+    status=$?
+    [ "$status" -eq 0 ] || fail 1 "docker compose up failed (exit $status); see the output above, or 'ostraka logs'."
+
+    progress 75 "Waiting for Ostraka to answer"
+    local waited=0 limit="${OSTRAKA_START_TIMEOUT:-180}"
+    percent=75
+    until healthy; do
+        [ "$waited" -ge "$limit" ] \
+            && fail 1 "Ostraka didn't answer at $(local_url) within ${limit}s; see 'ostraka logs'."
+        sleep 1
+        waited=$((waited + 1))
+        if [ "$percent" -lt 95 ] && [ $((waited % 3)) -eq 0 ]; then
+            percent=$((percent + 1))
+            progress "$percent" "Waiting for Ostraka to answer"
+        fi
+    done
+    progress 100 "Ready"
+    say "Ostraka is running at $(local_url)"
+}
+
+cmd_stop() {
+    need_docker
+    compose stop
+}
+
+cmd_status() {
+    local json=false arg state running=false version has_admin answer
+    for arg in "$@"; do
+        case "$arg" in
+            --json) json=true ;;
+            *) fail 2 "unknown option for status: $arg" ;;
+        esac
+    done
+    state="$(docker_state)"
+    [ "$state" = ok ] && healthy && running=true
+    version="$(health_version)"
+    [ -n "$version" ] || version="$(tree_version)"
+    # Asked of the backend only while it's up; null otherwise, as there's no one to ask
+    has_admin=null
+    if $running; then
+        answer="$(compose exec -T backend ostraka has-admin 2>/dev/null | tail -1 | tr -d '\r ')"
+        case "$answer" in true|false) has_admin="$answer" ;; esac
+    fi
+    if $json; then
+        printf '{"running": %s, "url": "%s", "version": "%s", "docker": "%s", "has_admin": %s}\n' \
+            "$running" "$(local_url)" "$version" "$state" "$has_admin"
+    else
+        case "$state" in
+            missing) echo "Docker isn't installed." ;;
+            stopped) echo "Docker isn't running." ;;
+            *)
+                if $running; then echo "Ostraka $version is running at $(local_url)"
+                else echo "Ostraka is stopped."
+                fi
+                ;;
+        esac
+    fi
+    [ "$state" = ok ] || exit $EXIT_NO_DOCKER
+    $running || exit $EXIT_STOPPED
+    exit 0
+}
+
+backend_running() {
+    [ -n "$(compose ps -q --status running backend 2>/dev/null)" ]
+}
+
+cmd_first_admin() {
+    [ $# -eq 1 ] || fail 2 "usage: ostraka first-admin EMAIL"
+    need_docker
+    backend_running || fail $EXIT_STOPPED "Ostraka isn't running: ostraka start"
+    local link status
+    # The backend's own exit is passed on: $EXIT_ADMIN_EXISTS when there's an admin already, 1 otherwise
+    link="$(compose exec -T backend ostraka bootstrap-admin --link-only "$1")"
+    status=$?
+    [ "$status" -eq 0 ] || exit "$status"
+    link="$(printf '%s\n' "$link" | grep '/invite/' | tail -1)"
+    [ -n "$link" ] || fail 1 "the backend didn't print an invitation link."
+    # The link is opened on this computer, so it gets this computer's address whatever
+    # OSTRAKA_PUBLIC_URL says (an older .env may still name another server)
+    echo "$(local_url)/invite/${link##*/invite/}"
+}
+
+cmd_logs() {
+    need_docker
+    compose logs -f "$@"
+}
+
+run_part() {  # <path under ROOT> <what it is> [args...]: another part of phase 3b
+    local part="$1" what="$2"
+    shift 2
+    [ -f "$ROOT/$part" ] || fail 1 "$what isn't in this source tree ($part is missing)."
+    exec bash "$ROOT/$part" "$@"
+}
+
+cmd_server() {
+    local action="${1:-}"
+    [ $# -gt 0 ] && shift
+    [ "$action" = init ] || fail 2 "usage: ostraka server init [options]"
+    [ "$(uname -s)" = Linux ] || fail 1 "a central server is set up on Linux (Debian, Ubuntu, Rocky, RHEL or Alma)."
+    run_part deploy/linux/install.sh "Server setup" "$@"
+}
+
+cmd_app() {
+    local action="${1:-}"
+    [ $# -gt 0 ] && shift
+    case "$action" in
+        install|uninstall) ;;
+        *) fail 2 "usage: ostraka app install | uninstall" ;;
+    esac
+    case "$(uname -s)" in
+        Darwin) run_part desktop/macos/build.sh "The macOS app" "--$action" "$@" ;;
+        Linux)
+            if [ "$action" = uninstall ]; then
+                run_part desktop/linux/install.sh "The Linux desktop entry" --uninstall "$@"
+            fi
+            run_part desktop/linux/install.sh "The Linux desktop entry" "$@"
+            ;;
+        *)
+            echo "On Windows, from PowerShell:" >&2
+            printf '  powershell -ExecutionPolicy Bypass -File "%s/desktop/windows/install.ps1"\n' "$ROOT" >&2
+            exit 1
+            ;;
+    esac
+}
+
+# The backend's CLI runs in its container, which can't see the host's files: a file named on
+# the command line (`licence install FILE`, `import FILE`) is copied in first and its path
+# swapped for the copy's. Through stdin and `cat`, so the copy belongs to the container's own
+# user: `docker compose cp` would leave it root's, unreadable when the original was 0600.
+cmd_backend() {
+    need_docker
+    backend_running || fail $EXIT_STOPPED "Ostraka isn't running: ostraka start"
+    local args=() copies="" arg copy n=0 status
+    for arg in "$@"; do
+        if [ -f "$arg" ]; then
+            n=$((n + 1))
+            copy="/tmp/ostraka-host-$$-$n-$(basename "$arg" | tr -c 'A-Za-z0-9._\n-' _)"
+            # shellcheck disable=SC2016 # $1 is expanded by the container's shell, not this one
+            compose exec -T backend sh -c 'umask 077 && cat > "$1"' sh "$copy" < "$arg" \
+                || fail 1 "couldn't copy $arg into the backend container."
+            copies="$copies $copy"
+            arg="$copy"
+        fi
+        args+=("$arg")
+    done
+    # No terminal for compose to attach when either end is piped: a launcher, a script, a pipe
+    if [ -t 0 ] && [ -t 1 ]; then
+        compose exec backend ostraka "${args[@]}"
+    else
+        compose exec -T backend ostraka "${args[@]}"
+    fi
+    status=$?
+    # shellcheck disable=SC2086 # copies is a word list of paths without spaces
+    [ -n "$copies" ] && compose exec -T backend rm -f $copies >/dev/null 2>&1
+    exit $status
+}
+
+# ── Dispatch ──────────────────────────────────────────────────────────────────
+COMMAND="${1:-}"
+[ $# -gt 0 ] && shift
+
+case "$COMMAND" in
+    ""|help|-h|--help) usage ;;
+    start) cmd_start "$@" ;;
+    stop) cmd_stop "$@" ;;
+    status) cmd_status "$@" ;;
+    url) local_url ;;
+    first-admin) cmd_first_admin "$@" ;;
+    logs) cmd_logs "$@" ;;
+    server) cmd_server "$@" ;;
+    app) cmd_app "$@" ;;
+    version|--version) tree_version ;;
+    *) cmd_backend "$COMMAND" "$@" ;;
+esac

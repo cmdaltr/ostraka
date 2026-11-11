@@ -1,0 +1,94 @@
+# Ostraka Commercial Licence
+
+**Version 1.1**, 11 November 2026
+
+> **Draft for legal review.** Plain-language terms written to be checked by a solicitor before any
+> sale. Governing law: England and Wales.
+
+Ostraka is licensed under the **Elastic License 2.0** (`LICENSE`). On its own that licence lets
+anyone use, copy and change Ostraka for free, which is the **Free** edition. It does not allow
+providing Ostraka to others as a hosted or managed service, or getting around its licence key.
+The **Pro** and **Services** editions are these terms added to it, switched on by a licence key the
+Licensor issues.
+
+**Licensor:** Ben Smith, trading as cmdaltr ([cmdaltr.com](https://cmdaltr.com)).
+**Software:** Ostraka.
+**Licence key:** the signed licence line the Licensor issues to a Licensee under these terms, naming
+the Licensee, edition, seats, any extra features and the term.
+
+## 1. Editions
+
+| | Free | Pro | Services |
+|---|---|---|---|
+| Who it's for | Individuals and small teams | Organisations running their own incident response | MSSPs and consultancies working for clients |
+| People who can sign in | 4, one of them an admin or team lead | As the licence key states | As the licence key states |
+| Report branding (`report-branding`) | Ostrakon only | One brand for the installation | Yes |
+| Webhooks (`automation`) | | Yes | Yes |
+| A brand per client (`brand-library`) | | | Chosen per incident |
+| Run Ostraka for clients (`managed-service`) | | | Yes, under section 3 |
+
+A licence key grants its edition's features and any others it names. The Licensor may add features
+in later versions; a key grants only what its edition and its own list include.
+
+## 2. Grant
+
+On payment of the fee, the Licensor grants the Licensee a non-exclusive, non-transferable,
+non-sublicensable licence, for the term in the licence key, to activate and use the features the key
+grants, for up to the number of people it states, for the Licensee's own business. This is in
+addition to the Elastic License 2.0, which continues to govern the Software.
+
+## 3. Services: work for clients
+
+The Elastic License 2.0 forbids providing the Software to third parties as a hosted or managed
+service. For a Services licence, and only while it's valid, the Licensor permits the Licensee to
+operate the Software to deliver security services to the Licensee's own clients, including giving
+client personnel accounts, all within the licensed seats.
+
+This doesn't permit offering the Software itself as a product: reselling or sublicensing it, or
+offering hosted Ostraka as a service whose main value is the Software rather than the Licensee's
+own security services.
+
+## 4. Licence key
+
+The Licensee may install the key on systems it operates to run the Software. Installing it requires
+an administrator to accept this version of these terms on the Licensee's behalf; the Software records
+who accepted, when, and which version. By installing the key, the Licensee confirms that person has
+authority to accept for it. The Licensee must not
+share, publish or resell the key; change, disable or get around the licensing mechanism (which the
+Elastic License 2.0 also forbids); or try to recover any signing key.
+
+## 5. Term, renewal and ending
+
+A licence runs from the first day in its key to the last. After the last day, the paid edition keeps
+working for 30 days' grace; after that the installation returns to the Free edition. Nothing is
+deleted and nobody is deactivated when that happens, but no one new can be added past the Free limit
+and reports return to the standard style. A key with no end date doesn't expire.
+
+Either party may end a licence for material breach not put right within 30 days of written notice.
+Section 3's permission ends with the licence.
+
+## 6. Fees, support and updates
+
+Fees, any support and any service levels are as agreed in writing for each licence. Without such an
+agreement there's no obligation to provide support or updates.
+
+## 7. Warranty and liability
+
+The Software is provided as it is, without warranty, as far as the law allows. The Licensor's total
+liability under these terms is limited to the fees paid for the licence in the 12 months before the
+claim. Nothing here limits liability that can't be limited by law, including for death or personal
+injury caused by negligence, or for fraud.
+
+## 8. Trademarks
+
+**Ostraka™** is a trademark of cmdaltr. Neither licence grants any right to use the name or logo,
+whether to brand a fork or otherwise, beyond saying truthfully that you use Ostraka.
+
+## 9. General
+
+These terms, the Elastic License 2.0 and any written order are the whole agreement for a licence.
+If they conflict, the order wins, then these terms, then the Elastic License 2.0. Each version of
+these terms is numbered; a licence is governed by the version accepted for it, and a later version
+applies only once accepted, for example when a renewed key is installed.
+They're governed by the law of England and Wales, and the courts of England and Wales have
+exclusive jurisdiction.

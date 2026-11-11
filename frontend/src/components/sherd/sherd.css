@@ -1,0 +1,113 @@
+/* The mended sherd as fragments (geometry.ts). Each piece is the whole artwork clipped to one
+   fragment, so together they are the mark exactly. */
+.ostrakon {
+  position: relative;
+  display: inline-block;
+  aspect-ratio: 560 / 408;
+  width: 7rem;
+  vertical-align: middle;
+}
+.ostrakon-piece {
+  position: absolute;
+  inset: 0;
+  background: var(--sherd-image) center / 100% 100% no-repeat;
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ostrakon[data-state='assembling'] .ostrakon-piece {
+  transition-duration: 0.35s;
+  transition-timing-function: linear;
+}
+.ostrakon[data-state='scattered'] .ostrakon-piece {
+  transition-duration: 0.45s;
+  transition-timing-function: cubic-bezier(0.1, 0.7, 0.3, 1);
+}
+/* Finished work: the last pieces click home, one warm glow, then it rests */
+.ostrakon-glow .ostrakon-piece {
+  transition-duration: 0.3s;
+}
+.ostrakon-glow {
+  animation: sherd-glow 0.9s ease-out 0.25s 1 both;
+}
+@keyframes sherd-glow {
+  0% { filter: drop-shadow(0 0 0 transparent); }
+  45% { filter: drop-shadow(0 0 0.9rem var(--sherd-glow)); }
+  100% { filter: drop-shadow(0 0 0.15rem transparent); }
+}
+
+.ostrakon-button {
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+.ostrakon-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+}
+
+.assembling {
+  display: inline-grid;
+  justify-items: center;
+  /* room for the loose pieces, so they never sit on the label */
+  padding-block: calc(var(--sherd-width) * 0.4) 0;
+  gap: calc(var(--sherd-width) * 0.4);
+}
+.assembling-inline {
+  display: inline-flex;
+  padding-block: 0;
+  gap: 0;
+}
+.assembling-label {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.loading-page {
+  display: grid;
+  place-items: center;
+  min-block-size: 40vh;
+}
+
+/* Loose sherds behind the app */
+.sherd-field {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.sherd {
+  position: absolute;
+  aspect-ratio: 560 / 408;
+  opacity: var(--sherd-opacity);
+  animation: sherd-drift 20s ease-in-out infinite alternate;
+}
+.sherd .ostrakon-piece {
+  transition: none;
+}
+@keyframes sherd-drift {
+  from { translate: 0 0; }
+  to { translate: 0.6rem -0.9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ostrakon-piece {
+    transition: none;
+    transform: none !important;
+  }
+  .ostrakon-glow,
+  .sherd {
+    animation: none;
+  }
+}
+
+/* Text for screen readers only (an inline progress sherd's label) */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

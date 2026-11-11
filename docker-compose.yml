@@ -1,0 +1,79 @@
+# Ostraka. Only the web container publishes a port, and only on loopback: a reverse proxy in front
+# (deploy/README.md) serves it over HTTPS.
+# Postgres and Redis are reachable only on this compose network.
+#
+# Secrets come from .env (make env writes one); compose refuses to start without them.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ostraka
+      POSTGRES_DB: ostraka
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (make env)}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ostraka -d ostraka"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      OSTRAKA_ENV: production
+      OSTRAKA_SECRET_KEY: ${OSTRAKA_SECRET_KEY:?set OSTRAKA_SECRET_KEY in .env (make env)}
+      OSTRAKA_DATABASE_URL: postgresql+asyncpg://ostraka:${POSTGRES_PASSWORD}@db:5432/ostraka
+      OSTRAKA_REDIS_URL: redis://redis:6379/0
+      OSTRAKA_PUBLIC_URL: ${OSTRAKA_PUBLIC_URL:-http://localhost:24747}
+      OSTRAKA_AI_PROVIDER: ${OSTRAKA_AI_PROVIDER:-none}
+      # Email (optional): SMTP or Microsoft Graph; unset, notifications stay in ostraka and push
+      OSTRAKA_MAIL_TRANSPORT: ${OSTRAKA_MAIL_TRANSPORT:-smtp}
+      OSTRAKA_GRAPH_TENANT_ID: ${OSTRAKA_GRAPH_TENANT_ID:-}
+      OSTRAKA_GRAPH_CLIENT_ID: ${OSTRAKA_GRAPH_CLIENT_ID:-}
+      OSTRAKA_GRAPH_CLIENT_SECRET: ${OSTRAKA_GRAPH_CLIENT_SECRET:-}
+      OSTRAKA_GRAPH_SENDER: ${OSTRAKA_GRAPH_SENDER:-}
+      OSTRAKA_SMTP_HOST: ${OSTRAKA_SMTP_HOST:-}
+      OSTRAKA_SMTP_PORT: ${OSTRAKA_SMTP_PORT:-587}
+      OSTRAKA_SMTP_TLS: ${OSTRAKA_SMTP_TLS:-starttls}
+      OSTRAKA_SMTP_USERNAME: ${OSTRAKA_SMTP_USERNAME:-}
+      OSTRAKA_SMTP_PASSWORD: ${OSTRAKA_SMTP_PASSWORD:-}
+      OSTRAKA_SMTP_FROM: ${OSTRAKA_SMTP_FROM:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:6176/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${OSTRAKA_PORT:-24747}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db:
+  redis:

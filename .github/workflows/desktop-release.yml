@@ -1,0 +1,323 @@
+# Builds the desktop app for macOS (.dmg), Windows (.msi) and Debian/Ubuntu (.deb), each
+# carrying the source tree at this commit, and the source tarball itself for servers and any
+# Linux without apt. A v* tag attaches them, with SHA256SUMS, to a draft release; a manual run
+# builds and tests them without publishing. `make release` stays as the local build (desktop/README.md).
+#
+# Jobs hand files to each other through actions/cache, not upload-artifact: artifacts share one
+# 500 MB quota across every repository on the account, so a busy sibling repo could block this one,
+# while each repository has its own 10 GB of cache. enableCrossOsArchive lets a cache saved on Linux
+# or macOS restore on Windows and back.
+#
+# Signing is optional and switches on with these secrets:
+#   macOS:   MACOS_CERTIFICATE_P12 (base64 Developer ID Application .p12), MACOS_CERTIFICATE_PASSWORD,
+#            MACOS_SIGN_IDENTITY ("Developer ID Application: Name (TEAMID)");
+#            notarisation also needs APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD (app-specific)
+#   Windows: WINDOWS_CERTIFICATE_PFX (base64 code-signing .pfx), WINDOWS_CERTIFICATE_PASSWORD
+name: Desktop app
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      # A tag must be the version the code says (as scripts/release.sh insists locally): the tarball's
+      # folder and the .ostraka-version a launcher writes come from backend/ostraka/__init__.py
+      - id: version
+        name: Version
+        run: |
+          code="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' backend/ostraka/__init__.py | head -1)"
+          [ -n "$code" ] || { echo "No __version__ in backend/ostraka/__init__.py"; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            version="${GITHUB_REF_NAME#v}"
+            [ "$version" = "$code" ] || { echo "The tag says $version but backend/ostraka/__init__.py says $code"; exit 1; }
+          else
+            version="$code-dev.$GITHUB_RUN_NUMBER"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Source tarball
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: mkdir -p src && desktop/source-tarball.sh "src/ostraka-$VERSION-source.tar.gz"
+      - uses: actions/cache/save@v4
+        with:
+          path: src
+          key: source-${{ github.run_id }}
+          enableCrossOsArchive: true
+
+  macos:
+    needs: source
+    runs-on: macos-15
+    env:
+      VERSION: ${{ needs.source.outputs.version }}
+      HAS_CERT: ${{ secrets.MACOS_CERTIFICATE_P12 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with:
+          path: src
+          key: source-${{ github.run_id }}
+          enableCrossOsArchive: true
+          fail-on-cache-miss: true
+      - name: Import the signing certificate
+        if: env.HAS_CERT == 'true'
+        env:
+          P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(uuidgen)"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          echo "$P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" >/dev/null
+          # shellcheck disable=SC2046  # the existing keychains, one word each
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+      # Notarised with the Apple ID secrets: package.sh takes them when there's no MACOS_NOTARY_PROFILE,
+      # since a saved profile has no keychain to live in on a runner thrown away after one build
+      - name: Package
+        env:
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_CERTIFICATE_P12 != '' && secrets.MACOS_SIGN_IDENTITY || '' }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: desktop/macos/package.sh --version "$VERSION" --source "src/ostraka-$VERSION-source.tar.gz" out
+      # Installed and removed with the scripts a user runs. The stack can't start here (GitHub's macOS
+      # runners have no Docker), and nothing opens the app's window, so this checks what the DMG puts
+      # down and takes away
+      - name: Install, check and uninstall
+        run: |
+          set -eu
+          sh desktop/install.sh --file "out/Ostraka-$VERSION-macos-universal.dmg"
+          app=/Applications/Ostraka.app
+          [ -d "$app" ] || app="$HOME/Applications/Ostraka.app"
+          [ -d "$app" ] || { echo "Ostraka.app isn't installed"; exit 1; }
+          archs=$(lipo -archs "$app/Contents/MacOS/Ostraka")
+          echo "Launcher: $archs"
+          case " $archs " in *" x86_64 "*) ;; *) echo "not universal: no x86_64"; exit 1 ;; esac
+          case " $archs " in *" arm64 "*) ;; *) echo "not universal: no arm64"; exit 1 ;; esac
+          for f in LICENSE COMMERCIAL-LICENSE.md ostraka-src.tar.gz; do
+            [ -f "$app/Contents/Resources/$f" ] || { echo "Contents/Resources/$f is missing"; exit 1; }
+          done
+          cmp "$app/Contents/Resources/LICENSE" LICENSE
+          cmp "$app/Contents/Resources/COMMERCIAL-LICENSE.md" COMMERCIAL-LICENSE.md
+          id=$(defaults read "$app/Contents/Info" CFBundleIdentifier)
+          [ "$id" = com.cmdaltr.ostraka ] || { echo "bundle id is $id"; exit 1; }
+          shown=$(defaults read "$app/Contents/Info" CFBundleShortVersionString)
+          [ "$shown" = "$VERSION" ] || { echo "the app says $shown, not $VERSION"; exit 1; }
+          codesign --verify --deep --strict "$app"
+          # The app carries no uninstaller of its own: Ostraka's is desktop/uninstall.sh, as a user runs it
+          sh desktop/uninstall.sh --yes
+          for left in /Applications/Ostraka.app "$HOME/Applications/Ostraka.app" \
+                      "$HOME/Library/Preferences/com.cmdaltr.ostraka.plist" "$HOME/Ostraka"; do
+            [ ! -e "$left" ] || { echo "Left behind: $left"; exit 1; }
+          done
+          ! defaults read com.cmdaltr.ostraka >/dev/null 2>&1 || { echo "Preferences left behind"; exit 1; }
+      - uses: actions/cache/save@v4
+        with:
+          path: out
+          key: pkg-${{ github.run_id }}-macos
+          enableCrossOsArchive: true
+
+  linux:
+    needs: source
+    # The oldest Ubuntu the .deb supports, as Rowanholt's does
+    runs-on: ubuntu-22.04
+    env:
+      VERSION: ${{ needs.source.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with:
+          path: src
+          key: source-${{ github.run_id }}
+          enableCrossOsArchive: true
+          fail-on-cache-miss: true
+      - name: Package
+        run: desktop/linux/package-deb.sh --version "$VERSION" --source "src/ostraka-$VERSION-source.tar.gz" out
+      - name: Check the package
+        run: |
+          dpkg-deb --info out/*.deb
+          dpkg-deb --contents out/*.deb | grep -E 'usr/lib/ostraka/|applications/ostraka.desktop'
+      # Installed and removed with the scripts a user runs (apt pulls in the launcher's dependencies).
+      # The stack isn't started and no browser window opens: this checks what the .deb puts down and
+      # takes away
+      - name: Install, check and uninstall
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq desktop-file-utils >/dev/null
+          sh desktop/install.sh --file "out/ostraka_${VERSION}-1_all.deb"
+          for f in ostraka-app.sh ostraka-src.tar.gz ostraka.png VERSION; do
+            [ -f "/usr/lib/ostraka/$f" ] || { echo "/usr/lib/ostraka/$f is missing"; exit 1; }
+          done
+          [ "$(cat /usr/lib/ostraka/VERSION)" = "$VERSION" ] || { echo "VERSION isn't $VERSION"; exit 1; }
+          [ -x /usr/bin/ostraka-app ] || { echo "/usr/bin/ostraka-app is missing"; exit 1; }
+          [ -f /usr/share/icons/hicolor/512x512/apps/ostraka.png ] || { echo "The icon is missing"; exit 1; }
+          # The copyright file carries LICENSE and COMMERCIAL-LICENSE.md whole (desktop/linux/copyright.sh)
+          desktop/linux/copyright.sh . | cmp /usr/share/doc/ostraka/copyright -
+          desktop-file-validate /usr/share/applications/ostraka.desktop
+          # The .deb carries no uninstaller of its own: Ostraka's is desktop/uninstall.sh, which purges it
+          sh desktop/uninstall.sh --yes
+          ! dpkg -s ostraka >/dev/null 2>&1 || { echo "ostraka is still installed"; exit 1; }
+          for left in /usr/lib/ostraka /usr/bin/ostraka-app /usr/share/doc/ostraka \
+                      /usr/share/applications/ostraka.desktop /usr/share/icons/hicolor/512x512/apps/ostraka.png \
+                      "$HOME/Ostraka" "$HOME/.config/ostraka"; do
+            [ ! -e "$left" ] && [ ! -L "$left" ] || { echo "Left behind: $left"; exit 1; }
+          done
+      - uses: actions/cache/save@v4
+        with:
+          path: out
+          key: pkg-${{ github.run_id }}-linux
+          enableCrossOsArchive: true
+
+  # wixl (msitools) builds the MSI in a Debian container, so it needs a Linux runner's Docker; the
+  # windows job installs, checks and signs it
+  msi:
+    needs: source
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.source.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with:
+          path: src
+          key: source-${{ github.run_id }}
+          enableCrossOsArchive: true
+          fail-on-cache-miss: true
+      - name: Build the MSI
+        run: desktop/windows/package-msi.sh --version "$VERSION" --source "src/ostraka-$VERSION-source.tar.gz" msi
+      # Not out/: the release takes the MSI the windows job signed and tested
+      - uses: actions/cache/save@v4
+        with:
+          path: msi
+          key: msi-${{ github.run_id }}
+          enableCrossOsArchive: true
+
+  windows:
+    needs: [source, msi]
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.source.outputs.version }}
+      HAS_CERT: ${{ secrets.WINDOWS_CERTIFICATE_PFX != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with:
+          path: msi
+          key: msi-${{ github.run_id }}
+          enableCrossOsArchive: true
+          fail-on-cache-miss: true
+      - name: Sign the MSI
+        if: env.HAS_CERT == 'true'
+        shell: pwsh
+        env:
+          PFX: ${{ secrets.WINDOWS_CERTIFICATE_PFX }}
+          PFX_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          $pfx = Join-Path $env:RUNNER_TEMP 'cert.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:PFX))
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName | Select-Object -Last 1
+          try {
+            & $signtool.FullName sign /f $pfx /p $env:PFX_PASSWORD /fd sha256 /tr http://timestamp.digicert.com /td sha256 (Get-ChildItem msi\*.msi).FullName
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Remove-Item $pfx
+          }
+      # Installed and removed with the scripts a user runs, from Windows PowerShell as theirs would.
+      # The stack itself can't start here (the runner's Docker runs Windows containers only), and
+      # nothing opens Edge, so this checks what the MSI puts down and takes away
+      - name: Install, check and uninstall
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $msi = (Get-Item "msi\Ostraka-$env:VERSION-windows-universal.msi").FullName
+          & powershell -NoProfile -ExecutionPolicy Bypass -File desktop\install.ps1 -File $msi
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs\Ostraka'
+          $menu = Join-Path ([Environment]::GetFolderPath('Programs')) 'Ostraka'
+          $expected = @("$dir\Ostraka.ps1", "$dir\source.zip", "$dir\version.txt", "$dir\LICENSE", "$dir\COMMERCIAL-LICENSE.md",
+                        "$menu\Ostraka.lnk", "$menu\Stop Ostraka.lnk", "$menu\Change Server.lnk", "$menu\Ostraka Licence.lnk")
+          $missing = @($expected | Where-Object { -not (Test-Path -LiteralPath $_) })
+          if ($missing) { throw "Not installed: $($missing -join ', ')" }
+          if ((Get-Content "$dir\version.txt" -Raw).Trim() -ne $env:VERSION) { throw "version.txt isn't $env:VERSION" }
+          if ((Get-ItemProperty 'HKCU:\SOFTWARE\cmdaltr\Ostraka').Version -ne $env:VERSION) { throw "The registry's Version isn't $env:VERSION" }
+          # Settings > Apps lists what Windows Installer has registered: asked by the MSI's UpgradeCode
+          $installer = New-Object -ComObject WindowsInstaller.Installer
+          $code = @($installer.RelatedProducts('{7A1F0C3E-5B2D-4E8A-9C61-0D3F8E2B4A17}'))[0]
+          if (-not $code) { throw 'No Settings > Apps entry' }
+          if ($installer.ProductInfo($code, 'ProductName') -ne 'Ostraka') { throw 'The registered product isn''t Ostraka' }
+          Write-Host "Installed $($installer.ProductInfo($code, 'VersionString')); removing it"
+          # The MSI carries no uninstaller of its own: Ostraka's is desktop\uninstall.ps1, as a user runs it
+          & powershell -NoProfile -ExecutionPolicy Bypass -File desktop\uninstall.ps1 -Yes
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $left = @(($expected + $dir, $menu, "$env:USERPROFILE\Ostraka", "$env:APPDATA\Ostraka\server") | Where-Object { Test-Path -LiteralPath $_ })
+          if ($left) { throw "Left behind: $($left -join ', ')" }
+          $reg = Get-ItemProperty 'HKCU:\SOFTWARE\cmdaltr\Ostraka' -ErrorAction SilentlyContinue
+          if ($reg -and ($reg.Version -or $reg.InstallDir)) { throw 'Left behind: HKCU\SOFTWARE\cmdaltr\Ostraka' }
+          if (@($installer.RelatedProducts('{7A1F0C3E-5B2D-4E8A-9C61-0D3F8E2B4A17}')).Count) { throw 'Still registered with Windows Installer' }
+      - name: The signed, tested MSI for the release
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          Copy-Item msi\*.msi out\
+      - uses: actions/cache/save@v4
+        with:
+          path: out
+          key: pkg-${{ github.run_id }}-windows
+          enableCrossOsArchive: true
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: [source, macos, linux, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.source.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # Each leg's package restores into the same out/, so they accumulate there
+      - uses: actions/cache/restore@v4
+        with:
+          path: out
+          key: pkg-${{ github.run_id }}-macos
+          enableCrossOsArchive: true
+      - uses: actions/cache/restore@v4
+        with:
+          path: out
+          key: pkg-${{ github.run_id }}-linux
+          enableCrossOsArchive: true
+      - uses: actions/cache/restore@v4
+        with:
+          path: out
+          key: pkg-${{ github.run_id }}-windows
+          enableCrossOsArchive: true
+      - uses: actions/cache/restore@v4
+        with:
+          path: src
+          key: source-${{ github.run_id }}
+          enableCrossOsArchive: true
+          fail-on-cache-miss: true
+      - name: Checksums
+        run: |
+          cp src/ostraka-*-source.tar.gz out/
+          cd out && sha256sum -- * > SHA256SUMS
+      - name: Attach to a draft release
+        run: |
+          gh release view "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
+            gh release create "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --draft --generate-notes --title "Ostraka $VERSION"
+          gh release upload "$GITHUB_REF_NAME" out/* -R "$GITHUB_REPOSITORY" --clobber

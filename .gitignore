@@ -1,0 +1,67 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Reports and uploads
+/uploads/
+/reports/
+*.pdf
+*.docx
+
+# Database
+*.db
+*.sqlite3
+
+# Python
+.ruff_cache/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Licensing: never commit a signing key or an issued licence
+licences/
+*licence-signing-key*
+*licence-signing.key
+*.lic.key
+*.licence
+
+# Private to this machine: never published
+CLAUDE.local.md
+.claude/snapshots/
+*.fetch

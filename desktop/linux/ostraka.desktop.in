@@ -1,0 +1,33 @@
+[Desktop Entry]
+Type=Application
+Name=Ostraka
+GenericName=Incident Response
+Comment=Incident management and response for teams
+Exec=@EXEC@
+Icon=ostraka
+Terminal=false
+Categories=Office;ProjectManagement;
+Keywords=incident;response;IR;DFIR;security;
+StartupNotify=true
+StartupWMClass=Ostraka
+Actions=Stop;ChangeServer;Licence;Setup;About;
+
+[Desktop Action Stop]
+Name=Stop Ostraka
+Exec=@EXEC@ --stop
+
+[Desktop Action ChangeServer]
+Name=Change Server
+Exec=@EXEC@ --change-server
+
+[Desktop Action Licence]
+Name=Licence
+Exec=@EXEC@ --licence
+
+[Desktop Action Setup]
+Name=Set Up Ostraka
+Exec=@EXEC@ --setup
+
+[Desktop Action About]
+Name=About Ostraka
+Exec=@EXEC@ --about

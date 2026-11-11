@@ -1,0 +1,108 @@
+.workflow {
+  position: relative;
+  display: grid;
+  gap: var(--space-5) var(--space-6);
+  padding: var(--space-6) var(--space-3) var(--space-3);
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+.workflow-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.workflow-lines path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.4;
+}
+.workflow-lines path.dashed {
+  stroke: var(--accent);
+  stroke-dasharray: 5 4;
+}
+.workflow-lines marker path {
+  fill: var(--muted);
+  stroke: none;
+}
+.workflow-lines text {
+  font: 500 var(--text-xs) / 1 var(--font-ui);
+  fill: var(--accent);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+}
+.workflow-lane {
+  grid-column: 1;
+  align-self: center;
+  font: 600 var(--text-sm) / 1.3 var(--font-ui);
+  color: var(--muted);
+  border-right: 2px solid var(--line);
+  padding-right: var(--space-3);
+}
+.workflow-cell {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  align-content: center;
+}
+.workflow-step {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: var(--text-sm);
+}
+.workflow-step.decision {
+  border-color: var(--accent);
+  border-left-width: 4px;
+}
+.workflow-step-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.workflow-state {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.workflow-step.state-open {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.workflow-step.state-open .workflow-state {
+  color: var(--accent);
+}
+.workflow-step.state-done .workflow-state {
+  color: var(--ok);
+}
+.workflow-step.state-skipped,
+.workflow-step.state-waiting {
+  opacity: 0.7;
+}
+.workflow-step.state-skipped strong {
+  text-decoration: line-through;
+}
+.workflow-outcomes {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-xs);
+}
+.workflow-outcomes .chosen {
+  font-weight: 700;
+  color: var(--accent);
+}

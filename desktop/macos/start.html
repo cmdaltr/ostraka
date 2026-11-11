@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Ostraka</title>
+<style>
+/* The Ostrakon palette (docs/BRAND.md), by the OS's light or dark setting. Red ochre marks
+   the one thing that needs someone: an error. */
+:root {
+  color-scheme: light dark;
+  --bg: #f1ede4; --surface: #faf7f1; --ink: #33241b; --muted: #6e5a4a; --line: #ddd3c3;
+  --accent: #a0492f; --accent-ink: #faf7f1; --accent-soft: #f1ddd2; --ochre: #a33a24;
+  --mark-clay: block; --mark-limestone: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1612; --surface: #271d18; --ink: #efe6d8; --muted: #bcaa97; --line: #3e2f27;
+    --accent: #e08d6d; --accent-ink: #1e1612; --accent-soft: #43291f; --ochre: #ec7a5c;
+    --mark-clay: none; --mark-limestone: block;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 Inter, -apple-system, system-ui, sans-serif;
+  display: flex; align-items: center; justify-content: center;
+}
+main { width: min(560px, 100% - 32px); padding: 32px 0; }
+header { text-align: center; margin-bottom: 20px; }
+header img { width: 288px; max-width: 72%; }
+header .clay { display: var(--mark-clay); margin: 0 auto; }
+header .limestone { display: var(--mark-limestone); margin: 0 auto; }
+h1 { font-size: 20px; font-weight: 600; margin: 0 0 6px; text-align: center; }
+p { margin: 6px 0; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.error { color: var(--ochre); }
+section[hidden], [hidden] { display: none !important; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  padding: 16px 18px; margin: 12px 0;
+}
+.card h2 { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+input[type=text], input[type=email] {
+  flex: 1; min-width: 0; padding: 7px 10px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); font: 13px 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+input:focus-visible, button:focus-visible, a.button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button, a.button {
+  padding: 7px 16px; border-radius: 4px; border: 1px solid var(--accent); background: transparent;
+  color: var(--accent); font: inherit; cursor: pointer; text-decoration: none; display: inline-block;
+}
+button.primary, a.button.primary { background: var(--accent); color: var(--accent-ink); }
+button:disabled { opacity: .5; cursor: default; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 14px 0 6px; }
+.bar div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+.bar.indeterminate div { width: 30%; animation: slide 1.4s ease-in-out infinite; }
+@keyframes slide { from { margin-left: -30%; } to { margin-left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .bar.indeterminate div { animation: none; width: 100%; opacity: .4; } }
+details { margin-top: 14px; }
+summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+pre {
+  max-height: 220px; overflow: auto; margin: 6px 0 0; padding: 8px 10px; border-radius: 4px;
+  background: var(--surface); border: 1px solid var(--line);
+  font: 11px/1.45 'JetBrains Mono', ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-all;
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img class="clay" src="ostrakon-clay.png" alt="Ostraka">
+    <img class="limestone" src="ostrakon-limestone.png" alt="Ostraka">
+  </header>
+
+  <!-- First launch, and Ostraka › Change Server… -->
+  <section id="choose" hidden>
+    <h1>Where is your Ostraka?</h1>
+    <div class="card">
+      <h2>Connect to your team's Ostraka</h2>
+      <p class="muted small">Nothing is stored or run on this Mac. You sign in on your team's server.</p>
+      <form class="row" id="connect-form">
+        <input id="address" type="text" placeholder="ostraka.example.org" spellcheck="false"
+               autocomplete="off" autocapitalize="off" aria-label="Server address">
+        <button class="primary" id="connect" type="submit">Connect</button>
+      </form>
+      <p class="error small" id="choose-error" hidden></p>
+    </div>
+    <div class="card">
+      <h2>Run Ostraka on this computer</h2>
+      <p class="muted small">Ostraka runs in Docker (OrbStack or Docker Desktop), on this Mac only.
+        Its files go in <span id="local-home"></span>.</p>
+      <div class="row"><button id="local">Run on this computer</button></div>
+    </div>
+  </section>
+
+  <!-- Starting, connecting, stopping -->
+  <section id="progress" hidden>
+    <h1 id="progress-title"></h1>
+    <div class="bar" id="bar"><div></div></div>
+    <p class="muted small" id="progress-message"></p>
+  </section>
+
+  <!-- Something to read or act on: an error, Docker missing, stopped -->
+  <section id="message" hidden>
+    <h1 id="message-title"></h1>
+    <p id="message-text"></p>
+    <p class="muted small" id="message-note"></p>
+    <div class="row" id="message-actions"></div>
+  </section>
+
+  <!-- A fresh local install: the first admin -->
+  <section id="admin" hidden>
+    <h1>Ostraka is running</h1>
+    <div class="card">
+      <h2>The first admin</h2>
+      <p class="muted small">Your email address. Ostraka makes you an invitation and opens it: you choose a
+        password and set up an authenticator app, as on any server.</p>
+      <form class="row" id="admin-form">
+        <input id="email" type="email" placeholder="you@example.org" spellcheck="false" aria-label="Email address">
+        <button class="primary" id="admin-go" type="submit">Continue</button>
+      </form>
+      <p class="error small" id="admin-error" hidden></p>
+    </div>
+    <p class="small"><a href="#" id="admin-skip">There's an admin already: open Ostraka</a></p>
+  </section>
+
+  <details id="log-box" hidden>
+    <summary>Details</summary>
+    <pre id="log"></pre>
+  </details>
+</main>
+<script>
+const send = (action, extra) => webkit.messageHandlers.ostraka.postMessage(Object.assign({ action }, extra || {}));
+const $ = (id) => document.getElementById(id);
+const views = ['choose', 'progress', 'message', 'admin'];
+
+function view(name) {
+  views.forEach((v) => { $(v).hidden = v !== name; });
+  $('log-box').hidden = !(name === 'progress' || name === 'message') || !$('log').textContent;
+}
+
+// First run: the server box or this computer
+function choose(s) {
+  view('choose');
+  $('address').value = s.address || '';
+  $('local-home').textContent = s.home;
+  $('choose-error').hidden = !s.error;
+  $('choose-error').textContent = s.error || '';
+  $('connect').disabled = !!s.busy;
+  $('local').disabled = !!s.busy;
+  $('connect').textContent = s.busy ? 'Checking…' : 'Connect';
+  if (!s.busy) $('address').focus();
+}
+$('connect-form').onsubmit = (e) => { e.preventDefault(); send('connect', { address: $('address').value }); };
+$('local').onclick = () => send('local');
+
+// A start or a check under way; pct is null when there's no measure of it
+function progress(title, message, pct) {
+  view('progress');
+  $('progress-title').textContent = title;
+  $('progress-message').textContent = message || '';
+  $('bar').classList.toggle('indeterminate', pct === null || pct === undefined);
+  $('bar').firstElementChild.style.width = pct === null || pct === undefined ? '' : `${pct}%`;
+}
+
+function line(text) {
+  const log = $('log');
+  log.textContent += (log.textContent ? '\n' : '') + text;
+  log.scrollTop = log.scrollHeight;
+  if (!$('progress').hidden || !$('message').hidden) $('log-box').hidden = false;
+}
+
+function clearLog() { $('log').textContent = ''; $('log-box').hidden = true; }
+
+// actions: [{label, action, primary}] for the app, or [{label, href}] for a web page
+function message(s) {
+  view('message');
+  $('message-title').textContent = s.title;
+  $('message-text').textContent = s.text || '';
+  $('message-text').className = s.error ? 'error' : '';
+  $('message-note').textContent = s.note || '';
+  const row = $('message-actions');
+  row.replaceChildren();
+  (s.actions || []).forEach((a) => {
+    let node;
+    if (a.href) {
+      node = Object.assign(document.createElement('a'), { href: a.href, textContent: a.label, className: 'button' });
+    } else {
+      node = Object.assign(document.createElement('button'), { textContent: a.label, onclick: () => send(a.action) });
+    }
+    if (a.primary) node.classList.add('primary');
+    row.append(node);
+  });
+  if (s.error) $('log-box').open = true;
+}
+
+function admin(s) {
+  view('admin');
+  $('admin-error').hidden = !s.error;
+  $('admin-error').textContent = s.error || '';
+  $('admin-go').disabled = !!s.busy;
+  $('admin-go').textContent = s.busy ? 'Creating…' : 'Continue';
+  if (!s.busy) $('email').focus();
+}
+$('admin-form').onsubmit = (e) => { e.preventDefault(); send('admin', { email: $('email').value }); };
+$('admin-skip').onclick = (e) => { e.preventDefault(); send('skipAdmin'); };
+</script>
+</body>
+</html>

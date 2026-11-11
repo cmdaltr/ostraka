@@ -1,0 +1,25 @@
+.wordmark {
+  display: inline-flex;
+  gap: 3px;
+}
+.wordmark span {
+  display: grid;
+  place-items: center;
+  font: 600 var(--wm-size) / 1 var(--font-mono);
+  width: calc(var(--wm-size) * 1.45);
+  height: calc(var(--wm-size) * 1.8);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  /* the split between the upper and lower flap */
+  background: linear-gradient(180deg, var(--surface) 0 49%, var(--line) 49% 51%, var(--raised) 51% 100%);
+}
+.wordmark-sm {
+  --wm-size: 12px;
+}
+.wordmark-md {
+  --wm-size: 16px;
+}
+.wordmark-lg {
+  --wm-size: 28px;
+}

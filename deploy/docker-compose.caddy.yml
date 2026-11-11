@@ -1,0 +1,26 @@
+# HTTPS in front of Ostraka, added by `deploy/linux/install.sh --caddy`: it sets COMPOSE_FILE in .env to
+# docker-compose.yml plus this file, so every `docker compose` in the tree includes it.
+#
+# `caddy reverse-proxy` rather than a Caddyfile: there's nothing to bind-mount, so SELinux hosts need
+# no relabelling, and the site is just OSTRAKA_PUBLIC_URL. Caddy keeps the Host header and adds
+# X-Forwarded-For and -Proto; certificates and its CA live in the caddy_data volume.
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    # OSTRAKA_CADDY_CERTS is --internal-certs for Caddy's own CA, empty for Let's Encrypt
+    command: caddy reverse-proxy --from ${OSTRAKA_PUBLIC_URL:?set OSTRAKA_PUBLIC_URL in .env} --to web:8080 ${OSTRAKA_CADDY_CERTS:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:

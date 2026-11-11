@@ -1,0 +1,724 @@
+#!/usr/bin/env bash
+# ost: the Ostraka responder client. Declare an incident, push IOCs and host details, comment and
+# list tasks from a terminal on the machine you're working on, with an ost_ API token.
+#
+# Runs on a stock macOS (Bash 3.2) or Linux: curl, plus jq or Python 3 for JSON. No arrays-of-arrays,
+# no associative arrays, no ${x,,}: Bash 3.2 has none of them.
+
+set -euo pipefail
+
+OST_VERSION="0.1.0"
+REF_RE='^(OST|HNT)-[0-9]{4}-[0-9]{3,}$'
+TOKEN_RE='^ost_[A-Za-z0-9_-]+$'
+SEVERITIES="critical high medium low"
+TLPS="red amber+strict amber green clear"
+VERDICTS="unknown suspicious malicious benign"
+
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ostraka"
+CONFIG_FILE="$CONFIG_DIR/client"
+
+usage() {
+    cat <<'EOF'
+ost: the Ostraka responder client
+
+Usage:
+  ost login [URL]                       save the server and an API token (asked for, never echoed)
+  ost logout                            forget them
+  ost whoami [--json]                   who the token belongs to
+  ost incidents [--status open|closed] [--hunts] [--json]
+  ost declare TITLE --severity S [--tlp T] [--summary TEXT] [--tag T]...
+  ost ioc add REF [VALUE...] [--verdict V] [--note TEXT] [--tag T]...
+                                        no VALUE (or -): one per line from stdin, so a list pastes
+  ost host add REF [--hostname H] [--ip IP] [--os OS] [--user U] [--criticality S]
+                   [--patient-zero] [--note TEXT]
+                                        anything not given is read from this machine
+  ost comment REF [TEXT...]             no TEXT: the comment is read from stdin
+  ost tasks [REF] [--mine] [--json]     no REF: your tasks and your team's queue across incidents
+  ost version
+
+REF is an incident or hunt reference such as OST-2026-001 or HNT-2026-003.
+Severity: critical, high, medium, low. TLP: red, amber+strict, amber (default), green, clear.
+
+Settings: OSTRAKA_URL and OSTRAKA_TOKEN (an ost_ token from Profile -> API tokens) override the
+file `ost login` writes (~/.config/ostraka/client, mode 600). OSTRAKA_CA_BUNDLE trusts a private CA,
+such as Caddy's own. Plain http:// is refused for anything but this computer unless
+OSTRAKA_ALLOW_HTTP=1.
+
+Exit status: 0 done, 1 failed, 2 usage, 3 the token wasn't accepted (401), 4 not allowed (403),
+5 conflict (409).
+EOF
+}
+
+die() {
+    printf 'ost: %s\n' "$1" >&2
+    exit "${2:-1}"
+}
+
+usage_error() {
+    printf 'ost: %s\n' "$1" >&2
+    printf "Run 'ost help' for usage.\n" >&2
+    exit 2
+}
+
+lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+upper() { printf '%s' "$1" | tr '[:lower:]' '[:upper:]'; }
+
+in_list() {
+    local word
+    for word in $2; do
+        [ "$word" = "$1" ] && return 0
+    done
+    return 1
+}
+
+# ---- JSON: jq when it's there, otherwise Python 3 -------------------------------------------------
+
+JSON_TOOL="${OSTRAKA_JSON:-}"
+
+pick_json() {
+    [ -n "$JSON_TOOL" ] && return 0
+    if command -v jq >/dev/null 2>&1; then
+        JSON_TOOL=jq
+    elif command -v python3 >/dev/null 2>&1; then
+        JSON_TOOL=python3
+    else
+        die "ost needs jq or Python 3 to read the server's answers. Install either one."
+    fi
+}
+
+# Python runs isolated (-I) so a stray json.py in the current directory is never imported.
+py() { python3 -I -c "$@"; }
+
+# A string as a JSON literal, from stdin so long comments don't go through argv.
+j_str() {
+    pick_json
+    if [ "$JSON_TOOL" = jq ]; then
+        printf '%s' "$1" | jq -Rs .
+    else
+        printf '%s' "$1" | py 'import json,sys; sys.stdout.write(json.dumps(sys.stdin.read()))'
+    fi
+}
+
+# A field of the JSON object on stdin, by dotted path; empty when missing or null.
+j_field() {
+    pick_json
+    if [ "$JSON_TOOL" = jq ]; then
+        jq -r --arg p "$1" 'getpath($p | split(".")) // empty | tostring' 2>/dev/null || true
+    else
+        py '
+import json, sys
+try:
+    v = json.load(sys.stdin)
+    for k in sys.argv[1].split("."):
+        v = v.get(k) if isinstance(v, dict) else None
+except Exception:
+    v = None
+if v is not None:
+    sys.stdout.write(v if isinstance(v, str) else json.dumps(v))
+' "$1" || true
+    fi
+}
+
+# Tab-separated rows from the JSON array on stdin, one column per dotted path given.
+j_rows() {
+    pick_json
+    local paths
+    paths=$(IFS=,; printf '%s' "$*")
+    if [ "$JSON_TOOL" = jq ]; then
+        jq -r --arg ps "$paths" '
+            ($ps | split(",")) as $p
+            | .[] as $r
+            | [$p[] as $k | ($r | getpath($k | split(".")) // "" | tostring | gsub("[\t\r\n]"; " "))]
+            | join("\t")'
+    else
+        py '
+import json, sys
+paths = sys.argv[1].split(",")
+for row in json.load(sys.stdin):
+    cells = []
+    for p in paths:
+        v = row
+        for k in p.split("."):
+            v = v.get(k) if isinstance(v, dict) else None
+        v = "" if v is None else v if isinstance(v, str) else json.dumps(v)
+        cells.append(v.replace("\t", " ").replace("\r", " ").replace("\n", " "))
+    print("\t".join(cells))
+' "$paths"
+    fi
+}
+
+# What went wrong, from a FastAPI error body: `detail` as text, or a 422's list of field errors.
+j_detail() {
+    pick_json
+    if [ "$JSON_TOOL" = jq ]; then
+        jq -r '
+            if (.detail | type) == "string" then .detail
+            elif (.detail | type) == "array" then
+                [.detail[] | (((.loc // []) | map(tostring) | .[1:] | join(".")) as $f
+                 | (if $f == "" then "" else $f + ": " end) + (.msg // ""))] | join("; ")
+            else empty end' 2>/dev/null || true
+    else
+        py '
+import json, sys
+try:
+    d = json.load(sys.stdin).get("detail")
+except Exception:
+    d = None
+if isinstance(d, str):
+    sys.stdout.write(d)
+elif isinstance(d, list):
+    out = []
+    for e in d:
+        f = ".".join(str(x) for x in (e.get("loc") or [])[1:])
+        out.append((f + ": " if f else "") + str(e.get("msg", "")))
+    sys.stdout.write("; ".join(out))
+' || true
+    fi
+}
+
+# Columns padded to the widest cell, the last one left as it is (usually a title).
+table() {
+    awk -F '\t' '
+        { rows[NR] = $0; if (NF > cols) cols = NF
+          for (i = 1; i < NF; i++) if (length($i) > w[i]) w[i] = length($i) }
+        END {
+            for (r = 1; r <= NR; r++) {
+                n = split(rows[r], c, "\t"); line = ""
+                for (i = 1; i <= n; i++) line = line (i < n ? sprintf("%-" w[i] "s  ", c[i]) : c[i])
+                print line
+            }
+        }'
+}
+
+# ---- settings -------------------------------------------------------------------------------------
+
+load_config() {
+    local file_url="" file_token="" key value
+    if [ -r "$CONFIG_FILE" ]; then
+        # Read as key=value, never sourced: the file is data, not a script.
+        while IFS='=' read -r key value || [ -n "$key" ]; do
+            case "$key" in
+                url) file_url=$value ;;
+                token) file_token=$value ;;
+            esac
+        done <"$CONFIG_FILE"
+    fi
+    OSTRAKA_URL="${OSTRAKA_URL:-$file_url}"
+    OSTRAKA_TOKEN="${OSTRAKA_TOKEN:-$file_token}"
+    OSTRAKA_URL="${OSTRAKA_URL%/}"
+}
+
+check_url() {
+    local url=$1 host
+    case "$url" in
+        https://*) return 0 ;;
+        http://*)
+            host=${url#http://}
+            host=${host%%[/?#]*}
+            # http://127.0.0.1:1@evil.example/ is evil.example with a user name: curl would send the
+            # token there in clear. No Ostraka address has user info, so refuse it outright.
+            case "$host" in
+                *@*) die "$url has user info (the part before @) in it: curl would connect to what follows the @ and send the token there unencrypted. Give the server's address alone." ;;
+            esac
+            host=${host%:*}
+            case "$host" in
+                127.0.0.1 | localhost | "[::1]") return 0 ;;
+            esac
+            [ "${OSTRAKA_ALLOW_HTTP:-}" = 1 ] && return 0
+            die "$url is plain HTTP: the token would cross the network unencrypted. Use the server's https:// address (or set OSTRAKA_ALLOW_HTTP=1 if you really mean it)."
+            ;;
+        *) die "The server address must start with https:// (got '$url')." 2 ;;
+    esac
+}
+
+need_config() {
+    load_config
+    [ -n "$OSTRAKA_URL" ] || die "No server set. Run 'ost login', or set OSTRAKA_URL and OSTRAKA_TOKEN." 2
+    [ -n "$OSTRAKA_TOKEN" ] || die "No API token set. Run 'ost login', or set OSTRAKA_TOKEN." 2
+    check_url "$OSTRAKA_URL"
+    [[ $OSTRAKA_TOKEN =~ $TOKEN_RE ]] ||
+        die "That isn't an Ostraka API token (they start ost_). Make one under Profile -> API tokens." 2
+}
+
+# ---- HTTP -----------------------------------------------------------------------------------------
+
+RESP_CODE=""
+RESP_BODY=""
+
+# The token reaches curl through a config on a file descriptor, never on its command line, where
+# `ps` and process accounting would show it to anyone on the machine.
+auth_config() {
+    [ -n "${OSTRAKA_TOKEN:-}" ] && printf 'header = "Authorization: Bearer %s"\n' "$OSTRAKA_TOKEN"
+    return 0
+}
+
+# api METHOD PATH [BODY]: sets RESP_CODE and RESP_BODY. RESP_CODE is 000 when nothing answered.
+api() {
+    local method=$1 path=$2 body=${3-} out rc=0
+    # -q first: ignore ~/.curlrc, which could add verbose tracing that prints headers.
+    local args=(-q -sS -X "$method" -H "Accept: application/json" -A "ost/$OST_VERSION"
+        --connect-timeout 10 --max-time 120 -w '\n%{http_code}')
+    [ -n "${OSTRAKA_CA_BUNDLE:-}" ] && args+=(--cacert "$OSTRAKA_CA_BUNDLE")
+    [ -n "$body" ] && args+=(-H "Content-Type: application/json" --data-binary @-)
+    out=$(printf '%s' "$body" | curl "${args[@]}" -K <(auth_config) "$OSTRAKA_URL$path") || rc=$?
+    RESP_CODE=${out##*$'\n'}
+    if [ "$out" = "$RESP_CODE" ]; then RESP_BODY=""; else RESP_BODY=${out%$'\n'*}; fi
+    if [ "$rc" -ne 0 ] && [ "${RESP_CODE:-000}" = 000 ]; then
+        RESP_CODE=000
+    fi
+}
+
+ok() { case "$RESP_CODE" in 2??) return 0 ;; esac; return 1; }
+
+# What went wrong with the last request, as a sentence (PROBLEM_MSG) and the exit status it maps to
+# (PROBLEM_EXIT). Set in this shell rather than printed, so callers needn't run it in a subshell.
+PROBLEM_MSG=""
+PROBLEM_EXIT=1
+problem() {
+    local detail
+    detail=$(printf '%s' "$RESP_BODY" | j_detail)
+    PROBLEM_EXIT=1
+    case "$RESP_CODE" in
+        000) PROBLEM_MSG="Couldn't reach $OSTRAKA_URL. Check the address and that the server is running." ;;
+        401)
+            PROBLEM_EXIT=3
+            PROBLEM_MSG="The server didn't accept your token${detail:+ ($detail)}. It may have been revoked or have expired: make a new one under Profile -> API tokens, then run 'ost login'."
+            ;;
+        403)
+            PROBLEM_EXIT=4
+            case "$detail" in
+                *read-only*) PROBLEM_MSG="This token is read-only (an MCP token). Make a full one under Profile -> API tokens." ;;
+                *) PROBLEM_MSG="Not allowed: ${detail:-you do not have permission to do that.}" ;;
+            esac
+            ;;
+        404) PROBLEM_MSG="${detail:-Not found.}" ;;
+        409)
+            PROBLEM_EXIT=5
+            PROBLEM_MSG="Conflict: ${detail:-someone changed it first. Fetch it again and retry.}"
+            ;;
+        422) PROBLEM_MSG="The server refused that: ${detail:-check the values given.}" ;;
+        429) PROBLEM_MSG="${detail:-Too many requests; try again shortly.}" ;;
+        5??) PROBLEM_MSG="The server had a problem (HTTP $RESP_CODE)${detail:+: $detail}." ;;
+        *) PROBLEM_MSG="Unexpected answer (HTTP $RESP_CODE)${detail:+: $detail}." ;;
+    esac
+}
+
+need_ok() {
+    ok && return 0
+    problem
+    die "$PROBLEM_MSG" "$PROBLEM_EXIT"
+}
+
+# REF -> the incident's id, through GET /api/incidents/by-ref.
+INCIDENT_ID=""
+INCIDENT_REF=""
+resolve_ref() {
+    local ref
+    ref=$(upper "${1#\#}")
+    [[ $ref =~ $REF_RE ]] || usage_error "'$1' isn't an incident or hunt reference (like OST-2026-001)."
+    api GET "/api/incidents/by-ref/$ref"
+    if [ "$RESP_CODE" = 404 ]; then
+        die "No incident $ref, or not one you can see."
+    fi
+    need_ok
+    INCIDENT_ID=$(printf '%s' "$RESP_BODY" | j_field id)
+    INCIDENT_REF=$ref
+    [ -n "$INCIDENT_ID" ] || die "The server's answer for $ref had no id."
+}
+
+# ---- commands -------------------------------------------------------------------------------------
+
+cmd_login() {
+    local url="${1:-}" token="" name email existing_url="" answer=""
+    [ $# -le 1 ] || usage_error "login takes at most a server address."
+    if [ -r "$CONFIG_FILE" ]; then
+        existing_url=$(sed -n 's/^url=//p' "$CONFIG_FILE" | head -1)
+    fi
+    if [ -z "$url" ]; then
+        url="${OSTRAKA_URL:-$existing_url}"
+        if [ -t 0 ]; then
+            read -r -p "Server address${url:+ [$url]}: " answer || true
+            url="${answer:-$url}"
+        fi
+    fi
+    [ -n "$url" ] || usage_error "Give the server's address, e.g. ost login https://ostraka.example.org"
+    url="${url%/}"
+    check_url "$url"
+    OSTRAKA_URL=$url
+    OSTRAKA_TOKEN=""
+
+    # Ask the server what it is before handing it a token.
+    api GET /api/meta
+    if ! ok || [ "$(printf '%s' "$RESP_BODY" | j_field name)" != "Ostraka" ]; then
+        if [ "$RESP_CODE" = 000 ]; then need_ok; fi
+        die "$url doesn't answer as an Ostraka server."
+    fi
+
+    if [ -t 0 ]; then
+        read -r -s -p "API token (Profile -> API tokens; not shown): " token || true
+        printf '\n' >&2
+    else
+        IFS= read -r token || true
+    fi
+    token=$(printf '%s' "$token" | tr -d '[:space:]')
+    [[ $token =~ $TOKEN_RE ]] || die "That isn't an Ostraka API token (they start ost_)." 2
+    OSTRAKA_TOKEN=$token
+
+    api GET /api/users/me
+    need_ok
+    name=$(printf '%s' "$RESP_BODY" | j_field name)
+    email=$(printf '%s' "$RESP_BODY" | j_field email)
+
+    (
+        umask 077
+        mkdir -p "$CONFIG_DIR"
+        chmod 700 "$CONFIG_DIR"
+        printf 'url=%s\ntoken=%s\n' "$url" "$token" >"$CONFIG_FILE.tmp"
+        chmod 600 "$CONFIG_FILE.tmp"
+        mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+    )
+    printf 'Signed in to %s as %s <%s>. Saved to %s.\n' "$url" "$name" "$email" "$CONFIG_FILE"
+}
+
+cmd_logout() {
+    if [ -e "$CONFIG_FILE" ]; then
+        rm -f "$CONFIG_FILE"
+        printf 'Removed %s. The token still works until you revoke it under Profile -> API tokens.\n' "$CONFIG_FILE"
+    else
+        printf 'Nothing saved.\n'
+    fi
+}
+
+cmd_whoami() {
+    local json=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --json) json=1 ;;
+            *) usage_error "whoami: unknown option '$1'." ;;
+        esac
+        shift
+    done
+    need_config
+    api GET /api/users/me
+    need_ok
+    if [ "$json" = 1 ]; then
+        printf '%s\n' "$RESP_BODY"
+        return
+    fi
+    local name email role team
+    name=$(printf '%s' "$RESP_BODY" | j_field name)
+    email=$(printf '%s' "$RESP_BODY" | j_field email)
+    role=$(printf '%s' "$RESP_BODY" | j_field role)
+    team=$(printf '%s' "$RESP_BODY" | j_field team.name)
+    printf '%s <%s>\n%s%s on %s\n' "$name" "$email" "$role" "${team:+, $team}" "$OSTRAKA_URL"
+}
+
+cmd_incidents() {
+    local json=0 status=open kind=incident
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --json) json=1 ;;
+            --status) status=$(lower "${2:?--status needs open or closed}"); shift ;;
+            --status=*) status=$(lower "${1#*=}") ;;
+            --hunts) kind=hunt ;;
+            *) usage_error "incidents: unknown option '$1'." ;;
+        esac
+        shift
+    done
+    in_list "$status" "open closed" || usage_error "--status is open or closed."
+    need_config
+    api GET "/api/incidents?status=$status&kind=$kind"
+    need_ok
+    if [ "$json" = 1 ]; then
+        printf '%s\n' "$RESP_BODY"
+        return
+    fi
+    local rows
+    rows=$(printf '%s' "$RESP_BODY" | j_rows ref severity tlp phase commander.name title)
+    if [ -z "$rows" ]; then
+        printf 'No %s %ss you can see.\n' "$status" "$kind"
+        return
+    fi
+    { printf 'REF\tSEVERITY\tTLP\tPHASE\tCOMMANDER\tTITLE\n'; printf '%s\n' "$rows"; } | table
+}
+
+norm_tlp() {
+    local t
+    t=$(lower "$1")
+    t=${t#tlp:}
+    printf '%s' "$t"
+}
+
+cmd_declare() {
+    local title="" severity="" tlp=amber summary="" tags=() tag_json="" t body ref
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -s | --severity) severity=$(lower "${2:?--severity needs a value}"); shift ;;
+            --severity=*) severity=$(lower "${1#*=}") ;;
+            -t | --tlp) tlp=$(norm_tlp "${2:?--tlp needs a value}"); shift ;;
+            --tlp=*) tlp=$(norm_tlp "${1#*=}") ;;
+            --summary) summary=${2:?--summary needs text}; shift ;;
+            --summary=*) summary=${1#*=} ;;
+            --tag) tags+=("${2:?--tag needs a value}"); shift ;;
+            --tag=*) tags+=("${1#*=}") ;;
+            -*) usage_error "declare: unknown option '$1'." ;;
+            *) title="${title:+$title }$1" ;;
+        esac
+        shift
+    done
+    [ -n "$title" ] || usage_error "declare needs a title: ost declare \"Ransom note on FS01\" --severity high"
+    [ -n "$severity" ] || usage_error "declare needs --severity: one of $SEVERITIES."
+    in_list "$severity" "$SEVERITIES" || usage_error "Severity is one of: $SEVERITIES."
+    in_list "$tlp" "$TLPS" || usage_error "TLP is one of: $TLPS."
+    need_config
+    for t in ${tags[@]+"${tags[@]}"}; do
+        tag_json="${tag_json:+$tag_json,}$(j_str "$t")"
+    done
+    body=$(printf '{"kind":"incident","title":%s,"severity":%s,"tlp":%s,"summary":%s,"tags":[%s]}' \
+        "$(j_str "$title")" "$(j_str "$severity")" "$(j_str "$tlp")" "$(j_str "$summary")" "$tag_json")
+    api POST /api/incidents "$body"
+    need_ok
+    ref=$(printf '%s' "$RESP_BODY" | j_field ref)
+    printf 'Declared %s: %s (%s, TLP:%s)\n%s/incidents/%s\n' \
+        "$ref" "$title" "$severity" "$(upper "$tlp")" "$OSTRAKA_URL" "$ref"
+}
+
+cmd_ioc() {
+    local sub=${1:-}
+    [ "$sub" = add ] || usage_error "Usage: ost ioc add REF [VALUE...] (or values on stdin, one per line)."
+    shift
+    [ $# -ge 1 ] || usage_error "ioc add needs an incident reference."
+    local ref=$1 verdict=unknown note="" tags=() values=() from_stdin=0 tag_json="" t
+    shift
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --verdict) verdict=$(lower "${2:?--verdict needs a value}"); shift ;;
+            --verdict=*) verdict=$(lower "${1#*=}") ;;
+            --note) note=${2:?--note needs text}; shift ;;
+            --note=*) note=${1#*=} ;;
+            --tag) tags+=("${2:?--tag needs a value}"); shift ;;
+            --tag=*) tags+=("${1#*=}") ;;
+            -) from_stdin=1 ;;
+            --) shift; values+=("$@"); break ;;
+            -*) usage_error "ioc add: unknown option '$1'." ;;
+            *) values+=("$1") ;;
+        esac
+        shift
+    done
+    in_list "$verdict" "$VERDICTS" || usage_error "Verdict is one of: $VERDICTS."
+    [ ${#values[@]} -eq 0 ] && from_stdin=1
+    if [ "$from_stdin" = 1 ]; then
+        [ -t 0 ] && printf 'Paste indicators, one per line, then Ctrl-D:\n' >&2
+        local line
+        while IFS= read -r line || [ -n "$line" ]; do
+            line=$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            # Blank lines and # comments let a pasted list keep its headings.
+            case "$line" in "" | \#*) continue ;; esac
+            values+=("$line")
+        done
+    fi
+    [ ${#values[@]} -gt 0 ] || usage_error "No indicators given."
+    need_config
+    resolve_ref "$ref"
+    for t in ${tags[@]+"${tags[@]}"}; do
+        tag_json="${tag_json:+$tag_json,}$(j_str "$t")"
+    done
+
+    local value body added=0 failed=0 oref kind shown last_exit=0
+    for value in "${values[@]}"; do
+        # The server detects the type and refangs (hxxp, [.]), so values go as written.
+        body=$(printf '{"value":%s,"verdict":%s,"note":%s,"tags":[%s]}' \
+            "$(j_str "$value")" "$(j_str "$verdict")" "$(j_str "$note")" "$tag_json")
+        api POST "/api/incidents/$INCIDENT_ID/observables" "$body"
+        if ok; then
+            added=$((added + 1))
+            oref=$(printf '%s' "$RESP_BODY" | j_field ref)
+            kind=$(printf '%s' "$RESP_BODY" | j_field kind)
+            shown=$(printf '%s' "$RESP_BODY" | j_field value)
+            printf '%s\t%s\t%s\n' "$oref" "$kind" "${shown:-$value}"
+        else
+            failed=$((failed + 1))
+            problem
+            last_exit=$PROBLEM_EXIT
+            printf 'ost: %s: %s\n' "$value" "$PROBLEM_MSG" >&2
+            # An auth failure won't fix itself on the next line.
+            case "$RESP_CODE" in 000 | 401 | 403) break ;; esac
+        fi
+    done
+    printf 'Added %d to %s%s.\n' "$added" "$INCIDENT_REF" "$([ "$failed" -gt 0 ] && printf ', %d failed' "$failed")" >&2
+    [ "$failed" -eq 0 ] || exit "$last_exit"
+}
+
+# ---- this machine ---------------------------------------------------------------------------------
+
+this_os() {
+    if [ "$(uname -s)" = Darwin ] && command -v sw_vers >/dev/null 2>&1; then
+        printf '%s %s' "$(sw_vers -productName)" "$(sw_vers -productVersion)"
+    elif [ -r /etc/os-release ]; then
+        # shellcheck source=/dev/null
+        (. /etc/os-release && printf '%s' "${PRETTY_NAME:-$NAME}")
+    else
+        uname -sr
+    fi
+}
+
+# Every address but loopback and link-local IPv6, one per line.
+this_ips() {
+    if command -v ip >/dev/null 2>&1; then
+        ip -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1
+    elif command -v ifconfig >/dev/null 2>&1; then
+        ifconfig 2>/dev/null | awk '$1 == "inet" || $1 == "inet6" {print $2}' | sed 's/%.*//'
+    fi | grep -v -E '^(127\.|::1$|fe80:)' | awk 'NF && !seen[$0]++' || true
+}
+
+this_user() {
+    # Under sudo, the person at the keyboard rather than root.
+    printf '%s' "${SUDO_USER:-$(id -un)}"
+}
+
+cmd_host() {
+    local sub=${1:-}
+    [ "$sub" = add ] || usage_error "Usage: ost host add REF [--hostname H] [--ip IP] [--os OS] [--user U]"
+    shift
+    [ $# -ge 1 ] || usage_error "host add needs an incident reference."
+    local ref=$1 hostname="" ip="" os="" user="" criticality=medium p0=false note="" given=0 ips="" ipjson
+    shift
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --hostname) hostname=${2:?--hostname needs a value}; given=1; shift ;;
+            --hostname=*) hostname=${1#*=}; given=1 ;;
+            --ip) ip=${2:?--ip needs a value}; shift ;;
+            --ip=*) ip=${1#*=} ;;
+            --os) os=${2:?--os needs a value}; shift ;;
+            --os=*) os=${1#*=} ;;
+            --user) user=${2:?--user needs a value}; shift ;;
+            --user=*) user=${1#*=} ;;
+            --criticality) criticality=$(lower "${2:?--criticality needs a value}"); shift ;;
+            --criticality=*) criticality=$(lower "${1#*=}") ;;
+            --patient-zero) p0=true ;;
+            --note) note=${2:?--note needs text}; shift ;;
+            --note=*) note=${1#*=} ;;
+            *) usage_error "host add: unknown option '$1'." ;;
+        esac
+        shift
+    done
+    in_list "$criticality" "$SEVERITIES" || usage_error "Criticality is one of: $SEVERITIES."
+    # A host named on the command line is some other machine: don't fill it in with this one's details.
+    if [ "$given" = 0 ]; then
+        hostname=$(hostname 2>/dev/null || uname -n)
+        [ -n "$os" ] || os=$(this_os)
+        [ -n "$user" ] || user=$(this_user)
+        ips=$(this_ips)
+        [ -n "$ip" ] || ip=$(printf '%s\n' "$ips" | head -1)
+        local extra
+        extra="Added with ost from the host itself at $(date -u +%Y-%m-%dT%H:%M:%SZ)."
+        if [ "$(printf '%s\n' "$ips" | grep -c .)" -gt 1 ]; then
+            extra="$extra Addresses: $(printf '%s\n' "$ips" | paste -sd, - | sed 's/,/, /g')."
+        fi
+        note="${note:+$note
+
+}$extra"
+    fi
+    [ -n "$hostname" ] || usage_error "No hostname: give --hostname."
+    need_config
+    resolve_ref "$ref"
+    ipjson=$(j_str "$ip")
+    local body aref
+    body=$(printf '{"hostname":%s,"ip":%s,"os":%s,"primary_user":%s,"criticality":%s,"is_patient_zero":%s,"notes":%s}' \
+        "$(j_str "$hostname")" "$ipjson" "$(j_str "$os")" "$(j_str "$user")" "$(j_str "$criticality")" "$p0" "$(j_str "$note")")
+    api POST "/api/incidents/$INCIDENT_ID/assets" "$body"
+    need_ok
+    aref=$(printf '%s' "$RESP_BODY" | j_field ref)
+    printf 'Added %s to %s: %s%s%s%s\n' "$aref" "$INCIDENT_REF" "$hostname" "${ip:+, $ip}" "${os:+, $os}" "${user:+, $user}"
+}
+
+cmd_comment() {
+    [ $# -ge 1 ] || usage_error "Usage: ost comment REF TEXT (or the text on stdin)."
+    local ref=$1 text=""
+    shift
+    if [ $# -gt 0 ]; then
+        text="$*"
+    else
+        [ -t 0 ] && printf 'Write the comment, then Ctrl-D:\n' >&2
+        text=$(cat)
+    fi
+    [ -n "$(printf '%s' "$text" | tr -d '[:space:]')" ] || usage_error "The comment is empty."
+    need_config
+    resolve_ref "$ref"
+    api POST "/api/incidents/$INCIDENT_ID/comments" "$(printf '{"body":%s}' "$(j_str "$text")")"
+    need_ok
+    printf 'Commented on %s.\n' "$INCIDENT_REF"
+}
+
+cmd_tasks() {
+    local ref="" mine=0 json=0 me rows
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --mine) mine=1 ;;
+            --json) json=1 ;;
+            -*) usage_error "tasks: unknown option '$1'." ;;
+            *) [ -z "$ref" ] || usage_error "tasks takes one reference."; ref=$1 ;;
+        esac
+        shift
+    done
+    need_config
+    if [ "$mine" = 1 ]; then
+        api GET /api/users/me
+        need_ok
+        me=$(printf '%s' "$RESP_BODY" | j_field id)
+    fi
+    if [ -n "$ref" ]; then
+        resolve_ref "$ref"
+        api GET "/api/incidents/$INCIDENT_ID/tasks"
+    else
+        api GET /api/tasks/mine
+    fi
+    need_ok
+    if [ "$json" = 1 ]; then
+        printf '%s\n' "$RESP_BODY"
+        return
+    fi
+    if [ -n "$ref" ]; then
+        rows=$(printf '%s' "$RESP_BODY" | j_rows assignee.id ref status assignee.name team.name due_at title)
+    else
+        rows=$(printf '%s' "$RESP_BODY" | j_rows assignee.id ref incident.ref status assignee.name team.name due_at title)
+    fi
+    # --mine keeps what's assigned to you, dropping the team queue; the id column then goes.
+    if [ "$mine" = 1 ]; then
+        rows=$(printf '%s\n' "$rows" | awk -F '\t' -v me="$me" '$1 == me')
+    fi
+    # ISO due dates trimmed to the minute: 2026-11-12T09:30:00Z -> 2026-11-12 09:30
+    local tab=$'\t'
+    rows=$(printf '%s\n' "$rows" | cut -f2- | sed -e '/^$/d' -e "s/\([0-9]\{4\}-[0-9][0-9]-[0-9][0-9]\)T\([0-9][0-9]:[0-9][0-9]\)[^$tab]*/\1 \2/g")
+    if [ -z "$rows" ]; then
+        printf 'No tasks%s.\n' "$([ "$mine" = 1 ] && printf ' assigned to you')"
+        return
+    fi
+    if [ -n "$ref" ]; then
+        { printf 'TASK\tSTATUS\tASSIGNEE\tTEAM\tDUE\tTITLE\n'; printf '%s\n' "$rows"; } | table
+    else
+        { printf 'TASK\tINCIDENT\tSTATUS\tASSIGNEE\tTEAM\tDUE\tTITLE\n'; printf '%s\n' "$rows"; } | table
+    fi
+}
+
+main() {
+    command -v curl >/dev/null 2>&1 || die "ost needs curl."
+    local cmd=${1:-help}
+    [ $# -gt 0 ] && shift
+    case "$cmd" in
+        login) cmd_login "$@" ;;
+        logout) cmd_logout "$@" ;;
+        whoami) cmd_whoami "$@" ;;
+        incidents) cmd_incidents "$@" ;;
+        declare) cmd_declare "$@" ;;
+        ioc) cmd_ioc "$@" ;;
+        host) cmd_host "$@" ;;
+        comment) cmd_comment "$@" ;;
+        tasks) cmd_tasks "$@" ;;
+        version | --version) printf 'ost %s\n' "$OST_VERSION" ;;
+        help | -h | --help) usage ;;
+        *) usage_error "Unknown command '$cmd'." ;;
+    esac
+}
+
+main "$@"

@@ -1,0 +1,35 @@
+.status-hero {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+}
+.status-hero p {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--muted);
+}
+.status-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  max-width: 520px;
+}
+.status-row {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+.status-row + .status-row {
+  border-top: 1px solid var(--line);
+}
+.good {
+  color: var(--ok);
+}
+.bad {
+  color: var(--sev-critical);
+}
+.muted {
+  color: var(--muted);
+}

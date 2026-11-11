@@ -1,0 +1,4 @@
+# Shell scripts run on Linux and macOS even from a Windows checkout: a CRLF breaks them
+*.sh text eol=lf
+ostraka text eol=lf
+clients/ost text eol=lf

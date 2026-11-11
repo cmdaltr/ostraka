@@ -1,0 +1,69 @@
+.pill {
+  display: inline-block;
+  font: 600 10.5px / 1 var(--font-mono);
+  letter-spacing: 0.04em;
+  padding: 4px 7px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+.sev-critical {
+  color: var(--sev-critical);
+  background: color-mix(in srgb, var(--sev-critical) 14%, transparent);
+}
+.sev-high {
+  color: var(--sev-high);
+  background: color-mix(in srgb, var(--sev-high) 14%, transparent);
+}
+.sev-medium {
+  color: var(--sev-medium);
+  background: color-mix(in srgb, var(--sev-medium) 14%, transparent);
+}
+.sev-low {
+  color: var(--sev-low);
+  background: color-mix(in srgb, var(--sev-low) 14%, transparent);
+}
+.tlp {
+  background: var(--tlp-ground);
+}
+.tlp-red {
+  color: var(--tlp-red);
+}
+.tlp-amber {
+  color: var(--tlp-amber);
+}
+.tlp-green {
+  color: var(--tlp-green);
+}
+.tlp-clear {
+  color: var(--tlp-clear);
+}
+
+.phase-strip {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+}
+.phase-strip li {
+  font: 500 10px / 1 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 7px 2px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.phase-strip li.done {
+  color: var(--ink);
+}
+.phase-strip li.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}

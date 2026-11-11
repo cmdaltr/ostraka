@@ -1,0 +1,288 @@
+/* Panels, fields, notices and tables: the pieces every form and list is built from */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.panel > header {
+  display: grid;
+  gap: var(--space-1);
+}
+.panel > header h2 {
+  font-size: var(--text-lg);
+}
+.panel > header p,
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.page-head h1 {
+  font-size: var(--text-2xl);
+}
+.page-head p {
+  margin: var(--space-1) 0 0;
+  color: var(--muted);
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.field > span {
+  font-weight: 500;
+  font-size: var(--text-sm);
+}
+.input,
+.field input,
+.field select {
+  font: 400 var(--text-md) / 1.4 var(--font-ui);
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 9px 11px;
+  width: 100%;
+}
+.field input:focus,
+.field select:focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 0;
+}
+.field input.code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+.check {
+  display: flex;
+  gap: var(--space-2);
+  align-items: start;
+}
+.check input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.notice {
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  border: 1px solid var(--line);
+  background: var(--raised);
+}
+.notice-error {
+  color: var(--sev-critical);
+  border-color: color-mix(in srgb, var(--sev-critical) 40%, transparent);
+  background: color-mix(in srgb, var(--sev-critical) 8%, transparent);
+}
+.notice-ok {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+  background: color-mix(in srgb, var(--ok) 8%, transparent);
+}
+
+.copy-box {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+.copy-box code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 9px 11px;
+  border-radius: var(--radius-md);
+  background: var(--raised);
+  border: 1px solid var(--line);
+}
+
+.codes {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2) var(--space-5);
+  font: 500 var(--text-lg) / 1.4 var(--font-mono);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.table th {
+  text-align: left;
+  font: 500 var(--text-xs) / 1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+.table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.table tr:last-child td {
+  border-bottom: 0;
+}
+.table .inactive td {
+  color: var(--muted);
+}
+.chip {
+  display: inline-block;
+  font: 500 var(--text-xs) / 1 var(--font-ui);
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.chip-accent {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--ink);
+}
+/* Availability: a dot before the word, so it doesn't rest on colour alone */
+.availability-available::before,
+.availability-busy::before,
+.availability-away::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+.availability-available::before {
+  background: var(--ok);
+}
+.availability-busy::before {
+  background: var(--sev-medium);
+}
+.availability-away::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--muted);
+}
+
+.auth-page {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6) var(--space-4);
+  background: var(--backdrop);
+}
+.auth-page > * {
+  position: relative;
+  z-index: 1;
+}
+.auth-card > p,
+.auth-card > .hint {
+  color: var(--backdrop-ink);
+}
+.auth-card .panel {
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.35);
+}
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  display: grid;
+  gap: var(--space-5);
+}
+.auth-card .brandmark {
+  justify-self: center;
+}
+.auth-card h1 {
+  font-size: var(--text-xl);
+  text-align: center;
+}
+.auth-card .lede {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+}
+.qr {
+  justify-self: center;
+  background: #ffffff; /* QR codes need a light ground to scan, in every theme */
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  width: 200px;
+  max-width: 100%;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.tabs button {
+  font: 500 var(--text-md) / 1 var(--font-ui);
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 10px 12px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+.tabs button:hover {
+  color: var(--ink);
+}
+.tabs button[aria-current='page'] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
