@@ -1,5 +1,5 @@
 # Dependencies
-node_modules/
+node_modules
 __pycache__/
 *.pyc
 .venv/
@@ -26,10 +26,13 @@ build/
 *.log
 logs/
 
-# Testing
+# Testing (scripts/housekeeping.sh clears these)
 .coverage
 htmlcov/
 .pytest_cache/
+test-results/
+playwright-report/
+blob-report/
 
 # OS
 .DS_Store
@@ -64,4 +67,8 @@ licences/
 # Private to this machine: never published
 CLAUDE.local.md
 .claude/snapshots/
+.claude/worktrees/
+
+# OneDrive conflict copies (scripts/housekeeping.sh moves them to the Bin)
 *.fetch
+*-MacBook.*

@@ -46,7 +46,10 @@ repository on the account.
 The install tests check what each package puts down and takes away. They don't start the stack (the
 macOS runners have no Docker, and Windows' runs Windows containers only) or open the app's window.
 
-Signing is optional and switches on with repository secrets, the same names as Rowanholt's:
+Releases ship unsigned until Ostraka earns enough to pay for certificates (Ben, 11 November 2026): on
+first launch macOS asks the user to choose Open Anyway in Privacy & Security, and Windows SmartScreen
+asks them to choose More info, then Run anyway. When that changes, signing switches on with repository
+secrets, the same names as Rowanholt's:
 
 | Secret | For |
 |---|---|
@@ -54,12 +57,10 @@ Signing is optional and switches on with repository secrets, the same names as R
 | `MACOS_CERTIFICATE_PASSWORD` | The `.p12`'s password |
 | `MACOS_SIGN_IDENTITY` | `Developer ID Application: Name (TEAMID)` |
 | `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD` | Notarisation (an app-specific password). The workflow passes them to `package.sh`, which uses them when there's no `MACOS_NOTARY_PROFILE` |
-| `WINDOWS_CERTIFICATE_PFX` | A code-signing certificate as `.pfx`, base64-encoded; `signtool` signs the MSI with it |
+| `WINDOWS_CERTIFICATE_PFX` | A code-signing certificate as `.pfx`, base64-encoded; `signtool` signs the MSI with it. Certificates issued since June 2023 keep their key on hardware or a cloud HSM and can't be exported as a `.pfx`, so Windows signing will mean replacing this step with Azure Trusted Signing or a CA's cloud signing service |
 | `WINDOWS_CERTIFICATE_PASSWORD` | The `.pfx`'s password |
 
-Without them the `.dmg` is ad-hoc signed and the `.msi` unsigned, as a local build is. The repository
-is private, so macOS and Windows minutes count at a multiple: tag a release rather than looping manual
-runs.
+Without them the `.dmg` is ad-hoc signed and the `.msi` unsigned, as a local build is.
 
 `make release VERSION=…` stays as the local build, for a release from one Mac with Docker, or to try the
 packagers before tagging (below).

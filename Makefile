@@ -1,4 +1,4 @@
-.PHONY: help env up down logs ps check test test-backend test-db test-frontend e2e test-launcher test-scripts release lint dev-backend dev-frontend
+.PHONY: help env up down logs ps housekeeping check test test-backend test-db test-frontend e2e test-launcher test-scripts release lint dev-backend dev-frontend
 
 help:
 	@echo "make env            write .env with random secrets (refuses to overwrite)"
@@ -12,6 +12,7 @@ help:
 	@echo "make test-scripts   install, release, responder client and server setup scripts"
 	@echo "make release VERSION=x.y.z [UPLOAD=1]  every package into dist/<version>/"
 	@echo "make lint           ruff and tsc"
+	@echo "make housekeeping   list test leftovers and OneDrive copies; scripts/housekeeping.sh --apply tidies"
 	@echo "make dev-backend    uvicorn with reload on :6176 (needs Postgres and Redis)"
 	@echo "make dev-frontend   Vite on :5173, proxying /api to :6176"
 
@@ -76,3 +77,7 @@ dev-backend:
 
 dev-frontend:
 	cd frontend && npm run dev
+
+# Lists what testing and OneDrive leave behind; scripts/housekeeping.sh --apply tidies it
+housekeeping:
+	@scripts/housekeeping.sh
