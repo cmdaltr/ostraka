@@ -133,7 +133,7 @@ number; what a client's brand attaches to (Ostraka: an incident); which events s
 | (seats) | 4, one an admin or team lead | Licence | Licence | `accounts.seat_refusal`: invitations, re-enabling, access for imported people, `bootstrap-admin` beside a live admin |
 | `report-branding` | Ostrakon | One brand for the installation | Yes | `reports.brands.styling_for`, and brand writes in `api/installation.py` |
 | `brand-library` | | | A brand per client, chosen per incident | `styling_for`, brand creation past the first, `api/incidents._choose_brand` |
-| `automation` | Kept, not sent | Webhooks | Webhooks | `webhooks._send_all` and the test send in `api/webhooks.py`; registering and listing are open on every edition |
+| `automation` | Kept, not sent | Webhooks; pushing to MISP | Webhooks; pushing to MISP | `webhooks._send_all` and the test send in `api/webhooks.py`; the push and connection check in `api/exports.py`. Registering webhooks and MISP settings is open on every edition, and so are the STIX, MISP and Navigator downloads |
 | `managed-service` | | | Run Ostraka for clients | A right in `COMMERCIAL-LICENSE.md`, not a switch |
 
 Webhook events come from the activity log, after the change commits (`activity.finish` →

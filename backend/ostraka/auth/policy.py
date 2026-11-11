@@ -103,3 +103,31 @@ def can_export(viewer: User, *, worked_on: bool, is_commander: bool, sensitive: 
     if worked_on or is_commander:
         return None
     return "Only people who have worked on this incident can export its reports."
+
+
+def can_export_intel(
+    viewer: User,
+    *,
+    worked_on: bool,
+    is_commander: bool,
+    sensitive: bool,
+    restricted: bool,
+    push: bool = False,
+) -> str | None:
+    """Why `viewer` may not export an incident as STIX, MISP or a Navigator layer, or push it to the
+    installation's MISP; None if they may. The reports' rule applies (`can_export`), and a TLP:RED or
+    TLP:AMBER+STRICT incident (`restricted`) goes further: it may only be downloaded, by its commander,
+    and is never pushed to another system, whoever asks."""
+    if why := can_export(viewer, worked_on=worked_on, is_commander=is_commander, sensitive=sensitive):
+        return why
+    if restricted and push:
+        return "TLP:RED and TLP:AMBER+STRICT incidents are never sent to another system."
+    if restricted and not is_commander:
+        return "TLP:RED and TLP:AMBER+STRICT incidents export for their commander only, as a download."
+    return None
+
+
+def can_manage_misp(actor: User) -> str | None:
+    """Set or remove the installation's MISP instance: admins only, since a push sends incident
+    indicators to a system outside ostraka."""
+    return None if actor.role is Role.ADMIN else "Only admins can set up MISP."
