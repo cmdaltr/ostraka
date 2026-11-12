@@ -125,7 +125,7 @@ def licence_line(signing_key):
         today = datetime.now(UTC).date()
         return licence.sign(
             signing_key,
-            licence.Licence(
+            licence.rules().licence(
                 licence_id=licence.new_id(),
                 licensee=licensee,
                 edition=licence.Edition(edition),

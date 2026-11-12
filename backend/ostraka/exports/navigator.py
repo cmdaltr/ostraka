@@ -34,21 +34,6 @@ from ostraka.observables.detect import ObservableType
 from ostraka.reports import attack
 
 DOMAIN = shared.ENTERPRISE
-# Every platform Enterprise's techniques name (Rowanholt's attack_lookup.platforms("enterprise-attack")
-# over ATT&CK v20); the bundled attack.json doesn't carry platforms
-PLATFORMS = [
-    "Containers",
-    "ESXi",
-    "IaaS",
-    "Identity Provider",
-    "Linux",
-    "Network Devices",
-    "Office Suite",
-    "PRE",
-    "SaaS",
-    "Windows",
-    "macOS",
-]
 
 
 def attack_major() -> str:
@@ -88,7 +73,9 @@ def layer(record: IntelRecord, *, leads: bool = False) -> dict[str, Any]:
         DOMAIN,
         techniques,
         attack_version=attack.VERSION or "",
-        platforms=PLATFORMS,
+        # The bundled attack.json carries no platforms, so the layer names every one ATT&CK 20.1's
+        # Enterprise techniques do (samarkand's list, the same as Rowanholt reads from its data)
+        platforms=list(shared.PLATFORMS[DOMAIN]),
         description=(
             f"{record.ref}: {record.title}. "
             + (

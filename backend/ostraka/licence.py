@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import re
 import uuid
-from dataclasses import dataclass, fields
 from datetime import datetime
 from functools import cache, lru_cache
 from pathlib import Path
@@ -47,6 +46,7 @@ from samarkand.licence import (  # noqa: F401  (re-exported: the rest of Ostraka
     REPORT_BRANDING,
     WILDCARD,
     Edition,
+    Licence,
     LicenceProblem,
     Standing,
     check_installable,
@@ -70,13 +70,6 @@ CODE_LICENCE = Path(__file__).parent / "legal" / "LICENSE"  # the Elastic Licens
 PUBLIC_KEYS: tuple[str, ...] = ("cf9e0496426f783c79180af19dd77d40d2b4ea7d7104191784c48b8d1a40cb1f",)
 
 
-@dataclass(frozen=True)
-class Licence(shared.Licence):
-    """samarkand's licence, naming ostraka unless told otherwise."""
-
-    product: str = PRODUCT
-
-
 @lru_cache(maxsize=8)
 def _rules(public_keys: tuple[str, ...], free_seats: int | None) -> shared.Rules:
     return shared.Rules(PRODUCT, public_keys, free_seats, name=NAME)
@@ -88,10 +81,6 @@ def rules() -> shared.Rules:
     return _rules(tuple(PUBLIC_KEYS), FREE_SEATS)
 
 
-def _ours(lic: shared.Licence) -> Licence:
-    return lic if isinstance(lic, Licence) else Licence(**{f.name: getattr(lic, f.name) for f in fields(lic)})
-
-
 def sign(private_key: Ed25519PrivateKey, licence: shared.Licence) -> str:
     """The licence as a line to send to the customer, as the licensor's admin script makes it."""
     head = head_of(licence)
@@ -100,7 +89,7 @@ def sign(private_key: Ed25519PrivateKey, licence: shared.Licence) -> str:
 
 def parse(text: str) -> Licence:
     """A licence, once its signature checks out against one of PUBLIC_KEYS. Raises LicenceProblem."""
-    return _ours(rules().parse(text))
+    return rules().parse(text)
 
 
 def standing(licence: shared.Licence | None, now: datetime | None = None) -> Standing:
