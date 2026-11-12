@@ -1,4 +1,4 @@
-"""Rowanholt's HTTP API, as its own clients use it (Aulë's MCP server, `src/aule_mcp/server.py`).
+"""Rowanholt's HTTP API, as its own clients use it (Smith's MCP server, `src/smith_mcp/server.py`).
 
 A Rowanholt "case" is a job (`/api/jobs/{id}`), and several jobs can share a case number
 (`/api/validate/case-id/{case}`). A row is cited as (host, artefact path, row reference, row hash):
@@ -6,9 +6,10 @@ the reference is the line number for JSON Lines and CSV, `#<index>` for a JSON a
 SHA-256 over the row's canonical JSON. A Rowanholt finding is `lead`, `confirmed` or `benign`; in
 Ostraka every one of them arrives as a lead.
 
-The best token is Rowanholt's read-only `aule-mcp` scope: Ostraka only ever reads. Rowanholt's UI
-has no address for a file or a row, so a deep link opens the job's case browser; the host, path and
-row ride along as query parameters for the day the case browser reads them.
+The best token is Rowanholt's read-only `smith-mcp` scope (`aule-mcp` and `eru-mcp` before it):
+Ostraka only ever reads. Rowanholt's UI has no address for a file or a row, so a deep link opens the
+job's case browser; the host, path and row ride along as query parameters for the day the case
+browser reads them.
 """
 
 from __future__ import annotations
@@ -40,7 +41,7 @@ _WINDOW = 60
 
 
 def cite(host: str, artefact: str, row_ref: str, row_hash: str) -> str:
-    """A row's citation, written as Aulë writes it."""
+    """A row's citation, written as Smith writes it."""
     return f"{host}: {artefact} row {row_ref}" + (f" (sha256 {row_hash[:16]})" if row_hash else "")
 
 

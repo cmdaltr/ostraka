@@ -73,7 +73,7 @@ def test_shikari_signature_is_hmac_sha256_of_the_raw_body():
     assert not shikari.signature_ok("", body, good)
 
 
-def test_citation_is_written_as_aule_writes_it():
+def test_citation_is_written_as_smith_writes_it():
     assert rowanholt.cite("DC02", "cooked/evtx/security.jsonl", "18833", "a" * 64) == (
         "DC02: cooked/evtx/security.jsonl row 18833 (sha256 " + "a" * 16 + ")"
     )

@@ -29,6 +29,7 @@ class Suite:
 
     def __init__(self) -> None:
         self.down: set[str] = set()
+        self.scope = "smith-mcp"
         self.job = {"id": JOB, "case_number": "2026-117", "status": "running", "progress": 40}
         self.findings = [
             {
@@ -71,7 +72,7 @@ class Suite:
             if path == "/api/health":
                 return httpx.Response(200, json={"status": "healthy", "timestamp": "2026-11-11T10:00:00"})
             if path == "/api/auth/me":
-                return httpx.Response(200, json={"username": "ostraka", "token": {"scope": "aule-mcp"}})
+                return httpx.Response(200, json={"username": "ostraka", "token": {"scope": self.scope}})
             if path == "/api/jobs":
                 return httpx.Response(200, json={"jobs": [self.job], "total": 1})
             if path == f"/api/jobs/{JOB}":
@@ -186,6 +187,14 @@ async def test_admins_connect_rowanholt_with_the_token_encrypted_and_tested(db, 
     test = r.json()
     assert test["ok"] and [s["ok"] for s in test["steps"]] == [True, True, True]
     assert "read-only" in test["steps"][1]["detail"]
+    for old in ("aule-mcp", "eru-mcp"):  # tokens made before the renames still count
+        suite.scope = old
+        test = (await client.post("/api/integrations/rowanholt/test", headers=p["admin"].headers)).json()
+        assert "read-only" in test["steps"][1]["detail"]
+    suite.scope = "full"
+    test = (await client.post("/api/integrations/rowanholt/test", headers=p["admin"].headers)).json()
+    assert "smith-mcp token is enough" in test["steps"][1]["detail"]
+    suite.scope = "smith-mcp"
     assert (
         suite.asked("rowanholt.example.org", "/api/auth/me")[0].headers["Authorization"]
         == "Bearer rvt_readonly"

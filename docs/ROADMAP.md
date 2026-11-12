@@ -6,7 +6,7 @@ Agreed with Ben on 10 November 2026. This replaces the original scaffold. The re
 
 | Tool | Owns | Ostraka's relationship |
 |---|---|---|
-| Rowanholt | Evidence and analysis: parsed artefacts, row-cited findings, Aulë | Link an incident to a Rowanholt job; pull confirmed findings with their `job/host/artefact/row_hash` citation |
+| Rowanholt | Evidence and analysis: parsed artefacts, row-cited findings, Smith | Link an incident to a Rowanholt job; pull confirmed findings with their `job/host/artefact/row_hash` citation |
 | Shikari | Detection and hunting | Each confirmed technique without a detection becomes a follow-up task; Shikari's `run.completed` webhook closes it |
 | Ostraka | The incident: people, work, decisions, record | Everything below |
 

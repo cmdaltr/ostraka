@@ -197,13 +197,13 @@ async def _test_rowanholt(row: Integration) -> list[CheckStep]:
     if isinstance(me, dict):
         scope = (me.get("token") or {}).get("scope", "")
         who = me.get("username") or me.get("name") or "someone"
-        if scope in ("aule-mcp", "eru-mcp"):
+        if scope in ("smith-mcp", "aule-mcp", "eru-mcp"):
             steps[-1].detail = f"As {who}, read-only."
         elif scope:
             steps[
                 -1
             ].detail = (
-                f"As {who}, with a {scope} token. Ostraka only reads: a read-only aule-mcp token is enough."
+                f"As {who}, with a {scope} token. Ostraka only reads: a read-only smith-mcp token is enough."
             )
         else:
             steps[-1].detail = f"As {who} (no token: Rowanholt in local mode)."

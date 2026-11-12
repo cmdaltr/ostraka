@@ -16,7 +16,7 @@ const about: Record<Product, { purpose: string; token: string; placeholder: stri
     purpose:
       'Link incidents to Rowanholt jobs and cases, see their status, cite Rowanholt rows in findings and bring Rowanholt’s findings in as leads.',
     token:
-      'A Rowanholt API token (rvt_…) from its Account page. Ostraka only reads, so a read-only aule-mcp token is enough. Leave it empty for Rowanholt in local mode.',
+      'A Rowanholt API token (rvt_…) from its Account page. Ostraka only reads, so a read-only smith-mcp token is enough. Leave it empty for Rowanholt in local mode.',
     placeholder: 'https://rowanholt.tail180683.ts.net',
   },
   shikari: {
