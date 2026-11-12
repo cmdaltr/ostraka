@@ -42,16 +42,19 @@ differs:
 | `automation` | Pro | Signed webhooks: the product calls the customer's systems when something happens. Checked when a webhook is sent, so one configured on Free is kept but doesn't fire |
 | `managed-service` | Services | The right in `COMMERCIAL-LICENSE.md` section 3 to run the product for clients. Not a switch |
 
-Webhooks work the same everywhere, as `samarkand.webhooks` sends and checks them: an
-admin registers a URL and the events it wants; each delivery is a POST of
-`{"event", "sent_at", "data"}` with `X-<Product>-Event` and, when the webhook has a secret,
-`X-<Product>-Signature: sha256=<hex HMAC-SHA256 of the raw body>`; three tries with backoff; the last
-20 deliveries kept per webhook for the admin page. Webhook bodies pass the same masking as the
-product's other outward messages.
+Webhooks work the same everywhere, through `samarkand.webhooks` (the reference for them): an admin
+registers a URL and the events it wants; each delivery is a POST of `{"event", "sent_at", "data"}`
+(`sent_at` ISO 8601 in UTC) with `X-<Product>-Event` and, when the webhook has a secret,
+`X-<Product>-Signature: sha256=<hex HMAC-SHA256 of the raw body>`; three tries with backoff; the
+last 20 deliveries kept per webhook for the admin page; https anywhere, plain http only to this
+machine or a private address, never a link-local address or credentials in the URL, and redirects
+not followed. Webhook bodies pass the same masking as the product's other outward messages.
 
 ### The licence
 
-One line: `<product>-licence-1.<payload>.<signature>`.
+One line: `<product>-licence-1.<payload>.<signature>`, read and checked by `samarkand.licence` (the
+reference for it, with its test vectors), which each product binds with its own id, public keys and
+free seat number. samarkand has no signing code: issuing stays in each product's admin script.
 
 - `payload` is base64url (no padding) of canonical JSON: sorted keys, compact separators.
 - `signature` is Ed25519, base64url, over the ASCII bytes of `<product>-licence-1.<payload>`, so
