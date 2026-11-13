@@ -20,7 +20,7 @@
 | 2026-11-11 | **Public repository created**, the name and mark throughout | `github.com/cmdaltr/ostraka` (created 2026-11-11 19:24 UTC, public); first public commit `ee389a6` |
 | 2026-11-11 | The name written as "Ostraka" wherever people read it (UI, messages, reports, terms) | commit `985895d` (pre-publication history) |
 | 2026-11-13 | ™ on the app's wordmark, and the trademark notice on the sign-in page and every signed-in page's footer | this pack's commit |
-| 2026-11-13 | Preliminary clearance search (see Notes): TMview, Companies House and the web | TMview and Companies House, 2026-11-13 |
+| 2026-11-13 | Preliminary clearance search (see Notes): TMview, Companies House and the web; the goods of EU OSTRA and OSTRAI read on EUIPO eSearch | TMview, EUIPO eSearch and Companies House, 2026-11-13 |
 | 2026-11-11 | **Domain `ostraka.uk` registered** under the Ostraka name | Nominet registration (registrar receipt / account) |
 
 ## Continued / public use
@@ -31,7 +31,7 @@
 
 ## To add as it happens (strengthens the record)
 
-- [ ] The goods of EU OSTRA (018948454) and OSTRAI (019435677), and what Ostraca Technologies Limited trades as (see Notes)
+- [ ] What Ostraca Technologies Limited trades as, and whether OSTRAI (EUIPO 019435677) is opposed, registered or withdrawn (see Notes)
 - [ ] First tagged release / GitHub release **published** under the Ostraka name (version / date: ____) — none yet
 - [ ] Product site live at ostraka.uk (date: ____)
 - [ ] First blog post naming Ostraka — *Adventures of Benny and Claude* (date / URL: ____)
@@ -49,12 +49,13 @@
   - **OSTRACON:** **USPTO reg. 6891914**, LY Corporation (Tokyo), classes 9 and 42, registered 2022: the same Greek word, but its goods are limited to software for virtual-currency transactions. A different field from incident management; worth naming to an attorney before any US filing.
   - **OSTRA** (which Ostraka begins with the whole of), live in classes 9 or 42 in the UK, EU or US:
     - **OSTRA**, USPTO reg. 5881108 (class 42) and serial 88032942 (class 9), OSTRA Cybersecurity, Inc.: SaaS "for use in increasing cybersecurity". The same field: **the closest risk**, as ROWAN was for Rowanholt. Get a US attorney's view before any USPTO filing or US launch.
-    - **OSTRA**, EUIPO 018948454 (classes 9, 37, 39, 42), NRG2050 Holding B.V., registered from 2023; goods not yet read.
+    - **OSTRA**, EUIPO 018948454 (classes 9, 37, 39, 42), NRG2050 Holding B.V. (Almere, NL), filed 9 November 2023, registered 19 March 2024: electric-vehicle charging and electricity storage and supply, with software and services only for those. A different field.
     - **Ostra Consulting**, UKIPO UK00003549077 (class 42), registered.
-    - Filed and pending: **OSTRAI**, EUIPO 019435677 (classes 9, 35, 41, 42, 45, filed 14 October 2026); **Ostrala**, UKIPO UK00004460729 (classes 9 and 42, filed 15 October 2026); **OSTRAQ**, USPTO 99703531 (classes 9 and 42, voting software); **VOSTRAK**, USPTO 99685548 (class 42).
+    - **OSTRAI**, EUIPO 019435677, OSTRAI LTD (Larnaca, CY), filed 14 October 2026, under examination (classes 9, 35, 41, 42, 45): downloadable software and SaaS for regulatory compliance management, monitoring and "regulatory and incident reporting", computer and data security consultancy, and compliance consultancy on "cybersecurity risk management and incident reporting obligations". It overlaps Ostraka's regulator clocks and reporting, and was filed before Ostraka's first use (10 November 2026), so it would be the earlier right in the EU. The marks share OSTRA- and differ in their endings (-I against -KA); how similar they are is a question for an attorney.
+    - Filed and pending: **Ostrala**, UKIPO UK00004460729 (classes 9 and 42, filed 15 October 2026); **OSTRAQ**, USPTO 99703531 (classes 9 and 42, voting software); **VOSTRAK**, USPTO 99685548 (class 42).
     - TMview lists 1,038 live marks in classes 9 or 42 matching "ostra" by sound; the first 100 (by relevance) were read, which hold the exact and near-exact ones above.
   - **Companies House:** no company named Ostraka. **OSTRACA TECHNOLOGIES LIMITED** (08255000, incorporated 16 October 2012, active) is registered for software publishing (SIC 58290, 62011, 62012): a different spelling with the same sound, in software. A company name isn't a trade mark, but it bears on a passing-off position; find out what, if anything, it trades as. OSTRACA LIMITED (11747003) is a building developer; the OSTRAKON companies are all dissolved.
   - **The web:** an "Ostraca" data-loss-prevention product is listed for Novariom, a French vendor, with no EU mark behind it on TMview.
-  - **Assessment:** OSTRAKA itself is clear in the UK, EU and US. The UK register is clear of anything close in software beyond Ostra Consulting (class 42). The risks are the OSTRA marks beginning the name, above all OSTRA Cybersecurity in the US, and the EU OSTRA and OSTRAI until their goods are read.
+  - **Assessment:** OSTRAKA itself is clear in the UK, EU and US. The UK register is clear of anything close in software beyond Ostra Consulting (class 42). The risks are the OSTRA marks beginning the name, above all OSTRA Cybersecurity in the US and, in the EU, OSTRAI (pending, earlier, and close in its goods). The EU OSTRA is for EV charging and electricity, a different field.
 - Registration (UKIPO / EUIPO / USPTO, classes 9 + 42) gives stronger, enforceable rights.
 - This document is a record of use to support a later application or a passing-off / common-law position. It is not legal advice and not a registration.
