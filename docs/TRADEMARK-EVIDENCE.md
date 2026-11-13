@@ -21,7 +21,7 @@
 | 2026-11-11 | The name written as "Ostraka" wherever people read it (UI, messages, reports, terms) | commit `985895d` (pre-publication history) |
 | 2026-11-13 | ™ on the app's wordmark, and the trademark notice on the sign-in page and every signed-in page's footer | this pack's commit |
 | 2026-11-13 | Preliminary clearance search (see Notes): TMview, Companies House and the web | TMview and Companies House, 2026-11-13 |
-| ____ | **Domain `ostraka.uk` registered** under the Ostraka name | Nominet registration (registrar receipt / account) |
+| 2026-11-11 | **Domain `ostraka.uk` registered** under the Ostraka name | Nominet registration (registrar receipt / account) |
 
 ## Continued / public use
 
