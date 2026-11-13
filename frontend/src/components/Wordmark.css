@@ -23,3 +23,8 @@
 .wordmark-lg {
   --wm-size: 28px;
 }
+.wordmark-tm {
+  align-self: flex-start;
+  font: 600 calc(var(--wm-size) * 0.75) / 1 var(--font-ui);
+  color: var(--ink);
+}

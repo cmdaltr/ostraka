@@ -1,7 +1,7 @@
 .shell {
   min-height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
 }
 .shell-header {
   position: sticky;
@@ -47,6 +47,14 @@
   display: grid;
   align-content: start;
   gap: var(--space-6);
+}
+
+.shell-footer {
+  position: relative;
+  z-index: 1;
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--line);
+  text-align: center;
 }
 
 .theme-picker {

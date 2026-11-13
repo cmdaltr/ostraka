@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../api/client';
 import type { Grant } from '../api/types';
+import { brand } from '../brand';
 import { startWith, useSession } from '../auth/session';
 import { BrandMark } from '../components/BrandMark';
 import { Progress } from '../components/sherd/Progress';
@@ -109,6 +110,9 @@ export function SignIn() {
         </p>
         <p className="hint" style={{ textAlign: 'center' }}>
           <a href="/help/licence">Licence</a>
+        </p>
+        <p className="hint" style={{ textAlign: 'center' }}>
+          {brand.trademark}
         </p>
       </div>
     </main>

@@ -69,6 +69,7 @@ async def test_ready_ok_when_everything_answers(client, monkeypatch):
 async def test_meta_serves_branding(client):
     body = (await client.get("/api/meta")).json()
     assert body["name"] == branding.NAME
+    assert body["trademark"].startswith("Ostraka™ and its logo are trademarks of cmdaltr.")
     assert body["default_theme"] == "cobalt"
     assert body["themes"] == ["cobalt", "ostrakon", "ledger"]
     assert body["phases"] == ["detect", "scope", "contain", "eradicate", "recover", "learn"]

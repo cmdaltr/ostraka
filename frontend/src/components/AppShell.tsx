@@ -4,6 +4,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import { day, getLicence } from '../api/installation';
 import type { Me } from '../api/types';
 import { signOut } from '../auth/session';
+import { brand } from '../brand';
 import { startLive } from '../live/live';
 import { Bell } from './Bell';
 import { SherdField } from './sherd/SherdField';
@@ -60,6 +61,9 @@ export function AppShell({ me }: { me: Me }) {
         {me.role === 'admin' && <LicenceRunningOut />}
         <Outlet />
       </main>
+      <footer className="shell-footer">
+        <p className="hint">{brand.trademark}</p>
+      </footer>
     </div>
   );
 }

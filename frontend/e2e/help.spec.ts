@@ -40,3 +40,15 @@ test('the sign-in page links to the licence', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('link', { name: 'Licence' })).toHaveAttribute('href', '/help/licence');
 });
+
+test('the sign-in page and every signed-in page carry the trademark notice', async ({ page }) => {
+  const notice = 'Ostraka™ and its logo are trademarks of cmdaltr.';
+  await page.route('**/api/**', (route) => route.fulfill({ status: 401, json: { detail: 'Sign in' } }));
+  await page.goto('/');
+  await expect(page.getByText(notice)).toBeVisible();
+  await page.unrouteAll();
+  await stubLive(page);
+  await stubApi(page, me());
+  await page.goto('/');
+  await expect(page.getByRole('contentinfo')).toContainText(notice);
+});
