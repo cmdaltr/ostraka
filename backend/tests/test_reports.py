@@ -94,12 +94,14 @@ async def test_only_people_who_worked_on_it_export_and_each_export_is_recorded(d
         assert r.status_code == 403, who
     assert (await client.get(url, headers=p["dfir"].headers)).status_code == 404  # can't see it at all
 
-    audit = (await db.scalars(select(SecurityEvent).where(SecurityEvent.action == "report_exported"))).all()
+    exported = select(SecurityEvent).where(SecurityEvent.action == "report_exported")
+    audit = (await db.scalars(exported.order_by(SecurityEvent.at))).all()
     assert [(e.detail["variant"], e.detail["format"]) for e in audit] == [
         ("briefing", "docx"),
         ("report", "pdf"),
     ]
-    logged = (await db.scalars(select(ActivityEvent).where(ActivityEvent.action == "report_exported"))).all()
+    in_log = select(ActivityEvent).where(ActivityEvent.action == "report_exported")
+    logged = (await db.scalars(in_log.order_by(ActivityEvent.position))).all()
     assert [e.summary for e in logged] == [
         "Sam Soc exported the briefing as DOCX",
         "Sam Soc exported the technical report as PDF",
