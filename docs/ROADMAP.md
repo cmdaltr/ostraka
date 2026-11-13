@@ -167,17 +167,14 @@ The host CLI, the install, release and server-setup scripts and the responder cl
 | Windows `.msi` | A fresh per-user install and uninstall without `SERVERURL` pass on the workflow's Windows runner. Still to check: an upgrade over an older version (the fixed UpgradeCode), and an install with `SERVERURL` |
 | Windows launcher | `Ostraka.ps1` opening Edge in app mode, local mode with Docker Desktop, the Help menu; `Ostraka.ps1`, `ostraka-cli.ps1` and `install-service.ps1` are only parse-checked |
 | `deploy/windows/install-service.ps1` | A run on Windows Server 2022 or 2025 and on Windows 11 under WSL 2, `-InstallDocker`, and reaching the server from another machine |
-| macOS `.dmg` | Install and uninstall of the ad-hoc signed image pass on the workflow's macOS runner, and it signs and notarises when the secrets are set (`desktop/README.md`). Still to check: a Developer ID signature and notarisation that pass Gatekeeper, then the app opened from a download on a clean Mac, Apple silicon and Intel |
+| macOS `.dmg` | Install and uninstall of the ad-hoc signed image pass on the workflow's macOS runner. It stays ad-hoc signed, with no Developer ID or notarisation planned (Ben, 13 November 2026), so a downloaded copy is opened through System Settings → Privacy & Security → Open Anyway. Still to check: the app opened that way from a download on a clean Mac, Apple silicon and Intel |
 | Linux desktop | The real `.deb`'s install and uninstall pass on the workflow's Ubuntu runner. Still to check: the `.deb` and the real tarball route on Rocky (the container tests use a cut-down tree) on a desktop, opening Chromium, Chrome, Brave or Edge in app mode; `desktop/linux/tests/test-launcher.sh` isn't in `make check` |
 | Updating in place | A newer app updating an unpacked `OSTRAKA_HOME` while keeping `.env` and the `ostraka-app` volumes, on each OS |
 
-## Known issues in the scaffold being replaced
+## Launch
 
-- Open self-registration with a self-chosen team (`auth.py:42`).
-- Default admin password published in the README and `config.py`; `SECRET_KEY` and the Postgres password have defaults.
-- All four ports published to every interface, including Postgres and Redis.
-- The WebSocket JWT is passed in the query string; access and refresh tokens are kept in `localStorage`.
-- `get_optional_current_user` calls an async function without awaiting it.
-- `create_all` runs alongside Alembic.
-- Celery, rate limiting and PDF/DOCX reports are claimed in the README but not implemented.
-- No tests or CI.
+| Item | Notes |
+|---|---|
+| Publish v0.1.0 | Tagged 13 November 2026; the release workflow attaches the `.dmg`, `.msi`, `.deb` and SHA256SUMS to a draft release. Publish the draft on GitHub, then date it in `docs/TRADEMARK-EVIDENCE.md` |
+| Blog post | The first post naming Ostraka, on *Adventures of Benny and Claude*. Date and link it in `docs/TRADEMARK-EVIDENCE.md` |
+| Walkthrough video | Recorded and rendered to `~/Desktop/Staging`, then published under @cmdaltr. Date and link it in `docs/TRADEMARK-EVIDENCE.md` |
