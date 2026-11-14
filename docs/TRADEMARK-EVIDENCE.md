@@ -32,7 +32,7 @@
 ## To add as it happens (strengthens the record)
 
 - [ ] What Ostraca Technologies Limited trades as, and whether OSTRAI (EUIPO 019435677) is opposed, registered or withdrawn (see Notes)
-- [ ] First tagged release / GitHub release **published** under the Ostraka name (version / date: ____) — none yet
+- [x] First tagged release / GitHub release **published** under the Ostraka name (version / date: v0.1.0, 14 November 2026, https://github.com/cmdaltr/ostraka/releases/tag/v0.1.0)
 - [ ] Product site live at ostraka.uk (date: ____)
 - [ ] First blog post naming Ostraka — *Adventures of Benny and Claude* (date / URL: ____)
 - [ ] First LinkedIn / YouTube post under **@cmdaltr** naming Ostraka (date / URL: ____)

@@ -175,6 +175,6 @@ The host CLI, the install, release and server-setup scripts and the responder cl
 
 | Item | Notes |
 |---|---|
-| Publish v0.1.0 | Tagged 13 November 2026; the release workflow attaches the `.dmg`, `.msi`, `.deb` and SHA256SUMS to a draft release. Publish the draft on GitHub, then date it in `docs/TRADEMARK-EVIDENCE.md` |
+| Publish v0.1.0 | Done: tagged 13 November 2026, published 14 November 2026 with the `.dmg`, `.msi`, `.deb`, source tarball and SHA256SUMS, and dated in `docs/TRADEMARK-EVIDENCE.md` |
 | Blog post | The first post naming Ostraka, on *Adventures of Benny and Claude*. Date and link it in `docs/TRADEMARK-EVIDENCE.md` |
 | Walkthrough video | Recorded and rendered to `~/Desktop/Staging`, then published under @cmdaltr. Date and link it in `docs/TRADEMARK-EVIDENCE.md` |
