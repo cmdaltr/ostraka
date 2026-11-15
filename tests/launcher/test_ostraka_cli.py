@@ -157,6 +157,26 @@ def test_start_never_overwrites_an_existing_env(launcher):
     assert (launcher.root / ".env").read_text() == "POSTGRES_PASSWORD=mine\nOSTRAKA_SECRET_KEY=mine-too\n"
 
 
+def test_start_fills_in_a_blank_or_missing_secret_and_nothing_else(launcher):
+    env_file = launcher.root / ".env"
+    env_file.write_text("POSTGRES_PASSWORD=mine\nOSTRAKA_SECRET_KEY=\nOSTRAKA_PORT=24747")
+    env_file.chmod(0o600)
+    out = launcher.run("start")
+    assert out.returncode == 0, out.stderr
+    env = env_file.read_text()
+    assert env.startswith("POSTGRES_PASSWORD=mine\nOSTRAKA_PORT=24747\nOSTRAKA_SECRET_KEY=")
+    assert re.search(r"^OSTRAKA_SECRET_KEY=[0-9a-f]{64}\n\Z", env, re.M)
+    assert "Added a new OSTRAKA_SECRET_KEY" in out.stdout
+    assert stat.S_IMODE(env_file.stat().st_mode) == 0o600
+    assert not list(launcher.root.glob(".env.tmp*"))
+
+    env_file.write_text("OSTRAKA_SECRET_KEY=kept\n")
+    assert launcher.run("start").returncode == 0
+    env = env_file.read_text()
+    assert env.startswith("OSTRAKA_SECRET_KEY=kept\nPOSTGRES_PASSWORD=")
+    assert re.search(r"^POSTGRES_PASSWORD=[0-9a-f]{48}$", env, re.M)
+
+
 def test_start_progress_prints_only_progress_lines(launcher):
     out = launcher.run("start", "--progress", FAKE_HEALTH_AFTER="4")
     assert out.returncode == 0, out.stderr

@@ -77,7 +77,7 @@ run from an Ostraka source tree: the repo checkout, or the copy a package unpack
 
 | Command | Does |
 |---|---|
-| `ostraka start [--progress]` | Writes `.env` with random secrets if there isn't one; `docker compose up -d --build`; waits until `GET /api/health` answers `{"status": "ok"}`. `--progress` prints machine-readable lines, `progress <0-100> <message>`, for the launchers. Exit 0 when up |
+| `ostraka start [--progress]` | Writes `.env` with random secrets if there isn't one, and fills in `POSTGRES_PASSWORD` or `OSTRAKA_SECRET_KEY` if an existing one leaves it blank or out (a value it has is never changed); `docker compose up -d --build`; waits until `GET /api/health` answers `{"status": "ok"}`. `--progress` prints machine-readable lines, `progress <0-100> <message>`, for the launchers. Exit 0 when up |
 | `ostraka stop` | `docker compose stop` (data stays) |
 | `ostraka status [--json]` | Exit 0 running, 3 stopped, 4 Docker missing or not running. `--json`: `{"running": bool, "url": str, "version": str, "docker": "ok"|"missing"|"stopped", "has_admin": bool|null}` (`null` while the stack is down) |
 | `ostraka url` | Prints the local URL, `http://127.0.0.1:24747` (or `OSTRAKA_PORT`) |

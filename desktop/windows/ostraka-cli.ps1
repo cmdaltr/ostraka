@@ -106,11 +106,15 @@ function New-RandomHex([int]$Bytes) {
 }
 
 # As `make env`, but a local install's links point at this computer on its own port
-# (OSTRAKA_PORT). An existing .env is never touched: it holds the secrets the
-# data volumes were created with.
+# (OSTRAKA_PORT). An existing .env is never rewritten: it holds the secrets the
+# data volumes were created with. Only a blank secret is filled in.
 function Write-EnvFile {
     $envFile = Join-Path $Root '.env'
-    if (Test-Path -LiteralPath $envFile) { return }
+    if (Test-Path -LiteralPath $envFile) {
+        Add-MissingSecret 'POSTGRES_PASSWORD' 24
+        Add-MissingSecret 'OSTRAKA_SECRET_KEY' 32
+        return
+    }
     $example = Join-Path $Root '.env.example'
     if (-not (Test-Path -LiteralPath $example)) { Stop-WithError 1 "there's no .env or .env.example in $Root" }
     $url = Get-LocalUrl
@@ -129,6 +133,29 @@ function Write-EnvFile {
     [IO.File]::WriteAllText($envFile, $text, (New-Object Text.UTF8Encoding($false)))
     Protect-EnvFile $envFile
     Say "Wrote $envFile with new secrets."
+}
+
+# A secret .env leaves blank or out gets a random one. Nothing can have used a blank one: Postgres
+# won't initialise without a password, and the backend refuses a blank key. Written in place, so
+# the file keeps its permissions.
+function Add-MissingSecret([string]$Name, [int]$Bytes) {
+    if (Get-EnvValue $Name) { return }
+    $envFile = Join-Path $Root '.env'
+    $added = $false
+    try {
+        $text = [IO.File]::ReadAllText($envFile)
+        $lines = @($text -split "`n" | Where-Object { $_.TrimEnd("`r") -ne "$Name=" })
+        $text = $lines -join "`n"
+        if (-not ($lines | Where-Object { $_.StartsWith("$Name=") })) {
+            if ($text.Length -gt 0 -and -not $text.EndsWith("`n")) { $text += "`n" }
+            $text += "$Name=$(New-RandomHex $Bytes)`n"
+            $added = $true
+        }
+        [IO.File]::WriteAllText($envFile, $text, (New-Object Text.UTF8Encoding($false)))
+    } catch {
+        Stop-WithError 1 "$envFile has no $Name and couldn't be written ($($_.Exception.Message)); set it there"
+    }
+    if ($added) { Say "Added a new $Name to $envFile, which had none." }
 }
 
 # Only this account may read the secrets (the Windows counterpart of chmod 600). By SID, as a name

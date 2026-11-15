@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import re
 import shutil
 import stat
 import subprocess
@@ -153,6 +154,18 @@ def test_an_unpacked_trees_older_env_gets_the_project_name(tmp_path):
     assert cli.run("stop").returncode == 0
     assert cli.env_file.read_text() == "POSTGRES_PASSWORD=mine\nCOMPOSE_PROJECT_NAME=ostraka-app\n"
     assert cli.docker_calls()[-1] == "compose stop | project="
+
+
+def test_start_fills_in_a_blank_or_missing_secret_and_nothing_else(tmp_path):
+    cli = Cli(tmp_path, unpacked=False)
+    cli.env_file.write_text("POSTGRES_PASSWORD=mine\nOSTRAKA_SECRET_KEY=\nOSTRAKA_PORT=24747")
+    out = cli.run("start", **HEALTHY)
+    assert out.returncode == 0, out.stderr
+    env = cli.env_file.read_text()
+    assert env.startswith("POSTGRES_PASSWORD=mine\nOSTRAKA_PORT=24747\nOSTRAKA_SECRET_KEY=")
+    assert re.search(r"^OSTRAKA_SECRET_KEY=[0-9a-f]{64}\n\Z", env, re.M)
+    assert "\r" not in env
+    assert "Added a new OSTRAKA_SECRET_KEY" in out.stdout
 
 
 def test_a_servers_own_project_name_is_honoured(tmp_path):
