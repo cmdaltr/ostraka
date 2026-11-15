@@ -21,7 +21,7 @@ $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $Folder = Join-Path ([Environment]::GetFolderPath('Programs')) 'Ostraka'
 # Name, Ostraka.ps1 switch, window style (1 normal, 7 minimised), description
 $Shortcuts = @(
-    @('Ostraka', '', 1, 'Incident management and response'),
+    @('Ostraka', '', 1, 'Platform for Incident Management, Response and Hunting'),
     @('Stop Ostraka', '-Stop', 7, 'Stop Ostraka on this computer (your data stays)'),
     @('Change Server', '-ChangeServer', 1, 'Connect Ostraka to another server, or run it here'),
     @('Ostraka Licence', '-Licence', 7, 'Ostraka''s licence and commercial terms')

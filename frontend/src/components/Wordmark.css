@@ -1,30 +1,31 @@
 .wordmark {
   display: inline-flex;
-  gap: 3px;
+  align-items: flex-start;
+  gap: 2px;
 }
-.wordmark span {
-  display: grid;
-  place-items: center;
-  font: 600 var(--wm-size) / 1 var(--font-mono);
-  width: calc(var(--wm-size) * 1.45);
-  height: calc(var(--wm-size) * 1.8);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  color: var(--ink);
-  /* the split between the upper and lower flap */
-  background: linear-gradient(180deg, var(--surface) 0 49%, var(--line) 49% 51%, var(--raised) 51% 100%);
+.wordmark svg {
+  display: block;
+  height: var(--wm-size);
+  width: auto;
+  overflow: visible;
+}
+.wordmark path {
+  fill: none;
+  stroke: var(--inscription-name);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .wordmark-sm {
-  --wm-size: 12px;
+  --wm-size: 1.5rem;
 }
 .wordmark-md {
-  --wm-size: 16px;
+  --wm-size: 2rem;
 }
 .wordmark-lg {
-  --wm-size: 28px;
+  --wm-size: 3rem;
 }
 .wordmark-tm {
-  align-self: flex-start;
-  font: 600 calc(var(--wm-size) * 0.75) / 1 var(--font-ui);
-  color: var(--ink);
+  font: 600 calc(var(--wm-size) * 0.32) / 1 var(--font-ui);
+  color: var(--inscription-name);
 }

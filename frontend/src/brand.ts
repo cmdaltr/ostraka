@@ -2,9 +2,7 @@
 
 export const brand = {
   name: 'Ostraka',
-  tagline: 'Incident management and response',
-  // What the letters stand for
-  expansion: 'Operational Suite for Teams to Respond, Assess, Keep records & take Action',
+  tagline: 'Platform for Incident Management, Response and Hunting',
   // The unregistered mark's notice, as the README and COMMERCIAL-LICENSE.md give it
   trademark:
     'Ostraka™ and its logo are trademarks of cmdaltr. The licence covers the software; it grants no right to use the name or logo.',

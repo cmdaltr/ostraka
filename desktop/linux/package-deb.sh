@@ -69,7 +69,7 @@ Installed-Size: $(du -sk "$PKG/usr" | cut -f1)
 Depends: curl, zenity, xdg-utils
 Recommends: libnotify-bin
 Suggests: docker-ce | docker.io, docker-compose-plugin | docker-compose-v2
-Description: incident management and response for teams (desktop app)
+Description: platform for incident management, response and hunting (desktop app)
  Ostraka is the record of an incident: the people, the work, the decisions and
  the assessments. This package adds it to the application menu: on first launch
  it connects to a team's Ostraka server, or runs Ostraka on this computer in

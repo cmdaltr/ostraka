@@ -4,9 +4,7 @@
 
 <h1 align="center">Ostraka</h1>
 
-<p align="center"><strong>Incident management and response for teams</strong></p>
-
-<p align="center"><em>Operational Suite for Teams to Respond, Assess, Keep records &amp; take Action</em></p>
+<p align="center"><strong>Platform for Incident Management, Response and Hunting</strong></p>
 
 Ostraka is where a team runs an incident:
 - who's involved and who's doing what;

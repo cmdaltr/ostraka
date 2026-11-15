@@ -16,7 +16,7 @@ Out of scope: SOAR playbook engine, alert ingestion and triage, artefact parsing
 
 | Area | Decision |
 |---|---|
-| Name | **Ostraka** (renamed from ciphr, 10 November 2026: CIPHR Ltd holds UK marks for HR software). Ancient Greek *ostraka*, the potsherds used as everyday records in Egypt and as ballots in Athens: the record, the ledger and the collective decision. The letters: Operational Suite for Teams to Respond, Assess, Keep records & take Action. References OST-YYYY-NNN, API tokens `ost_…`, settings `OSTRAKA_*`, the browser header `X-Ostraka`. The brand is in `docs/BRAND.md` |
+| Name | **Ostraka** (renamed from ciphr, 10 November 2026: CIPHR Ltd holds UK marks for HR software). Ancient Greek *ostraka*, the potsherds used as everyday records in Egypt and as ballots in Athens: the record, the ledger and the collective decision. References OST-YYYY-NNN, API tokens `ost_…`, settings `OSTRAKA_*`, the browser header `X-Ostraka`. The brand is in `docs/BRAND.md` |
 | Codebase | Rebuild in this repo; no existing data to migrate |
 | Backend | FastAPI, Postgres 16, Alembic only (no `create_all`), Redis pub/sub for live updates, a lightweight scheduler for nudges (Celery removed) |
 | Frontend | React, Vite, TypeScript SPA |
@@ -57,7 +57,7 @@ Out of scope: SOAR playbook engine, alert ingestion and triage, artefact parsing
 | Phases | Detect → Scope → Contain → Eradicate → Recover → Learn; hunts: Hypothesis → Collect → Analyse → Conclude |
 | AI drafting | Ollama or Anthropic, chosen per deployment; template-only fallback when no model is reachable |
 | TLP guard | Incidents marked TLP:RED or TLP:AMBER+STRICT only ever use local Ollama; every draft records which provider produced it |
-| Theme | Cobalt by default; Ostrakon (limestone, fired clay and iron-gall ink, replacing Cryptex) and Ledger selectable per user in preferences; each has light and dark. Sign-in shows the mended sherd (clay in light mode, limestone in dark) above a split-flap departures board |
+| Theme | Cobalt by default; Ostrakon (limestone, fired clay and iron-gall ink, replacing Cryptex) and Ledger selectable per user in preferences; each has light and dark. Sign-in shows the name as an inscription, now and then scratched out in chalk for a word from the work, and the tagline. The whole limestone sherd lies faintly behind every page |
 | Type | Inter and JetBrains Mono in every theme (only colours change) |
 | Severity and TLP colours | Fixed across themes; severity uses Shikari's four-step scale; TLP uses the FIRST TLP 2.0 colours |
 | Hosting | Port 24747 on loopback behind a TLS proxy; only the frontend publishes a port; implements `GET /api/busy` |
@@ -170,6 +170,12 @@ The host CLI, the install, release and server-setup scripts and the responder cl
 | macOS `.dmg` | Install and uninstall of the ad-hoc signed image pass on the workflow's macOS runner. It stays ad-hoc signed, with no Developer ID or notarisation planned (Ben, 13 November 2026), so a downloaded copy is opened through System Settings → Privacy & Security → Open Anyway. Still to check: the app opened that way from a download on a clean Mac, Apple silicon and Intel |
 | Linux desktop | The real `.deb`'s install and uninstall pass on the workflow's Ubuntu runner. Still to check: the `.deb` and the real tarball route on Rocky (the container tests use a cut-down tree) on a desktop, opening Chromium, Chrome, Brave or Edge in app mode; `desktop/linux/tests/test-launcher.sh` isn't in `make check` |
 | Updating in place | A newer app updating an unpacked `OSTRAKA_HOME` while keeping `.env` and the `ostraka-app` volumes, on each OS |
+
+## For Ben's review
+
+| Item | Notes |
+|---|---|
+| Loose sherds in the app | Fragments of the mark drifting round the edges of every signed-in page (`components/sherd/SherdField.tsx`), now on top of the whole limestone sherd (15 November 2026). Keep both, or drop the fragments and leave the whole sherd alone |
 
 ## Launch
 

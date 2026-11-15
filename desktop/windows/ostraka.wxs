@@ -28,7 +28,7 @@
            Manufacturer="cmdaltr"
            UpgradeCode="7A1F0C3E-5B2D-4E8A-9C61-0D3F8E2B4A17">
 
-    <Package Description="Ostraka: incident management and response"
+    <Package Description="Ostraka: platform for incident management, response and hunting"
              Comments="Ostraka $(var.FullVersion). Using Ostraka is accepting its licence (LICENSE, COMMERCIAL-LICENSE.md)."
              Manufacturer="cmdaltr"
              InstallerVersion="500"
@@ -63,7 +63,7 @@
     <Icon Id="ostraka.ico" SourceFile="$(var.StageDir)/ostraka.ico" />
     <Property Id="ARPPRODUCTICON" Value="ostraka.ico" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/cmdaltr/ostraka" />
-    <Property Id="ARPCOMMENTS" Value="Incident management and response. Your data in %USERPROFILE%\Ostraka stays when the app is removed." />
+    <Property Id="ARPCOMMENTS" Value="Platform for Incident Management, Response and Hunting. Your data in %USERPROFILE%\Ostraka stays when the app is removed." />
     <Property Id="ARPNOMODIFY" Value="1" />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
@@ -105,7 +105,7 @@
          Explorer resolves System32 to the native PowerShell on x64 and ARM64 -->
     <DirectoryRef Id="StartMenuDir">
       <Component Id="Shortcuts" Guid="3662C591-3E85-4EF5-B8AC-BA5342CF7309">
-        <Shortcut Id="OpenShortcut" Name="Ostraka" Description="Incident management and response"
+        <Shortcut Id="OpenShortcut" Name="Ostraka" Description="Platform for Incident Management, Response and Hunting"
                   Target="[WindowsFolder]System32\WindowsPowerShell\v1.0\powershell.exe"
                   Arguments="-NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]Ostraka.ps1&quot;"
                   WorkingDirectory="INSTALLDIR" Icon="ostraka.ico" />

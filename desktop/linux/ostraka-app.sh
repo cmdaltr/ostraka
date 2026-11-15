@@ -524,7 +524,7 @@ action_licence() {
 }
 
 action_about() {
-    say info "Ostraka $(app_version)\n\nIncident management and response for teams.\n\nLicensed under the Elastic License 2.0; paid editions add Ostraka's commercial terms.\nCopyright © 2026 cmdaltr"
+    say info "Ostraka $(app_version)\n\nPlatform for Incident Management, Response and Hunting.\n\nLicensed under the Elastic License 2.0; paid editions add Ostraka's commercial terms.\nCopyright © 2026 cmdaltr"
 }
 
 main() {

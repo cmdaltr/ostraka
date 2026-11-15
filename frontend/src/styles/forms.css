@@ -219,7 +219,6 @@
   display: grid;
   place-items: center;
   padding: var(--space-6) var(--space-4);
-  background: var(--backdrop);
 }
 .auth-page > * {
   position: relative;
@@ -227,7 +226,7 @@
 }
 .auth-card > p,
 .auth-card > .hint {
-  color: var(--backdrop-ink);
+  color: var(--muted);
 }
 .auth-card .panel {
   box-shadow: 0 18px 48px rgb(0 0 0 / 0.35);
@@ -238,8 +237,27 @@
   display: grid;
   gap: var(--space-5);
 }
+.auth-note {
+  margin: 0;
+  text-align: center;
+}
+.auth-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-4);
+}
+.auth-links a {
+  display: inline-flex;
+}
+/* The card's buttons are the name's red ochre, whatever the palette */
+.auth-card .btn-primary {
+  background: var(--inscription-name);
+  border-color: var(--inscription-name);
+  color: var(--inscription-name-ink);
+}
 .auth-card .brandmark {
-  justify-self: center;
+  justify-self: stretch;
 }
 .auth-card h1 {
   font-size: var(--text-xl);

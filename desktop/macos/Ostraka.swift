@@ -308,7 +308,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
     @objc func showAbout(_ sender: Any?) {
         let credits = NSMutableAttributedString(
-            string: "Incident management and response for teams.\n\nElastic License 2.0. The Pro and Services editions add the Ostraka Commercial Licence: Help › Licence.",
+            string: "Platform for Incident Management, Response and Hunting.\n\nElastic License 2.0. The Pro and Services editions add the Ostraka Commercial Licence: Help › Licence.",
             attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor])
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center

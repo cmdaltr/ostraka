@@ -187,7 +187,7 @@ function Read-FirstRunChoice {
     <# The first-run screen: a checked server address, or 'local'. Saves the choice. #>
     Write-Host ''
     Write-Host 'Ostraka' -ForegroundColor Cyan
-    Write-Host 'Incident management and response. Using Ostraka is accepting its licence (Ostraka Licence in the Start menu).'
+    Write-Host 'Platform for Incident Management, Response and Hunting. Using Ostraka is accepting its licence (Ostraka Licence in the Start menu).'
     Write-Host ''
     while ($true) {
         $choices = [System.Management.Automation.Host.ChoiceDescription[]]@(
@@ -550,7 +550,7 @@ function Stop-Local {
 
 function Show-About {
     Write-Host "Ostraka $(Get-AppVersion)"
-    Write-Host 'Incident management and response.'
+    Write-Host 'Platform for Incident Management, Response and Hunting.'
     Write-Host 'Licensed under the Elastic License 2.0; paid editions under COMMERCIAL-LICENSE.md.'
     Write-Host "Copyright (c) $((Get-Date).Year) cmdaltr."
 }

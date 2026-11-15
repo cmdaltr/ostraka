@@ -41,6 +41,38 @@ test('opening on the list: one sherd covers signing in and the list, never two',
   expect(labels.some((l) => l.startsWith('Loading open'))).toBe(false);
 });
 
+test('opening on sign-in takes two seconds to mend however soon the server answers, then holds a second and fades', async ({
+  page,
+}) => {
+  await page.route('**/api/auth/refresh', (r) => r.fulfill({ status: 401, json: { detail: 'Sign in' } }));
+  // Timed in the page, when each first appears, rather than by polling from here
+  await page.addInitScript(() => {
+    const seen: Record<string, number> = {};
+    (window as unknown as { seen: Record<string, number> }).seen = seen;
+    new MutationObserver(() => {
+      if (!seen.glow && document.querySelector('.ostrakon-glow')) seen.glow = performance.now();
+      if (!seen.form && document.querySelector('.loading-revealed #email')) seen.form = performance.now();
+    }).observe(document, { childList: true, subtree: true, attributes: true });
+  });
+  await page.goto('/');
+  await expect(sherd(page, 'Opening Ostraka').locator('.ostrakon')).toHaveAttribute('data-state', 'assembling');
+  await expect(page.locator('#email')).toBeVisible();
+  const { glow, form } = await page.evaluate(() => (window as unknown as { seen: Record<string, number> }).seen);
+  expect(glow).toBeGreaterThanOrEqual(2000);
+  expect(form - glow).toBeGreaterThanOrEqual(950);
+  // and sign-in fades in rather than appearing
+  await expect(page.locator('.loading-revealed')).toBeAttached();
+});
+
+test('opening signed in is as quick as the server', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page);
+  const began = Date.now();
+  await page.goto('/');
+  await expect(page.getByText('Phishing leads to a foothold on FIN-WS-07')).toBeVisible();
+  expect(Date.now() - began).toBeLessThan(3000);
+});
+
 test('arriving at the list from elsewhere assembles, glows once mended, then shows the list', async ({ page }) => {
   await stubLive(page);
   await stubApi(page);
@@ -74,44 +106,63 @@ test('a filter that isn’t cached yet assembles afresh', async ({ page }) => {
   await expect(sherd(page, 'Loading closed incidents or hunts')).toHaveCount(0);
 });
 
-test('your work and the playbooks assemble while they load', async ({ page }) => {
+// Loaded directly, a page's loading is covered by the opening sherd: it stays assembling until the page
+// has what it needs, and the page shows no sherd of its own
+async function opensUnder(page: Page, pageSherd: string, release: () => void) {
+  const opening = sherd(page, 'Opening Ostraka');
+  await expect(opening.locator('.ostrakon')).toHaveAttribute('data-state', 'assembling');
+  await page.waitForTimeout(600);
+  await expect(opening.locator('.ostrakon')).toHaveAttribute('data-state', 'assembling');
+  await expect(sherd(page, pageSherd)).toHaveCount(0);
+  release();
+  await expect(opening.locator('.ostrakon')).toHaveClass(/ostrakon-glow/);
+  await expect(opening).toHaveCount(0);
+}
+
+test('your work and the playbooks, loaded directly, wait under the opening sherd', async ({ page }) => {
   await stubLive(page);
   await stubApi(page);
   const work = await hold(page, '**/api/tasks/mine');
   await page.goto('/work');
-  await expect(sherd(page, 'Loading your work')).toBeVisible();
-  work();
+  await opensUnder(page, 'Loading your work', work);
   await expect(page.getByText('Nothing assigned to you.')).toBeVisible();
 
   const playbooks = await hold(page, '**/api/playbooks');
   await page.goto('/playbooks');
-  await expect(sherd(page, 'Loading playbooks')).toBeVisible();
-  playbooks();
+  await opensUnder(page, 'Loading playbooks', playbooks);
   await expect(page.getByText('No playbooks yet.')).toBeVisible();
 });
 
-test('report brands assemble while they load', async ({ page }) => {
+test('your work, reached from another page, assembles its own sherd', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page);
+  await page.goto('/');
+  await expect(page.getByText('Phishing leads to a foothold on FIN-WS-07')).toBeVisible();
+  const work = await hold(page, '**/api/tasks/mine');
+  await page.getByRole('link', { name: 'Your work' }).click();
+  await expect(sherd(page, 'Loading your work')).toBeVisible();
+  work();
+  await expect(page.getByText('Nothing assigned to you.')).toBeVisible();
+});
+
+test('report brands, loaded directly, wait under the opening sherd', async ({ page }) => {
   await stubLive(page);
   await stubApi(page, admin, (_method, path) => (path === '/api/licence' ? { json: services } : undefined));
   const open = await hold(page, '**/api/brands');
   await page.goto('/installation?tab=brands');
-  await expect(sherd(page, 'Loading report brands')).toBeVisible();
-  open();
+  await opensUnder(page, 'Loading report brands', open);
   await expect(page.getByRole('form', { name: 'New brand' })).toBeVisible();
   await expect(sherd(page, 'Loading report brands')).toHaveCount(0);
 });
 
-test('the webhook list mends and glows before it shows', async ({ page }) => {
+test('the webhook list, loaded directly, waits under the opening sherd', async ({ page }) => {
   await stubLive(page);
   await stubApi(page, admin, (_method, path) =>
     path === '/api/webhooks' ? { json: { events: ['incident.created'], sending: false, webhooks: [] } } : undefined,
   );
   const open = await hold(page, '**/api/webhooks');
   await page.goto('/installation?tab=webhooks');
-  const loading = sherd(page, 'Loading webhooks');
-  await expect(loading.locator('.ostrakon')).toHaveAttribute('data-state', 'assembling');
-  open();
-  await expect(loading.locator('.ostrakon')).toHaveClass(/ostrakon-glow/);
+  await opensUnder(page, 'Loading webhooks', open);
   await expect(page.getByRole('form', { name: 'New webhook' })).toBeVisible();
 });
 

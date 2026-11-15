@@ -21,6 +21,10 @@
   transition-duration: 0.45s;
   transition-timing-function: cubic-bezier(0.1, 0.7, 0.3, 1);
 }
+/* Gliding home (Assembling's `glide`): one eased movement the whole way, whatever the state */
+.assembling-glide .ostrakon[data-state] .ostrakon-piece {
+  transition: transform var(--sherd-glide) cubic-bezier(0.3, 0.1, 0.25, 1);
+}
 /* Finished work: the last pieces click home, one warm glow, then it rests */
 .ostrakon-glow .ostrakon-piece {
   transition-duration: 0.3s;
@@ -67,6 +71,47 @@
   display: grid;
   place-items: center;
   min-block-size: 40vh;
+}
+/* Opening (Ostrakon.tsx): the page waits hidden beneath the sherd, the sherd fades out and the page
+   fades in. The page's fade is only while it runs (no fill afterwards), so it leaves no stacking
+   context behind */
+.loading-content {
+  height: 100%;
+}
+.loading-covered {
+  visibility: hidden;
+}
+.loading-revealed {
+  animation: loading-arrive var(--loading-fade) ease-out backwards;
+}
+@keyframes loading-arrive {
+  from { opacity: 0; }
+}
+.loading-leaving {
+  opacity: 0;
+  transition: opacity var(--loading-fade) ease-in;
+}
+/* Opening the app: over the window, the mended sherd at its centre with the label below it, and no
+   band kept above for the loose pieces, which may drift past the edges as they come in */
+.loading-opening {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+.loading-opening .assembling {
+  padding-block: 0;
+  gap: var(--space-4);
+  translate: 0 calc((var(--space-4) + 1lh) / 2);
+}
+
+/* The whole sherd behind every page (WholeSherd.tsx), under the loose ones */
+.sherd-whole {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background: url('/brand/ostrakon-limestone.png') center / min(126.7vw, 103.7rem) auto no-repeat;
+  opacity: var(--sherd-whole-opacity);
 }
 
 /* Loose sherds behind the app */

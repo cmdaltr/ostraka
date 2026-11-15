@@ -52,13 +52,13 @@ def test_pdf_renders_with_cover_pages_and_back(pdf):
     assert re.search(rb"/FontName /[A-Z]{6}\+JetBrainsMono", pdf)
 
 
-def test_docx_has_sections_tlp_and_expansion(docx_text, blocks):
+def test_docx_has_sections_tlp_and_tagline(docx_text, blocks):
     for title in branded.sections_of(blocks):
         assert title in docx_text
     assert TLP_LABEL in docx_text
     assert "OST-2026-014" in docx_text
     assert "Findings†" in docx_text
-    assert branding.EXPANSION in docx_text.replace("\n", "")
+    assert branding.TAGLINE in docx_text
 
 
 def test_render_refuses_unknown_format_and_block():

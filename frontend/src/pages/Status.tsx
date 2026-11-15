@@ -30,7 +30,7 @@ export function Status() {
       <section className="status-hero">
         <Wordmark size="lg" />
         <p>
-          {brand.tagline}. The platform is being rebuilt; this page shows whether the server and its
+          {brand.tagline}. Ostraka is being rebuilt; this page shows whether the server and its
           dependencies are answering.
         </p>
       </section>

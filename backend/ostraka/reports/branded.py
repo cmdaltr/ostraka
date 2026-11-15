@@ -90,18 +90,6 @@ def _fit(png: bytes, max_w: float, max_h: float) -> tuple[float, float]:
     return w * scale, h * scale
 
 
-def _initials(text: str) -> list[tuple[str, bool]]:
-    """The expansion split so each capitalised word's first letter can be set apart: [(text, initial)]."""
-    out: list[tuple[str, bool]] = []
-    for i, word in enumerate(text.split(" ")):
-        lead = " " if i else ""
-        if word[:1].isupper():
-            out += [(lead, False), (word[0], True), (word[1:], False)]
-        else:
-            out.append((lead + word, False))
-    return [(t, b) for t, b in out if t]
-
-
 def sections_of(blocks: Sequence[tuple]) -> list[str]:
     """The section titles, in order, as the contents lists them."""
     return [b[1] for b in blocks if b[0] == "section"]
@@ -572,11 +560,7 @@ def to_docx(cover: Cover, blocks: Sequence[tuple]) -> bytes:
         add_text(p, branding.NAME, size=40, bold=True, colour=INK)
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        for text, initial in _initials(branding.EXPANSION):
-            r = p.add_run(text)
-            r.font.size = Pt(11)
-            r.font.bold = initial
-            r.font.color.rgb = RGBColor(*(CLAY if initial else MUTED))
+        add_text(p, branding.TAGLINE, size=11, colour=MUTED)
     else:
         for line in _back_lines(theme):
             add_text(p, line, size=9, colour=MUTED, italic=True)
@@ -956,16 +940,9 @@ def to_pdf(cover: Cover, blocks: Sequence[tuple]) -> bytes:
         cv.setFillColor(ink)
         cv.setFont(semibold, 40)
         cv.drawCentredString(page_w / 2, page_h * 0.53 - 2.2 * cm, branding.NAME)
-        parts = _initials(branding.EXPANSION)
-        size = 11
-        widths = [stringWidth(t, semibold if b else regular, size) for t, b in parts]
-        x = (page_w - sum(widths)) / 2
-        y = page_h * 0.53 - 3.3 * cm
-        for (text, initial), w in zip(parts, widths, strict=True):
-            cv.setFillColor(clay if initial else muted)
-            cv.setFont(semibold if initial else regular, size)
-            cv.drawString(x, y, text)
-            x += w
+        cv.setFillColor(muted)
+        cv.setFont(regular, 11)
+        cv.drawCentredString(page_w / 2, page_h * 0.53 - 3.3 * cm, branding.TAGLINE)
 
     class Numbered(rl_canvas.Canvas):
         """Page x of y in the footer, counting from the first page after the title."""

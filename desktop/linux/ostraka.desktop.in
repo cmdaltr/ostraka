@@ -2,7 +2,7 @@
 Type=Application
 Name=Ostraka
 GenericName=Incident Response
-Comment=Incident management and response for teams
+Comment=Platform for Incident Management, Response and Hunting
 Exec=@EXEC@
 Icon=ostraka
 Terminal=false

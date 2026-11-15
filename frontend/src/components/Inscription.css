@@ -1,0 +1,63 @@
+/* As wide as whatever holds it (on sign-in, the card): the name fills the width, and every word is
+   written at the name's height unless it's longer, when it shrinks to fit */
+.inscription {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  container-type: inline-size;
+}
+.inscription-word {
+  display: block;
+  /* the name's viewBox is 600 wide and 128 high (Inscription.tsx) */
+  height: calc(100cqi * 128 / 600);
+  width: auto;
+  max-width: 100%;
+  overflow: visible;
+}
+.inscription-letters path {
+  fill: none;
+  stroke: var(--inscription-ink);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.inscription-name .inscription-letters path {
+  stroke: var(--inscription-name);
+}
+/* Written stroke by stroke (each path's length is 1) */
+.inscription[data-phase='writing'] .inscription-letters path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: inscription-write 140ms ease-out forwards;
+}
+@keyframes inscription-write {
+  to { stroke-dashoffset: 0; }
+}
+.inscription-scratch {
+  fill: none;
+  stroke: var(--chalk);
+  stroke-width: 16;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: inscription-write 650ms cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+.inscription[data-phase='fading'] > * {
+  opacity: 0;
+  transition: opacity 350ms ease-in;
+}
+/* Top right, just outside the name, so the name itself spans the width */
+.inscription-tm {
+  position: absolute;
+  top: 0.2rem;
+  left: 100%;
+  margin-inline-start: 0.2rem;
+  font: 600 1.1rem / 1 var(--font-ui);
+  color: var(--inscription-name);
+  margin-inline-start: 0.2rem;
+}
+.inscription-tm[data-shown='false'] {
+  visibility: hidden;
+}

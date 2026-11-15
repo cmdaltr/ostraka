@@ -26,7 +26,7 @@
 ## Continued / public use
 
 - Public repository **github.com/cmdaltr/ostraka**: the name and mark throughout the README, `docs/` and the source; the host CLI is `ostraka`, references are `OST-`.
-- The name and mark in the running web application (sign-in sherd and split-flap board, the navigation's wordmark with its ™, browser title, the trademark notice under sign-in and in the footer) and on exported reports (PDF and Word) in the Ostrakon style, which carries the wordmark (a Pro or Services report brand puts the customer's logo in its place).
+- The name and mark in the running web application (the sherd behind every page, the name with its ™ on sign-in and the wordmark with its ™ in the navigation, browser title, the trademark notice under sign-in and in the footer) and on exported reports (PDF and Word) in the Ostrakon style, which carries the wordmark (a Pro or Services report brand puts the customer's logo in its place).
 - The Elastic License 2.0 file carries the name ("Copyright (c) 2026 cmdaltr. Ostraka is licensed under the Elastic License 2.0"); the trademark notice in the README and `COMMERCIAL-LICENSE.md` reserves the name and logo separately from the source-available code.
 
 ## To add as it happens (strengthens the record)

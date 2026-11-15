@@ -1,6 +1,6 @@
 # Ostraka
 
-Incident management and response for teams. It is the record of an incident: the people, the work, the decisions and the assessments. It sits beside Rowanholt (evidence and analysis) and Shikari (detection and hunting) and doesn't duplicate either. The plan and every product decision are in `docs/ROADMAP.md`; read it before starting a phase.
+Platform for Incident Management, Response and Hunting. It is the record of an incident: the people, the work, the decisions and the assessments. It sits beside Rowanholt (evidence and analysis) and Shikari (detection and hunting) and doesn't duplicate either. The plan and every product decision are in `docs/ROADMAP.md`; read it before starting a phase.
 
 ## Layout
 

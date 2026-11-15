@@ -7,8 +7,7 @@ that would rather ask.
 from __future__ import annotations
 
 NAME = "Ostraka"
-TAGLINE = "Incident management and response"
-EXPANSION = "Operational Suite for Teams to Respond, Assess, Keep records & take Action"
+TAGLINE = "Platform for Incident Management, Response and Hunting"
 # The unregistered mark's notice, as the README and COMMERCIAL-LICENSE.md give it
 TRADEMARK = (
     "Ostraka™ and its logo are trademarks of cmdaltr. The licence covers the software; it grants no right "
@@ -28,7 +27,6 @@ def as_dict() -> dict[str, object]:
     return {
         "name": NAME,
         "tagline": TAGLINE,
-        "expansion": EXPANSION,
         "trademark": TRADEMARK,
         "incident_prefix": INCIDENT_PREFIX,
         "hunt_prefix": HUNT_PREFIX,

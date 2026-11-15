@@ -5,6 +5,7 @@ import type { Grant } from '../api/types';
 import { brand } from '../brand';
 import { startWith, useSession } from '../auth/session';
 import { BrandMark } from '../components/BrandMark';
+import { GitHubMark } from '../components/GitHubMark';
 import { Progress } from '../components/sherd/Progress';
 import { Notice, messageOf } from '../components/ui';
 
@@ -58,7 +59,8 @@ export function SignIn() {
 
         {!ticket ? (
           <form className="panel" onSubmit={submitPassword}>
-            <h1>Sign in</h1>
+            {/* the form speaks for itself; the heading is for screen readers */}
+            <h1 className="visually-hidden">Sign in to {brand.name}</h1>
             <label className="field">
               <span>Email</span>
               <input id="email" name="email" type="email" autoComplete="username" required autoFocus />
@@ -72,6 +74,9 @@ export function SignIn() {
                 Continue
               </Progress>
             </button>
+            <p className="hint auth-note">
+              Ostraka accounts are by invitation. Ask your team lead or an admin.
+            </p>
           </form>
         ) : (
           <form className="panel" onSubmit={submitCode}>
@@ -105,11 +110,16 @@ export function SignIn() {
             </button>
           </form>
         )}
-        <p className="hint" style={{ textAlign: 'center' }}>
-          Ostraka accounts are by invitation. Ask your team lead or an admin.
-        </p>
-        <p className="hint" style={{ textAlign: 'center' }}>
+        <p className="hint auth-links">
           <a href="/help/licence">Licence</a>
+          <a
+            href="https://github.com/cmdaltr"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="cmdaltr on GitHub"
+          >
+            <GitHubMark />
+          </a>
         </p>
         <p className="hint" style={{ textAlign: 'center' }}>
           {brand.trademark}

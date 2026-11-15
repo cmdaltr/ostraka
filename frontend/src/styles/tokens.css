@@ -93,6 +93,11 @@
     --sherd-image: url('/brand/ostrakon-limestone.png');
     --sherd-glow: rgb(255 232 190 / 0.65);
     --sherd-opacity: 0.1;
+  --sherd-whole-opacity: 0.054;
+  --inscription-ink: #e6e1d8;
+  --inscription-name: #e07a5f;
+  --inscription-name-ink: #1e1612;
+  --chalk: #8b8f97;
     color-scheme: dark;
   }
 }
@@ -113,43 +118,31 @@
   --sherd-image: url('/brand/ostrakon-limestone.png');
   --sherd-glow: rgb(255 232 190 / 0.65);
   --sherd-opacity: 0.1;
+  --sherd-whole-opacity: 0.054;
+  --inscription-ink: #e6e1d8;
+  --inscription-name: #e07a5f;
+  --inscription-name-ink: #1e1612;
+  --chalk: #8b8f97;
   color-scheme: dark;
 }
 
-/* ---- The backdrop behind sign-in and invitation pages: each palette's darkest ground, in every mode --- */
+/* ---- Brand objects, the same in every palette ------------------------------------------------- */
 :root {
-  --backdrop: radial-gradient(120% 90% at 50% 0%, #2a3a7c 0%, #141c45 55%, #0b1029 100%);
-  --backdrop-ink: #d6dcf5;
-  --backdrop-glyph: #9db2ff;
-  /* the departures board is an object, not a surface: limestone tiles in a clay frame, the same in
-     every palette and mode */
-  --board-frame: #a95c42;
-  --board-frame-edge: #7e3f2b;
-  --board-tile: #ece7dc;
-  --board-tile-shade: #d9d1c1;
-  --board-seam: rgb(126 63 43 / 0.45);
-  --board-ink: #3d2217;
-  --board-name: #a33a24;
-  --board-malware: #e0261c;
-  --board-shadow: rgb(0 0 0 / 0.45);
   /* the mark: the clay sherd by day, the limestone one by night (see the mode blocks below) */
   --mark-clay: block;
   --mark-limestone: none;
   /* the same mark broken into fragments (components/sherd): its artwork, the glow when it's mended,
-     and how faint the loose sherds behind the app are */
+     how faint the loose sherds behind the app are, and the whole one behind every page */
   --sherd-image: url('/brand/ostrakon-clay.png');
   --sherd-glow: rgb(226 128 72 / 0.7);
   --sherd-opacity: 0.14;
-}
-:root[data-palette='ostrakon'] {
-  --backdrop: radial-gradient(120% 90% at 50% 0%, #5a3324 0%, #2e1b14 55%, #1a0f0b 100%);
-  --backdrop-ink: #f1e7d6;
-  --backdrop-glyph: #e0a27f;
-}
-:root[data-palette='ledger'] {
-  --backdrop: radial-gradient(120% 90% at 50% 0%, #245246 0%, #14302a 55%, #0b1a17 100%);
-  --backdrop-ink: #d7e8e1;
-  --backdrop-glyph: #8fdcc0;
+  --sherd-whole-opacity: 0.2;
+  /* the sign-in inscription (components/Inscription.tsx): words in iron-gall ink, the name in red
+     ochre, scratched out in black chalk (a soot grey by night, where black wouldn't show) */
+  --inscription-ink: #2b211b;
+  --inscription-name: #a33a24;
+  --inscription-name-ink: #ffffff;
+  --chalk: #161514;
 }
 
 /* ---- Cobalt ---------------------------------------------------------------------------- */

@@ -1,7 +1,7 @@
 [project]
 name = "ostraka"
 version = "0.1.0"
-description = "Incident management and response for teams"
+description = "Platform for Incident Management, Response and Hunting"
 requires-python = ">=3.12"
 license = {text = "Elastic-2.0"}
 dependencies = [

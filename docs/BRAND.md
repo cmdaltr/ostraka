@@ -11,7 +11,7 @@
 
 That gives the product three meanings in one word: the record, the ledger, and a decision taken by many hands. The broken-and-mended mark adds a fourth: an incident is rebuilt from its pieces, finding by finding.
 
-The letters stand for **O**perational **S**uite for **T**eams to **R**espond, **A**ssess, **K**eep records & take **A**ction. Say it OS-tra-ka.
+The name isn't an acronym. Say it OS-tra-ka.
 
 The product was called ciphr until 10 November 2026. CIPHR Ltd, a UK HR software company, holds registered marks for the name, so it changed before anything was released.
 
@@ -38,13 +38,17 @@ The mark changes material with the theme, so it always stands out from the page.
 | File | Use |
 |---|---|
 | `docs/brand/ostrakon-clay.png`, `ostrakon-limestone.png` | Documents, the README (800 px, transparent) |
-| `frontend/public/brand/` | Sign-in (560 px) |
+| `frontend/public/brand/` | The limestone one behind every page, and the loose fragments (560 px) |
 | `frontend/public/favicon.svg` | The browser tab, clay or limestone by the OS theme |
 | `frontend/public/favicon.png` | Push notifications (clay, 192 px) |
 
 ## Sign-in
 
-The sherd sits above a split-flap departures board: limestone tiles in a clay frame. The board flaps through incident words (ALERT, PAYLOAD, LATERAL, ΟΣΤΡΑΚΑ…) and keeps coming back to the name, which settles in red ochre. Malware appears as Egyptian hieroglyphs, the way it reads to anyone who hasn't reversed it, and flickers red. With reduced motion the board holds the name.
+The name as an inscription, with the tagline under it, over the whole sherd (below). The lettering (`frontend/src/components/lettering.ts`) is Latin capitals drawn as strokes in the manner of the mark's Greek: even monoline strokes, every letter in a cell of its own as in *stoichedon*, the lunate E, an A with a sloping bar and an angular S. OSTRAKA is in red ochre with its ™ at the top right. Every so often it's scratched out in black chalk (a soot grey in dark mode, where black wouldn't show) and a word from the work is written in its place, stroke by stroke, in iron-gall ink: PHISHING, LATERAL MOVEMENT, KERBEROASTING and so on, of any length. That is scratched out in turn and the name written again, so the name is up for most of the time. With reduced motion the name stays. The clay sherd and the split-flap departures board were taken off sign-in on 15 November 2026.
+
+## Behind every page
+
+The whole limestone sherd lies behind every page, sign-in included, in every palette and mode: large, centred and faint (`--sherd-whole-opacity`, 0.2 in light mode and 0.054 in dark). In the app, loose fragments of the mark drift round the edges above it. The first ciphr's blue gradient and drifting cipher glyphs are gone: sign-in sits on the palette's own ground like every other page.
 
 ## The Ostrakon palette
 
@@ -57,7 +61,7 @@ One of the three palettes in Settings, beside Cobalt (the default) and Ledger. N
 | `--ink` | `#33241b` iron-gall | `#efe6d8` |
 | `--accent` | `#a0492f` clay | `#e08d6d` |
 
-The departures board's colours (`--board-*`) are an object rather than a surface, so they're the same in every palette and mode. Severity and TLP colours never change with the palette; TLP chips keep the standard black ground.
+Severity and TLP colours never change with the palette; TLP chips keep the standard black ground.
 
 ## Rules
 
@@ -66,5 +70,5 @@ The departures board's colours (`--board-*`) are an object rather than a surface
 - No Greek-key borders, columns, amphora clip art or laurel wreaths. The mended sherd carries the whole reference.
 - Red ochre marks one thing per screen: what needs someone.
 - Inter and JetBrains Mono are the product's fonts, in every palette.
-- In writing the name is **Ostraka**, capitalised like any product name (11 November 2026); `ostraka` only in paths, commands and identifiers. The wordmark and the board set it in capitals.
-- The Greek capitals read as "OΣTPAKA" to anyone who doesn't read Greek (Ρ is an R), so the Latin *ostraka* is the wordmark and the Greek is the second voice: on the mark, on the board and on the about page.
+- In writing the name is **Ostraka**, capitalised like any product name (11 November 2026); `ostraka` only in paths, commands and identifiers. The wordmark (the app's header and the status page) and the sign-in inscription set it in capitals, in the same lettering: the wordmark is the inscription's name, still.
+- The Greek capitals read as "OΣTPAKA" to anyone who doesn't read Greek (Ρ is an R), so the Latin *ostraka* is the wordmark and the Greek is the second voice: on the mark and on the about page.

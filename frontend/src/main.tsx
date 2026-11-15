@@ -9,7 +9,8 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { restore, useSession } from './auth/session';
 import { AppShell } from './components/AppShell';
-import { Loading } from './components/sherd/Ostrakon';
+import { Opening } from './components/sherd/Ostrakon';
+import { WholeSherd } from './components/sherd/WholeSherd';
 import { AcceptInvite } from './pages/AcceptInvite';
 import { DesignSystem } from './pages/DesignSystem';
 import { DetectionGapsPage } from './pages/DetectionGapsPage';
@@ -59,10 +60,20 @@ function App() {
       </main>
     );
 
-  // Opening the app: the sherd assembles while the session is restored, then mends and glows once
-  // before sign-in or the app takes its place
+  // Opening the app: one sherd, larger than elsewhere, assembles while the session is restored and the
+  // first page loads beneath it, mends, glows and fades into the page. Opening on sign-in it takes
+  // two seconds to mend however soon the server answers, and stays a second; signed in, it's as
+  // quick as the server
+  const toSignIn = session.status !== 'signed-in';
   return (
-    <Loading ready={!opening} label="Opening Ostraka">
+    <Opening
+      ready={!opening}
+      label="Opening Ostraka"
+      width="min(44.8rem, 86vw)"
+      duration={toSignIn ? 2000 : 0}
+      hold={toSignIn ? 1000 : undefined}
+      fade={400}
+    >
       {session.status === 'signed-out' && <SignIn />}
       {session.status === 'signed-in' && (
         <Routes>
@@ -80,7 +91,7 @@ function App() {
           </Route>
         </Routes>
       )}
-    </Loading>
+    </Opening>
   );
 }
 
@@ -93,6 +104,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <WholeSherd />
         <App />
       </BrowserRouter>
     </QueryClientProvider>

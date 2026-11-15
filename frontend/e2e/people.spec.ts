@@ -62,6 +62,7 @@ test('signing in takes a password and then an authenticator code', async ({ page
 
   await page.goto('/');
   await expect(page.getByRole('img', { name: 'Ostraka' })).toBeVisible();
+  await expect(page.getByText('Platform for Incident Management, Response and Hunting')).toBeVisible();
   await page.locator('#email').fill('sam@example.org');
   await page.locator('#password').fill('correct horse battery staple');
   await page.getByRole('button', { name: 'Continue' }).click();
@@ -75,36 +76,43 @@ test('signing in takes a password and then an authenticator code', async ({ page
   await expect(page.locator('html')).toHaveAttribute('data-palette', 'ledger'); // the saved theme follows the account
 });
 
-test('with reduced motion the board holds the name and the glyphs stand still', async ({ page }) => {
+test('the inscription opens on the name with its ™, and with reduced motion it stays', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await signedOut(page);
   await page.goto('/');
-  const board = page.locator('.splitflap');
-  await expect(board).toHaveText('OSTRAKA');
-  await page.waitForTimeout(3600);
-  await expect(board).toHaveText('OSTRAKA');
-  await expect(page.locator('.cipher-field')).toBeAttached();
+  const inscription = page.getByRole('img', { name: 'Ostraka' });
+  await expect(inscription).toHaveAttribute('data-word', 'OSTRAKA');
+  await expect(inscription.locator('.inscription-tm')).toHaveAttribute('data-shown', 'true');
+  await page.waitForTimeout(9000);
+  await expect(inscription).toHaveAttribute('data-word', 'OSTRAKA');
+  await expect(inscription).toHaveAttribute('data-phase', 'held');
 });
 
-test('sign-in shows the clay sherd in light mode and the limestone one in dark', async ({ page }) => {
+test('sign-in has no visible title, the invitation note in the card, and links to the licence and GitHub', async ({ page }) => {
   await signedOut(page);
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Sign in to Ostraka' })).toHaveClass(/visually-hidden/);
+  await expect(page.locator('form.panel .auth-note')).toHaveText(
+    'Ostraka accounts are by invitation. Ask your team lead or an admin.',
+  );
+  await expect(page.getByRole('link', { name: 'Licence' })).toHaveAttribute('href', '/help/licence');
+  const github = page.getByRole('link', { name: 'cmdaltr on GitHub' });
+  await expect(github).toHaveAttribute('href', 'https://github.com/cmdaltr');
+  await expect(github).toHaveAttribute('rel', 'noopener noreferrer');
+});
+
+test('the whole limestone sherd lies behind sign-in and the public pages, in either mode', async ({ page }) => {
+  await signedOut(page);
+  const whole = page.locator('.sherd-whole');
+  const artwork = () => whole.evaluate((el) => getComputedStyle(el).backgroundImage);
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('/');
-  const piece = page.locator('.brandmark .ostrakon-piece').first();
-  const artwork = () => piece.evaluate((el) => getComputedStyle(el).backgroundImage);
-  await expect.poll(artwork).toContain('ostrakon-clay.png');
+  await expect(whole).toHaveCount(1);
+  await expect.poll(artwork).toContain('ostrakon-limestone.png');
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect.poll(artwork).toContain('ostrakon-limestone.png');
-});
-
-test('clicking the sherd breaks it apart, and it mends itself', async ({ page }) => {
-  await signedOut(page);
-  await page.goto('/');
-  const sherd = page.getByRole('button', { name: 'Ostraka: the mended sherd' });
-  await expect(sherd.locator('.ostrakon')).toHaveAttribute('data-state', 'whole');
-  await sherd.click();
-  await expect(sherd.locator('.ostrakon')).toHaveAttribute('data-state', 'scattered');
-  await expect(sherd.locator('.ostrakon')).toHaveAttribute('data-state', 'whole', { timeout: 3000 });
+  await page.goto('/status');
+  await expect(whole).toHaveCount(1);
 });
 
 test('a wrong password shows the server’s message and stays on the first step', async ({ page }) => {
