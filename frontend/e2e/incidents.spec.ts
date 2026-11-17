@@ -213,16 +213,58 @@ test('the list filters by severity, TLP and phase, and edges each card in its se
   await expect(cards).toHaveCount(3);
   await expect(cards.nth(1)).toHaveClass(/sev-edge-critical/);
 
-  await page.locator('#filter-severity').selectOption('critical');
+  const choose = async (filter: string, option: string) => {
+    await page.locator(`#filter-${filter}`).click();
+    await page.getByRole('option', { name: option, exact: true }).click();
+  };
+  await choose('severity', 'Critical');
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Ransomware on the file server');
-  await page.locator('#filter-tlp').selectOption('amber');
+  await expect(page.locator('#filter-severity')).toHaveAccessibleName('Severity: Critical');
+  await choose('tlp', 'TLP:AMBER');
   await expect(page.getByRole('heading', { name: 'No open incidents or hunts match' })).toBeVisible();
   await page.getByRole('button', { name: 'Clear filters' }).click();
-  await page.locator('#filter-phase').selectOption('collect');
+  await choose('phase', 'Collect');
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Kerberoasting');
   // an incident's phases go when only hunts are shown, and a hunt's phase filter clears for incidents
   await page.getByRole('button', { name: 'Incidents', exact: true }).click();
-  await expect(page.locator('#filter-phase')).toHaveValue('');
+  await expect(page.locator('#filter-phase')).toHaveAccessibleName('Phase: Any phase');
+});
+
+test('the filters drop down in the records’ colours, all on one line, and work from the keyboard', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page);
+  await page.goto('/');
+  const toolbar = page.getByRole('group', { name: 'Filter' });
+  await expect(page.locator('#filter-phase')).toBeVisible();
+  const controls = toolbar.locator(':scope > .segmented, :scope > .pill-select > button');
+  const boxes = await controls.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()));
+  expect(boxes).toHaveLength(5);
+  expect(new Set(boxes.map((b) => Math.round(b.height))).size).toBe(1);
+  expect(new Set(boxes.map((b) => Math.round(b.top))).size).toBe(1);
+
+  await page.locator('#filter-severity').click();
+  const critical = page.getByRole('option', { name: 'Critical' });
+  await expect(critical.locator('.pill')).toHaveClass(/sev-critical/);
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#filter-severity')).toHaveAccessibleName('Severity: Critical');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await page.locator('#filter-severity').click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(page.locator('#filter-severity')).toBeFocused();
+});
+
+test('declaring an incident and starting a hunt are in the header on every page', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page);
+  await page.goto('/people');
+  await page.getByRole('banner').getByRole('button', { name: 'Start a hunt' }).click();
+  await expect(page).toHaveURL(/\/\?declare=hunt$/);
+  await expect(page.getByRole('form', { name: 'Start a hunt' })).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('form', { name: 'Start a hunt' })).toHaveCount(0);
 });

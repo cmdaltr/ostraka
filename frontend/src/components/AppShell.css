@@ -19,17 +19,36 @@
   display: inline-flex;
   text-decoration: none;
 }
+/* Everything in the header is one height: links, buttons and icons */
+.shell-header {
+  --header-h: 36px;
+}
 .shell-nav {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-1);
   flex: 1;
 }
 .shell-nav a {
+  display: inline-flex;
+  align-items: center;
+  height: var(--header-h);
   color: var(--muted);
   text-decoration: none;
   font-weight: 500;
-  padding: 6px 10px;
+  padding: 0 10px;
   border-radius: var(--radius-md);
+}
+.shell-declare {
+  display: inline-flex;
+  gap: var(--space-2);
+  margin-left: var(--space-3);
+}
+.shell-header .btn {
+  height: var(--header-h);
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .shell-nav a:hover {
   color: var(--ink);
@@ -98,24 +117,12 @@
   color: var(--muted);
   font-weight: 500;
 }
-.shell-link {
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 500;
-  padding: 6px 10px;
-  border-radius: var(--radius-md);
-}
-.shell-link:hover,
-.shell-link.active {
-  color: var(--ink);
-  background: var(--raised);
-}
 /* the way to your profile, the bell's twin */
 .shell-icon {
   display: inline-grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: var(--header-h);
+  height: var(--header-h);
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: var(--surface);

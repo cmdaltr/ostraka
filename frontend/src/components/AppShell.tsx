@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { day, getLicence } from '../api/installation';
 import type { Me } from '../api/types';
 import { signOut } from '../auth/session';
 import { brand } from '../brand';
 import { startLive } from '../live/live';
 import { Bell } from './Bell';
+import { CogIcon } from './CogIcon';
 import { PersonIcon } from './PersonIcon';
 import { SiteLinks } from './SiteLinks';
 import { SherdField } from './sherd/SherdField';
@@ -31,6 +32,7 @@ function LicenceRunningOut() {
 export function AppShell({ me }: { me: Me }) {
   const manages = me.role === 'admin' || me.role === 'team_lead';
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   useEffect(() => startLive(queryClient), [queryClient]);
   return (
     <div className="shell">
@@ -47,18 +49,29 @@ export function AppShell({ me }: { me: Me }) {
           <NavLink to="/detection-gaps">Detections</NavLink>
           {manages && <NavLink to="/playbooks">Playbooks</NavLink>}
           <NavLink to="/people">{manages ? 'People' : 'Directory'}</NavLink>
+          {me.role !== 'observer' && (
+            // On every page: the form opens over the incident list
+            <span className="shell-declare">
+              <button className="btn" type="button" onClick={() => navigate('/?declare=hunt')}>
+                Start a hunt
+              </button>
+              <button className="btn btn-primary" type="button" onClick={() => navigate('/?declare=incident')}>
+                Declare an incident
+              </button>
+            </span>
+          )}
         </nav>
         <div className="shell-user">
-          {me.role === 'admin' && (
-            <NavLink to="/installation" className="shell-link">
-              Installation
-            </NavLink>
-          )}
           <Bell />
           <span className="shell-name">{me.name}</span>
           <NavLink to="/profile" className="shell-icon" aria-label="Profile" title="Profile">
             <PersonIcon />
           </NavLink>
+          {me.role === 'admin' && (
+            <NavLink to="/installation" className="shell-icon" aria-label="Installation" title="Installation">
+              <CogIcon />
+            </NavLink>
+          )}
           <button className="btn btn-quiet" type="button" onClick={() => signOut()}>
             Sign out
           </button>

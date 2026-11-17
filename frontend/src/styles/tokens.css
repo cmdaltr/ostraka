@@ -30,6 +30,9 @@
   --radius-md: 6px;
   --radius-lg: 10px;
 
+  /* One height for the controls that sit in a row: toolbars and the header */
+  --control-h: 2.5rem;
+
   /* FIRST TLP 2.0: black ground, standard text colours, in every theme */
   --tlp-ground: #000000;
   --tlp-red: #ff2b2b;
@@ -71,6 +74,15 @@
   --graph-evidence: #4d7c0f;
   --graph-finding: #3d4fd6;
   --graph-technique: #7a2e8f;
+  /* Teams in a playbook's swimlanes, by a hash of the team (teamColour), the same in every palette */
+  --team-1: #0e7490;
+  --team-2: #7a2e8f;
+  --team-3: #a15c07;
+  --team-4: #4d7c0f;
+  --team-5: #3d4fd6;
+  --team-6: #b42371;
+  --team-7: #1d6fb8;
+  --team-8: #7c5a3a;
 
   color-scheme: light;
 }
@@ -82,7 +94,6 @@
     --sev-high: #fd853a;
     --sev-medium: #fdb022;
     --sev-low: #98a2b3;
-  --sev-ink: #101217;
     --sev-ink: #101217;
     --ok: #47cd89;
     --graph-asset: #22b8cf;
@@ -90,18 +101,26 @@
     --graph-evidence: #a3d65c;
     --graph-finding: #8c9bff;
     --graph-technique: #d38ce8;
+    --team-1: #22b8cf;
+    --team-2: #d38ce8;
+    --team-3: #fdb022;
+    --team-4: #a3d65c;
+    --team-5: #8c9bff;
+    --team-6: #f472b6;
+    --team-7: #60a5fa;
+    --team-8: #c9a27e;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
     --mark-clay: none;
     --mark-limestone: block;
     --sherd-image: url('/brand/ostrakon-limestone.png');
     --sherd-glow: rgb(255 232 190 / 0.65);
     --sherd-opacity: 0.1;
-  --sherd-whole-opacity: 0.054;
-  --inscription-ink: #e6e1d8;
-  --inscription-name: #e07a5f;
-  --inscription-name-ink: #1e1612;
-  --chalk: #8b8f97;
-  --chalk-line-opacity: 0.45;
+    --sherd-whole-opacity: 0.054;
+    --inscription-ink: #e6e1d8;
+    --inscription-name: #e07a5f;
+    --inscription-name-ink: #1e1612;
+    --chalk: #8b8f97;
+    --chalk-line-opacity: 0.45;
     color-scheme: dark;
   }
 }
@@ -116,6 +135,14 @@
   --graph-evidence: #a3d65c;
   --graph-finding: #8c9bff;
   --graph-technique: #d38ce8;
+  --team-1: #22b8cf;
+  --team-2: #d38ce8;
+  --team-3: #fdb022;
+  --team-4: #a3d65c;
+  --team-5: #8c9bff;
+  --team-6: #f472b6;
+  --team-7: #60a5fa;
+  --team-8: #c9a27e;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
   --mark-clay: none;
   --mark-limestone: block;

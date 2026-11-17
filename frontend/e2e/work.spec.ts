@@ -219,6 +219,29 @@ test('team leads write playbooks step by step', async ({ page }) => {
   });
 });
 
+test('a playbook draws each team’s lane and steps in its own colour', async ({ page }) => {
+  await stubLive(page);
+  const twoTeams = {
+    ...phishing,
+    steps: [
+      { ...phishing.steps[0], team: teams[0] },
+      { ...phishing.steps[1], after: [0] },
+      { ...phishing.steps[1], title: 'Tell the user', team: null, after: [1] },
+    ],
+  };
+  await stubApi(page, me({ role: 'team_lead' }), (_method, path) => (path === '/api/playbooks' ? { json: [twoTeams] } : undefined));
+  await page.goto('/playbooks');
+  await expect(page.locator('.playbook-summary')).toHaveText(/3 tasks.*2 teams/);
+  const colour = (el: Element) => (el as HTMLElement).style.getPropertyValue('--team');
+  const lanes = await page.locator('.workflow-lane').evaluateAll((els) => els.map((e) => (e as HTMLElement).style.getPropertyValue('--team')));
+  expect(lanes).toHaveLength(3);
+  expect(new Set(lanes).size).toBe(3);
+  expect(lanes[2]).toBe('var(--muted)');
+  // a step wears its lane's colour
+  const step = await page.getByRole('listitem', { name: /^Step 2: Revoke sessions/ }).evaluate(colour);
+  expect(step).toBe(lanes[1]);
+});
+
 test('responders see no playbook or channel controls', async ({ page }) => {
   await stubLive(page);
   await stubApi(page);

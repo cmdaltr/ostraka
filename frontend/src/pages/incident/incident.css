@@ -130,14 +130,23 @@ textarea.input {
 .incident-card.sev-edge-low {
   --card-mark: var(--sev-low);
 }
-.list-filters {
+/* The list's filters, on one line, every control the same height */
+.list-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
-  gap: var(--space-3);
+  align-items: center;
+  gap: var(--space-2);
 }
-.list-filters .field {
-  min-width: 150px;
+.list-toolbar .segmented {
+  height: var(--control-h);
+}
+.list-toolbar .btn {
+  height: var(--control-h);
+}
+.phase-pill {
+  color: var(--accent);
+  background: var(--accent-soft);
+  text-transform: uppercase;
 }
 .incident-card:hover {
   border-color: var(--accent);
@@ -315,7 +324,7 @@ textarea.input {
   margin: 0;
 }
 .facts select {
-  text-transform: capitalize;
+  text-transform: uppercase;
 }
 
 .chip-x {
@@ -688,6 +697,27 @@ textarea.input {
 }
 .steps .record {
   background: var(--raised);
+}
+/* A playbook step in the editor, edged in its team's colour as in the drawing */
+.steps .playbook-step {
+  border-left: 5px solid var(--team);
+  background: color-mix(in srgb, var(--team) 6%, var(--raised));
+}
+.steps .playbook-step .label {
+  color: color-mix(in srgb, var(--team) 70%, var(--ink));
+}
+.playbook-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+}
+.playbook-summary span {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
 }
 .step-list {
   margin: 0;

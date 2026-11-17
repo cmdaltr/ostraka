@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { keys } from '../api/incidents';
 import { suggested } from '../api/work';
@@ -11,6 +11,7 @@ import type { Me, Team } from '../api/types';
 import { huntPhases, phases, phasesOf, severities, tlpLevels } from '../brand';
 import type { Phase, RecordKind, Severity, Tlp } from '../brand';
 import { PhaseStrip, SeverityPill, TlpPill } from '../components/Pills';
+import { PillSelect } from '../components/PillSelect';
 import { Loading } from '../components/sherd/Ostrakon';
 import { Notice, formatDate, messageOf } from '../components/ui';
 import { splitTags } from './incident/shared';
@@ -169,7 +170,11 @@ export function listQuery(status: 'open' | 'closed', kind: RecordKind | 'all') {
 export function Incidents({ me }: { me: Me }) {
   const [status, setStatus] = useState<'open' | 'closed'>('open');
   const [kind, setKind] = useState<RecordKind | 'all'>('all');
-  const [declaring, setDeclaring] = useState<RecordKind | null>(null);
+  // Declaring and starting a hunt live in the header, on every page: they open the form here
+  const [params, setParams] = useSearchParams();
+  const asked = params.get('declare');
+  const declaring: RecordKind | null = asked === 'incident' || asked === 'hunt' ? asked : null;
+  const stopDeclaring = () => setParams((p) => (p.delete('declare'), p), { replace: true });
   const list = useQuery(listQuery(status, kind));
   const [severity, setSeverity] = useState<Severity | ''>('');
   const [tlp, setTlp] = useState<Tlp | ''>('');
@@ -178,8 +183,8 @@ export function Incidents({ me }: { me: Me }) {
     (i) => (!severity || i.severity === severity) && (!tlp || i.tlp === tlp) && (!phase || i.phase === phase),
   );
   const filtered = Boolean(severity || tlp || phase);
+  const cap = (word: string) => word[0].toUpperCase() + word.slice(1);
   const noun = kind === 'hunt' ? 'hunts' : kind === 'incident' ? 'incidents' : 'incidents or hunts';
-  const canDeclare = me.role !== 'observer';
 
   return (
     <>
@@ -188,96 +193,65 @@ export function Incidents({ me }: { me: Me }) {
           <h1>Incidents</h1>
           <p>Hello, {me.name.split(' ')[0]}. These are the incidents and hunts your teams are involved in.</p>
         </div>
-        <div className="actions">
-          <div className="segmented" role="group" aria-label="Kind">
-            {(
-              [
-                ['all', 'All'],
-                ['incident', 'Incidents'],
-                ['hunt', 'Hunts'],
-              ] as const
-            ).map(([k, name]) => (
-              <button
-                key={k}
-                type="button"
-                aria-pressed={kind === k}
-                onClick={() => {
-                  setKind(k);
-                  // a hunt's phases aren't an incident's
-                  if (k !== 'all' && phase && !(phasesOf(k) as readonly string[]).includes(phase)) setPhase('');
-                }}
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-          <div className="segmented" role="group" aria-label="Show">
-            {(['open', 'closed'] as const).map((s) => (
-              <button key={s} type="button" aria-pressed={status === s} onClick={() => setStatus(s)}>
-                {s === 'open' ? 'Open' : 'Closed'}
-              </button>
-            ))}
-          </div>
-          {canDeclare && !declaring && (
-            <>
-              <button className="btn" type="button" onClick={() => setDeclaring('hunt')}>
-                Start a hunt
-              </button>
-              <button className="btn btn-primary" type="button" onClick={() => setDeclaring('incident')}>
-                Declare an incident
-              </button>
-            </>
-          )}
-        </div>
       </div>
 
-      <div className="list-filters" role="group" aria-label="Filter">
-        <label className="field">
-          <span>Severity</span>
-          <select id="filter-severity" value={severity} onChange={(e) => setSeverity(e.target.value as Severity | '')}>
-            <option value="">Any</option>
-            {severities.map((s) => (
-              <option key={s} value={s}>
-                {s[0].toUpperCase() + s.slice(1)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>TLP</span>
-          <select id="filter-tlp" value={tlp} onChange={(e) => setTlp(e.target.value as Tlp | '')}>
-            <option value="">Any</option>
-            {tlpLevels.map((t) => (
-              <option key={t} value={t}>
-                TLP:{t.toUpperCase()}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Phase</span>
-          <select id="filter-phase" value={phase} onChange={(e) => setPhase(e.target.value as Phase | '')}>
-            <option value="">Any</option>
-            {kind !== 'hunt' && (
-              <optgroup label="Incidents">
-                {phases.map((p) => (
-                  <option key={p} value={p}>
-                    {p[0].toUpperCase() + p.slice(1)}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            {kind !== 'incident' && (
-              <optgroup label="Hunts">
-                {huntPhases.map((p) => (
-                  <option key={p} value={p}>
-                    {p[0].toUpperCase() + p.slice(1)}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </select>
-        </label>
+      <div className="list-toolbar" role="group" aria-label="Filter">
+        <div className="segmented" role="group" aria-label="Kind">
+          {(
+            [
+              ['all', 'All'],
+              ['incident', 'Incidents'],
+              ['hunt', 'Hunts'],
+            ] as const
+          ).map(([k, name]) => (
+            <button
+              key={k}
+              type="button"
+              aria-pressed={kind === k}
+              onClick={() => {
+                setKind(k);
+                // a hunt's phases aren't an incident's
+                if (k !== 'all' && phase && !(phasesOf(k) as readonly string[]).includes(phase)) setPhase('');
+              }}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+        <div className="segmented" role="group" aria-label="Show">
+          {(['open', 'closed'] as const).map((s) => (
+            <button key={s} type="button" aria-pressed={status === s} onClick={() => setStatus(s)}>
+              {s === 'open' ? 'Open' : 'Closed'}
+            </button>
+          ))}
+        </div>
+        <PillSelect
+          id="filter-severity"
+          label="Severity"
+          any="Any severity"
+          value={severity}
+          onChange={setSeverity}
+          options={severities.map((v) => ({ value: v, name: cap(v), look: <SeverityPill level={v} /> }))}
+        />
+        <PillSelect
+          id="filter-tlp"
+          label="TLP"
+          any="Any TLP"
+          value={tlp}
+          onChange={setTlp}
+          options={tlpLevels.map((v) => ({ value: v, name: `TLP:${v.toUpperCase()}`, look: <TlpPill level={v} /> }))}
+        />
+        <PillSelect
+          id="filter-phase"
+          label="Phase"
+          any="Any phase"
+          value={phase}
+          onChange={setPhase}
+          options={[
+            ...(kind !== 'hunt' ? phases.map((v) => ({ value: v as Phase, group: 'Incidents' })) : []),
+            ...(kind !== 'incident' ? huntPhases.map((v) => ({ value: v as Phase, group: 'Hunts' })) : []),
+          ].map((o) => ({ ...o, name: cap(o.value), look: <span className="pill phase-pill">{o.value}</span> }))}
+        />
         {filtered && (
           <button
             className="btn btn-quiet"
@@ -293,7 +267,7 @@ export function Incidents({ me }: { me: Me }) {
         )}
       </div>
 
-      {declaring && <DeclareForm key={declaring} me={me} kind={declaring} onClose={() => setDeclaring(null)} />}
+      {declaring && me.role !== 'observer' && <DeclareForm key={declaring} me={me} kind={declaring} onClose={stopDeclaring} />}
 
       {list.error && <Notice kind="error">{messageOf(list.error)}</Notice>}
       {/* Keyed by the filter, so one that isn't cached yet assembles afresh */}

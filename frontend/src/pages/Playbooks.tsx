@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { CSSProperties, FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, api } from '../api/client';
 import type { Outcome, OutcomeAction, Playbook } from '../api/work';
@@ -9,6 +9,7 @@ import type { RecordKind } from '../brand';
 import { Loading } from '../components/sherd/Ostrakon';
 import { Notice, messageOf } from '../components/ui';
 import { Workflow } from '../components/Workflow';
+import { teamColour, teamSlots } from '../components/teamColour';
 import { splitTags } from './incident/shared';
 import './incident/incident.css';
 
@@ -70,6 +71,8 @@ function Editor({ playbook, teams, onDone }: { playbook: Playbook | null; teams:
   const remove = (i: number) =>
     setSteps(renumber(steps.filter((_, j) => j !== i), (n) => (n === i ? null : n > i ? n - 1 : n)));
   const toggle = (list: number[], n: number, on: boolean) => (on ? [...list, n].sort((a, b) => a - b) : list.filter((x) => x !== n));
+  // The same colours as the drawing below: the teams the steps are given to
+  const slots = teamSlots(steps.flatMap((s) => (s.team_id ? [s.team_id] : [])));
   const setOutcome = (i: number, k: number, patch: Partial<Outcome>) =>
     change(i, 'outcomes', steps[i].outcomes.map((o, j) => (j === k ? { ...o, ...patch } : o)));
 
@@ -142,7 +145,11 @@ function Editor({ playbook, teams, onDone }: { playbook: Playbook | null; teams:
 
       <ol className="steps" aria-label="Steps">
         {steps.map((step, i) => (
-          <li key={i} className="record">
+          <li
+            key={i}
+            className="record playbook-step"
+            style={{ '--team': teamColour(step.team_id ? slots.get(step.team_id) : undefined) } as CSSProperties}
+          >
             <div className="record-head">
               <span className="label">Task {i + 1}</span>
               <span className="actions">
@@ -341,6 +348,20 @@ function Editor({ playbook, teams, onDone }: { playbook: Playbook | null; teams:
   );
 }
 
+// Its size at a glance: steps, teams and decisions
+function PlaybookSummary({ playbook }: { playbook: Playbook }) {
+  const teams = new Set(playbook.steps.flatMap((s) => (s.team ? [s.team.id] : [])));
+  const decisions = playbook.steps.filter((s) => s.outcomes.length).length;
+  const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  return (
+    <p className="playbook-summary hint">
+      <span>{count(playbook.steps.length, 'task', 'tasks')}</span>
+      <span>{count(teams.size, 'team', 'teams')}</span>
+      {decisions > 0 && <span>{count(decisions, 'decision', 'decisions')}</span>}
+    </p>
+  );
+}
+
 function Card({ playbook, onEdit }: { playbook: Playbook; onEdit: () => void }) {
   const queryClient = useQueryClient();
   const [deleting, setDeleting] = useState(false);
@@ -358,6 +379,7 @@ function Card({ playbook, onEdit }: { playbook: Playbook; onEdit: () => void }) 
         ))}
       </div>
       {playbook.description && <p className="prose hint">{playbook.description}</p>}
+      <PlaybookSummary playbook={playbook} />
       <Workflow steps={playbook.steps} />
       <div className="actions">
         <button className="btn btn-quiet" type="button" onClick={onEdit}>

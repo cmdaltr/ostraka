@@ -5,8 +5,9 @@
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  /* the header's height for its controls, as the profile and cog icons */
+  width: var(--header-h, 36px);
+  height: var(--header-h, 36px);
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: var(--surface);
