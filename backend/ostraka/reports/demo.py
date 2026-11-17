@@ -25,6 +25,7 @@ PHASE_FILLS = {
     "contain": CLAY,
     "eradicate": (201, 138, 32),
     "recover": (168, 155, 142),
+    "report": (6, 118, 71),
     "learn": (221, 211, 195),
 }
 
@@ -131,6 +132,7 @@ def blocks() -> list[tuple]:
                     ("contain", 3.5, PHASE_FILLS["contain"]),
                     ("eradicate", 12.0, PHASE_FILLS["eradicate"]),
                     ("recover", 30.0, PHASE_FILLS["recover"]),
+                    ("report", 2.0, PHASE_FILLS["report"]),
                     ("learn", 0.75, PHASE_FILLS["learn"]),
                 ]
             ),

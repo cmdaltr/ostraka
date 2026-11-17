@@ -9,7 +9,7 @@ from sqlalchemy import select, text
 from ostraka import scheduler
 from ostraka.config import get_settings
 from ostraka.db import sessions
-from ostraka.models import PushSubscription, Role, Team, utcnow
+from ostraka.models import PushSubscription, Role, SecurityEvent, Team, utcnow
 from tests.test_incidents import declare, team_id
 
 pytestmark = pytest.mark.db
@@ -507,6 +507,39 @@ async def test_playbooks_are_written_by_leads_and_applied_once_on_declaring(
         f"/api/incidents/{other['id']}/playbooks/{made['id']}", headers=p["soc"].headers
     )
     assert retired.status_code == 409
+
+
+async def test_playbook_tag_and_profile_changes_go_in_the_security_log(db, client, people):
+    p = await people()
+    playbook = {**PHISHING, "steps": [{**s, "team_id": None} for s in PHISHING["steps"]]}
+    made = (await client.post("/api/playbooks", json=playbook, headers=p["lead"].headers)).json()
+    duplicate = await client.post("/api/playbooks", json=playbook, headers=p["lead"].headers)
+    assert duplicate.status_code == 409  # a clash is still a 409, not lost to the log
+    await client.patch(
+        f"/api/playbooks/{made['id']}", json={"version": 1, "is_active": False}, headers=p["lead"].headers
+    )
+    assert (await client.delete(f"/api/playbooks/{made['id']}", headers=p["lead"].headers)).status_code == 204
+    await client.put(
+        "/api/tags/bec", json={"name": "bec", "description": "Mailbox fraud"}, headers=p["admin"].headers
+    )
+    await client.delete("/api/tags/bec", headers=p["admin"].headers)
+    await client.patch("/api/users/me", json={"phone": "+44 7700 900123"}, headers=p["soc"].headers)
+
+    events = (await db.scalars(select(SecurityEvent).order_by(SecurityEvent.at))).all()
+    logged = [
+        (e.action, e.detail) for e in events if e.action.split("_")[0] in ("playbook", "tag", "profile")
+    ]
+    assert [a for a, _ in logged] == [
+        "playbook_added",
+        "playbook_changed",
+        "playbook_removed",
+        "tag_defined",
+        "tag_undefined",
+        "profile_changed",
+    ]
+    assert logged[1][1]["fields"] == ["is_active"]
+    # which fields changed, never the phone number itself
+    assert logged[5][1] == {"fields": ["phone"]} and "+44" not in str(logged)
 
 
 async def test_task_references_resolve(db, client, people, outbox):

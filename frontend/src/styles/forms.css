@@ -346,3 +346,21 @@ select.input,
   top: -4px;
   bottom: auto;
 }
+
+/* A button that is only an icon, such as the pencil that edits a panel: named by aria-label */
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.icon-button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}

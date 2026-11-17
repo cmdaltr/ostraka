@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
 import { api, objectUrl } from '../api/client';
 import { day, editionNames, getLicence, logoSlots, seatsText } from '../api/installation';
 import type { Brand, Licence, LicencePreview, LogoSlot, Terms } from '../api/installation';
@@ -592,49 +591,26 @@ function BrandList({ licence: l, brands: list, refresh, replace }: {
   );
 }
 
-const tabs = [
+export const installationTabs = [
   { key: 'licence', label: 'Licence' },
   { key: 'brands', label: 'Report brands' },
   { key: 'webhooks', label: 'Webhooks' },
   { key: 'integrations', label: 'Rowanholt and Shikari' },
   { key: 'misp', label: 'MISP' },
 ] as const;
-type Tab = (typeof tabs)[number]['key'];
+export type InstallationTab = (typeof installationTabs)[number]['key'];
 
-export function Installation() {
-  const [params, setParams] = useSearchParams();
-  const tab: Tab = tabs.find((t) => t.key === params.get('tab'))?.key ?? 'licence';
-  return (
-    <>
-      <div className="page-head">
-        <div>
-          <h1>Installation</h1>
-          <p className="hint">The licence, how exported reports look, webhooks, Rowanholt and Shikari, and MISP.</p>
-        </div>
-      </div>
-      <nav className="tabs" aria-label="Installation sections">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            aria-current={tab === t.key ? 'page' : undefined}
-            onClick={() => setParams(t.key === 'licence' ? {} : { tab: t.key })}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
-      {tab === 'licence' ? (
-        <LicencePanel />
-      ) : tab === 'brands' ? (
-        <Brands />
-      ) : tab === 'webhooks' ? (
-        <WebhooksTab />
-      ) : tab === 'misp' ? (
-        <MispTab />
-      ) : (
-        <IntegrationsTab />
-      )}
-    </>
+/** One of the installation's tabs, shown under Config to admins */
+export function Installation({ tab }: { tab: InstallationTab }) {
+  return tab === 'licence' ? (
+    <LicencePanel />
+  ) : tab === 'brands' ? (
+    <Brands />
+  ) : tab === 'webhooks' ? (
+    <WebhooksTab />
+  ) : tab === 'misp' ? (
+    <MispTab />
+  ) : (
+    <IntegrationsTab />
   );
 }

@@ -242,6 +242,26 @@ test('a playbook draws each team’s lane and steps in its own colour', async ({
   expect(step).toBe(lanes[1]);
 });
 
+test('clicking a playbook step opens its detail, and an example draws every playbook part-way through', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me({ role: 'team_lead' }), (_method, path) => (path === '/api/playbooks' ? { json: [phishing] } : undefined));
+  await page.goto('/playbooks');
+  await page.getByRole('button', { name: 'Revoke sessions' }).click();
+  const detail = page.getByRole('region', { name: 'Step 2: Revoke sessions' });
+  await expect(detail).toContainText('DFIR’s queue');
+  await expect(detail).toContainText('1 h after it opens');
+  await expect(detail).toContainText('All devices');
+  await expect(page.getByRole('button', { name: 'Revoke sessions' })).toHaveAttribute('aria-expanded', 'true');
+  await detail.getByRole('button', { name: 'Close' }).click();
+  await expect(detail).toHaveCount(0);
+
+  await page.getByLabel('Show an example').check();
+  await expect(page.getByRole('listitem', { name: 'Step 1: Pull the message, done' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: /^Step 2: Revoke sessions, (open|waiting)$/ })).toBeVisible();
+  await page.getByLabel('Show an example').uncheck();
+  await expect(page.getByRole('listitem', { name: 'Step 1: Pull the message' })).toBeVisible();
+});
+
 test('responders see no playbook or channel controls', async ({ page }) => {
   await stubLive(page);
   await stubApi(page);

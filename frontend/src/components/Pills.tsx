@@ -11,6 +11,10 @@ export function TlpPill({ level }: { level: Tlp }) {
   return <span className={`pill tlp tlp-${colour}`}>TLP:{level.toUpperCase()}</span>;
 }
 
+export function PhasePill({ phase }: { phase: Phase }) {
+  return <span className="pill phase-pill">{phase.toUpperCase()}</span>;
+}
+
 // The incident's phase as a row of tiles; done phases read in ink, the current one in the accent
 export function PhaseStrip({ current, kind = 'incident' }: { current: Phase; kind?: RecordKind }) {
   const phases = phasesOf(kind);

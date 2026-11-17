@@ -9,6 +9,9 @@ import type { Incident, IncidentRole } from '../../api/incidents';
 import type { Me, Person, Team } from '../../api/types';
 import { kindName, phasesOf, severities, tlpLevels } from '../../brand';
 import { announce } from '../../live/live';
+import { PencilIcon } from '../../components/PencilIcon';
+import { PillSelect } from '../../components/PillSelect';
+import { PhasePill, SeverityPill, TlpPill } from '../../components/Pills';
 import { Notice, formatDate } from '../../components/ui';
 import { Links } from './Links';
 import { Rich, Tags, splitTags, useSave } from './shared';
@@ -78,8 +81,8 @@ function Details({ incident }: { incident: Incident }) {
       <header className="panel-head">
         <h2>Summary</h2>
         {incident.can_edit && !editing && (
-          <button className="link-button" type="button" onClick={() => edit(true)}>
-            Edit
+          <button className="icon-button" type="button" onClick={() => edit(true)} aria-label="Edit the summary" title="Edit">
+            <PencilIcon />
           </button>
         )}
       </header>
@@ -108,7 +111,7 @@ function Details({ incident }: { incident: Incident }) {
         </form>
       ) : (
         <>
-          <p className="prose">{incident.summary ? <Rich text={incident.summary} /> : <span className="hint">No summary yet.</span>}</p>
+          <p className="prose prose-wide">{incident.summary ? <Rich text={incident.summary} /> : <span className="hint">No summary yet.</span>}</p>
           <Tags tags={incident.tags} />
         </>
       )}
@@ -117,55 +120,40 @@ function Details({ incident }: { incident: Incident }) {
         <div>
           <dt>Severity</dt>
           <dd>
-            <select
-              className="input"
-              aria-label="Severity"
-              value={incident.severity}
+            <PillSelect
+              label="Severity"
+              single
+              value={[incident.severity]}
               disabled={!incident.can_edit}
-              onChange={(e) => patch({ severity: e.target.value })}
-            >
-              {severities.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+              onChange={([v]) => patch({ severity: v })}
+              options={severities.map((v) => ({ value: v, name: v[0].toUpperCase() + v.slice(1), look: <SeverityPill level={v} /> }))}
+            />
           </dd>
         </div>
         <div>
           <dt>Phase</dt>
           <dd>
-            <select
-              className="input"
-              aria-label="Phase"
-              value={incident.phase}
+            <PillSelect
+              label="Phase"
+              single
+              value={[incident.phase]}
               disabled={!incident.can_edit}
-              onChange={(e) => patch({ phase: e.target.value })}
-            >
-              {phasesOf(incident.kind).map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+              onChange={([v]) => patch({ phase: v })}
+              options={phasesOf(incident.kind).map((v) => ({ value: v, name: v[0].toUpperCase() + v.slice(1), look: <PhasePill phase={v} /> }))}
+            />
           </dd>
         </div>
         <div>
           <dt>TLP</dt>
           <dd>
-            <select
-              className="input"
-              aria-label="TLP"
-              value={incident.tlp}
+            <PillSelect
+              label="TLP"
+              single
+              value={[incident.tlp]}
               disabled={!incident.can_manage}
-              onChange={(e) => patch({ tlp: e.target.value })}
-            >
-              {tlpLevels.map((t) => (
-                <option key={t} value={t}>
-                  TLP:{t.toUpperCase()}
-                </option>
-              ))}
-            </select>
+              onChange={([v]) => patch({ tlp: v })}
+              options={tlpLevels.map((v) => ({ value: v, name: `TLP:${v.toUpperCase()}`, look: <TlpPill level={v} /> }))}
+            />
           </dd>
         </div>
         <div>

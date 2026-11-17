@@ -60,6 +60,7 @@ def phase_fills() -> dict[Phase, tuple[int, int, int]]:
         Phase.CONTAIN: pal().clay,
         Phase.ERADICATE: STATUS["lead"],
         Phase.RECOVER: STATUS["refuted"],
+        Phase.REPORT: charts.OK,
         Phase.LEARN: pal().rule,
     }
 

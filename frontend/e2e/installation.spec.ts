@@ -33,12 +33,16 @@ test('an admin checks a licence, accepts the terms for its licensee, and install
   expect(api.requests.find((r) => r.method === 'PUT')!.body).toEqual({ text: line, accept_terms: true, terms_version: '1.0' });
 });
 
-test('only admins have the Installation page, and the free edition explains branding', async ({ page }) => {
+test('only admins have the installation under Config, and the free edition explains branding', async ({ page }) => {
   await stubLive(page);
   await stubApi(page, me());
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Incidents' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Installation' })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Config' }).click();
+  await expect(page).toHaveURL(/\/config$/);
+  await expect(page.getByRole('heading', { name: 'Directory' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Config sections' })).toHaveCount(0);
+  await page.goto('/installation');
+  await expect(page.getByRole('button', { name: 'Licence' })).toHaveCount(0);
 
   await stubApi(page, admin);
   await page.goto('/installation?tab=brands');
@@ -109,7 +113,7 @@ test('admins are told when the licence has run out, wherever they are', async ({
   await page.goto('/');
   await expect(page.getByRole('status').filter({ hasText: 'keeps working until 1 December 2026' })).toBeVisible();
   await page.getByRole('link', { name: 'Install the renewal' }).click();
-  await expect(page).toHaveURL(/\/installation$/);
+  await expect(page).toHaveURL(/\/config\?tab=licence$/);
 });
 
 test('people managers see how many places are taken', async ({ page }) => {

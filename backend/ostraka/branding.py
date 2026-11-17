@@ -18,7 +18,7 @@ HUNT_PREFIX = "HNT"
 TOKEN_PREFIX = "ost_"  # noqa: S105 (a prefix that marks Ostraka API tokens, not a secret)
 DEFAULT_THEME = "cobalt"
 THEMES = ("cobalt", "ostrakon", "ledger")
-PHASES = ("detect", "scope", "contain", "eradicate", "recover", "learn")
+PHASES = ("detect", "scope", "contain", "eradicate", "recover", "report", "learn")
 HUNT_PHASES = ("hypothesis", "collect", "analyse", "conclude")
 
 

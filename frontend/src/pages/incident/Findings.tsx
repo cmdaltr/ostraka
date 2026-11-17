@@ -12,6 +12,8 @@ const kinds: [FindingKind, string, string][] = [
   ['potential', 'Potential', 'A possibility still to test'],
 ];
 const statusNames: Record<FindingStatus, string> = { lead: 'Lead', confirmed: 'Confirmed', refuted: 'Refuted' };
+// The filter's words: "Leads" is a plural noun; confirmed and refuted don't take an s
+const filterNames: Record<FindingStatus, string> = { lead: 'Leads', confirmed: 'Confirmed', refuted: 'Refuted' };
 
 // Admiralty grading, with the UK policing handling code (P: lawful sharing allowed; C: conditions apply)
 const reliability = [
@@ -424,7 +426,7 @@ export function Findings({ incident }: { incident: Incident }) {
         <div className="segmented" role="group" aria-label="Show findings">
           {(['all', 'lead', 'confirmed', 'refuted'] as const).map((s) => (
             <button key={s} type="button" aria-pressed={show === s} onClick={() => setShow(s)}>
-              {s === 'all' ? 'All' : `${statusNames[s]}s`}
+              {s === 'all' ? 'All' : filterNames[s]}
               {s !== 'all' && <span className="count num">{count(s)}</span>}
             </button>
           ))}

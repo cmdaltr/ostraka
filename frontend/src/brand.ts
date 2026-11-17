@@ -10,7 +10,7 @@ export const brand = {
   huntPrefix: 'HNT',
 } as const;
 
-export const phases = ['detect', 'scope', 'contain', 'eradicate', 'recover', 'learn'] as const;
+export const phases = ['detect', 'scope', 'contain', 'eradicate', 'recover', 'report', 'learn'] as const;
 export const huntPhases = ['hypothesis', 'collect', 'analyse', 'conclude'] as const;
 export type Phase = (typeof phases)[number] | (typeof huntPhases)[number];
 

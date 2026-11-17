@@ -313,6 +313,7 @@ function TeamChannels({ me, teams, onChanged }: { me: Me; teams: Team[]; onChang
   );
 }
 
+/** Everyone with an account; under Config, whose tab names it, so it has no heading of its own */
 export function People({ me }: { me: Me }) {
   const [people, setPeople] = useState<Person[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -344,12 +345,7 @@ export function People({ me }: { me: Me }) {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>People</h1>
-          <p>Everyone with an Ostraka account, by team.</p>
-        </div>
-      </div>
+      <p className="hint">Everyone with an Ostraka account, by team.</p>
       {error && <Notice kind="error">{error}</Notice>}
       {created && <LinkToSend created={created} onClose={() => setCreated(null)} />}
       {manages && <InviteForm me={me} teams={teams} onInvited={handOut} />}

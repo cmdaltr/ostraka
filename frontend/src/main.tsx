@@ -16,9 +16,8 @@ import { DesignSystem } from './pages/DesignSystem';
 import { DetectionGapsPage } from './pages/DetectionGapsPage';
 import { HelpLicence } from './pages/HelpLicence';
 import { IncidentPage } from './pages/incident/IncidentPage';
-import { Installation } from './pages/Installation';
+import { Config, ToConfig } from './pages/Config';
 import { Incidents, listQuery } from './pages/Incidents';
-import { People } from './pages/People';
 import { Playbooks } from './pages/Playbooks';
 import { Profile } from './pages/Profile';
 import { SignIn } from './pages/SignIn';
@@ -83,9 +82,10 @@ function App() {
             <Route path="work" element={<Work me={session.me} />} />
             <Route path="detection-gaps" element={<DetectionGapsPage />} />
             <Route path="playbooks" element={<Playbooks me={session.me} />} />
-            <Route path="people" element={<People me={session.me} />} />
+            <Route path="config" element={<Config me={session.me} />} />
+            <Route path="people" element={<ToConfig />} />
+            <Route path="installation" element={<ToConfig tab="licence" />} />
             <Route path="profile" element={<Profile me={session.me} />} />
-            {session.me.role === 'admin' && <Route path="installation" element={<Installation />} />}
             <Route path="settings" element={<Navigate to="/profile" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

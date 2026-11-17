@@ -196,7 +196,8 @@ test('a team lead invites only responders and observers, into their own team', a
 test('responders see the directory without invite or admin controls', async ({ page }) => {
   await signedInAs(page, me());
   await page.goto('/people');
-  await expect(page.getByRole('link', { name: 'Directory' })).toBeVisible();
+  await expect(page).toHaveURL(/\/config$/);
+  await expect(page.getByRole('heading', { name: 'Directory' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Invite someone' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Deactivate' })).toHaveCount(0);
 });

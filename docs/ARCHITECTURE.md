@@ -27,7 +27,7 @@ Postgres holds everything; its schema changes only through Alembic (`backend/mig
 
 ![Records, phases and findings](diagrams/records.svg)
 
-A record is an incident (`OST-YYYY-NNN`) or a hunt (`HNT-YYYY-NNN`), the same table with a `kind`. Hunts run Hypothesis → Collect → Analyse → Conclude; a hunt that finds something is promoted, which declares an incident linked to it. Incidents run Detect → Scope → Contain → Eradicate → Recover → Learn.
+A record is an incident (`OST-YY-NNN`) or a hunt (`HNT-YY-NNN`), the same table with a `kind`. Hunts run Hypothesis → Collect → Analyse → Conclude; a hunt that finds something is promoted, which declares an incident linked to it. Incidents run Detect → Scope → Contain → Eradicate → Recover → Report → Learn.
 
 Findings (`FND-N`) start as leads. A lead can come from anyone, from an MCP client or from the importer, and it is never confirmed by itself: confirmation needs a verification (source reliability, information credibility, what it was checked against) and an analyst. A refuted finding is kept, with the reason. Every update carries an assessment in the PHIA yardstick's probability terms. All of this is enforced by Ostraka's own structure, not by AI.
 

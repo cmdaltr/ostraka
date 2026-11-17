@@ -7,6 +7,7 @@ import type { Working } from '../../api/handover';
 import { keys, label } from '../../api/incidents';
 import type { Asset, Extracted, Incident, IncidentObservable, Verdict } from '../../api/incidents';
 import type { Me } from '../../api/types';
+import { PillSelect } from '../../components/PillSelect';
 import { Notice, formatDate } from '../../components/ui';
 import { Watching, useRecordPresence } from '../../live/presence';
 import { Tags, fromLocalInput, useSave, useSection } from './shared';
@@ -250,40 +251,37 @@ function Row({
   const focus = `observable:${item.id}`;
   const presence = useRecordPresence(focus, editing);
   return (
-    <li className="record" id={item.ref} {...presence}>
+    <li className="record observable" id={item.ref} {...presence}>
+      {/* one line: what it is, its value, and the verdict you can change in place */}
       <div className="record-head">
         <span className="mono ref">{item.ref}</span>
         <span className="chip">{label(item.kind)}</span>
-        <span className={`verdict verdict-${item.verdict}`}>{item.verdict}</span>
+        <span className="mono value">{item.masked ? <span className="masked">[{label(item.kind)}]</span> : item.value}</span>
         <Tags tags={item.tags} />
         <Watching focus={focus} />
+        <span className="observable-actions">
+          {incident.can_edit ? (
+            <PillSelect
+              label={`Verdict for ${item.ref}`}
+              single
+              value={[item.verdict]}
+              onChange={([v]) => save.run(() => api(base, { method: 'PATCH', json: { version: item.version, verdict: v } }))}
+              options={verdicts.map((v) => ({ value: v, name: v, look: <span className={`verdict verdict-${v}`}>{v}</span> }))}
+            />
+          ) : (
+            <span className={`verdict verdict-${item.verdict}`}>{item.verdict}</span>
+          )}
+          {incident.can_edit && (
+            <button className="link-button" type="button" onClick={() => save.run(() => api(base, { method: 'DELETE' }))}>
+              Remove
+            </button>
+          )}
+        </span>
       </div>
-      <div className="mono value">{item.masked ? <span className="masked">[{label(item.kind)}]</span> : item.value}</div>
-      {item.note && <p className="prose">{item.note}</p>}
+      {item.note && <p className="prose prose-wide">{item.note}</p>}
       <Elsewhere item={item} />
       <WorkingElsewhere working={working} />
       <Sightings incident={incident} item={item} assets={assets} onOpen={setEditing} />
-      {incident.can_edit && (
-        <div className="actions">
-          <select
-            className="input inline"
-            aria-label={`Verdict for ${item.ref}`}
-            value={item.verdict}
-            onChange={(e) =>
-              save.run(() => api(base, { method: 'PATCH', json: { version: item.version, verdict: e.target.value } }))
-            }
-          >
-            {verdicts.map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
-          <button className="link-button" type="button" onClick={() => save.run(() => api(base, { method: 'DELETE' }))}>
-            Remove from incident
-          </button>
-        </div>
-      )}
       {save.error && <Notice kind="error">{save.error}</Notice>}
     </li>
   );

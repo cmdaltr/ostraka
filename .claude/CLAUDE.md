@@ -43,7 +43,7 @@ On the homelab: `homelab add ostraka <repo> --port 24747 --upstream 24747 --env 
   - Rebuild rather than refactor; there's no data to migrate.
   - React SPA; plain CSS tokens, no Tailwind.
   - Cobalt is the default theme, with Ostrakon and Ledger available under preferences. Fonts are fixed: Inter and JetBrains Mono.
-  - Phases are Detect → Scope → Contain → Eradicate → Recover → Learn.
+  - Phases are Detect → Scope → Contain → Eradicate → Recover → Report → Learn (Report added 17 November 2026).
   - The AI provider can be Ollama or Anthropic, with the TLP guard.
   - Nudges go in-app with browser push, by email, and through Microsoft Teams webhooks.
   - The reporting standard (verified confirmation, defensive writing, an assessment in every update, ACH) is built into Ostraka and doesn't depend on AI.

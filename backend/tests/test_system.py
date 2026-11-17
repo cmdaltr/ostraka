@@ -72,7 +72,7 @@ async def test_meta_serves_branding(client):
     assert body["trademark"].startswith("Ostraka™ and its logo are trademarks of cmdaltr.")
     assert body["default_theme"] == "cobalt"
     assert body["themes"] == ["cobalt", "ostrakon", "ledger"]
-    assert body["phases"] == ["detect", "scope", "contain", "eradicate", "recover", "learn"]
+    assert body["phases"] == ["detect", "scope", "contain", "eradicate", "recover", "report", "learn"]
 
 
 async def test_the_licence_and_terms_are_readable_without_signing_in(client):

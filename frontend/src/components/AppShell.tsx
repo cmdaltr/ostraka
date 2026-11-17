@@ -24,7 +24,7 @@ function LicenceRunningOut() {
       {l.state === 'grace'
         ? `The licence has run out. It keeps working until ${day(l.grace_ends)}, then Ostraka goes back to the free edition.`
         : 'The licence has run out: Ostraka is on the free edition.'}{' '}
-      <Link to="/installation">Install the renewal</Link>
+      <Link to="/config?tab=licence">Install the renewal</Link>
     </p>
   );
 }
@@ -48,7 +48,8 @@ export function AppShell({ me }: { me: Me }) {
           {me.role !== 'observer' && <NavLink to="/work">Your work</NavLink>}
           <NavLink to="/detection-gaps">Detections</NavLink>
           {manages && <NavLink to="/playbooks">Playbooks</NavLink>}
-          <NavLink to="/people">{manages ? 'People' : 'Directory'}</NavLink>
+        </nav>
+        <div className="shell-user">
           {me.role !== 'observer' && (
             // On every page: the form opens over the incident list
             <span className="shell-declare">
@@ -60,18 +61,15 @@ export function AppShell({ me }: { me: Me }) {
               </button>
             </span>
           )}
-        </nav>
-        <div className="shell-user">
           <Bell />
           <span className="shell-name">{me.name}</span>
           <NavLink to="/profile" className="shell-icon" aria-label="Profile" title="Profile">
             <PersonIcon />
           </NavLink>
-          {me.role === 'admin' && (
-            <NavLink to="/installation" className="shell-icon" aria-label="Installation" title="Installation">
-              <CogIcon />
-            </NavLink>
-          )}
+          {/* People (or the directory) for everyone, and the installation for admins */}
+          <NavLink to="/config" className="shell-icon" aria-label="Config" title="Config">
+            <CogIcon />
+          </NavLink>
           <button className="btn btn-quiet" type="button" onClick={() => signOut()}>
             Sign out
           </button>

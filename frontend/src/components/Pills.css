@@ -42,8 +42,10 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  /* one row however many phases the record has: seven for an incident, four for a hunt */
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 3px;
 }
 .phase-strip li {
@@ -69,4 +71,10 @@
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
+}
+
+/* a phase as a label, in the accent: the filters and the overview */
+.phase-pill {
+  color: var(--accent);
+  background: var(--accent-soft);
 }

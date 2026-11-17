@@ -64,6 +64,9 @@
   margin: 0;
   max-width: 72ch;
 }
+.prose-wide {
+  max-width: none;
+}
 .tags {
   display: inline-flex;
   flex-wrap: wrap;
@@ -143,11 +146,6 @@ textarea.input {
 .list-toolbar .btn {
   height: var(--control-h);
 }
-.phase-pill {
-  color: var(--accent);
-  background: var(--accent-soft);
-  text-transform: uppercase;
-}
 .incident-card:hover {
   border-color: var(--accent);
 }
@@ -172,22 +170,28 @@ textarea.input {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: var(--space-3) var(--space-5);
-  align-items: start;
+  align-items: center;
+}
+.incident-head h1 {
+  font-size: var(--text-2xl);
 }
 .incident-head-side {
-  display: grid;
-  justify-items: end;
-  gap: var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+@media (max-width: 720px) {
+  .incident-head {
+    grid-template-columns: 1fr;
+  }
+  .incident-head-side {
+    justify-content: flex-start;
+  }
 }
 .incident-head .phase-strip {
   grid-column: 1 / -1;
-}
-.incident-title {
-  display: grid;
-  gap: var(--space-2);
-}
-.incident-title h1 {
-  font-size: var(--text-2xl);
 }
 
 .presence {
@@ -287,10 +291,12 @@ textarea.input {
   }
 }
 
-.panel-head {
+/* .panel > header would otherwise stack the heading and its button */
+.panel-head,
+.panel > .panel-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-3);
 }
 .panel-head h2 {
@@ -430,7 +436,22 @@ textarea.input {
 }
 .sightings {
   display: grid;
+  justify-items: start;
   gap: 4px;
+}
+/* An observable is one line: reference, kind, value, then its verdict and removal at the far end */
+.observable {
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+}
+.observable-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.observable-actions .pill-select-button {
+  --control-h: 2rem;
 }
 
 .pick-list {

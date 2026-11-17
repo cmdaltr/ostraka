@@ -197,6 +197,6 @@ test('your work lists the next regulator deadline, breached ones first', async (
   const section = page.getByRole('region', { name: 'Regulator deadlines' });
   await expect(section.getByRole('timer').first()).toHaveText(/overdue$/);
   await expect(section.getByText('Breached')).toBeVisible();
-  await expect(section.getByRole('link', { name: 'CLK-2' })).toHaveAttribute('href', '/incidents/OST-26-001?s=clocks#CLK-2');
+  await expect(section.getByRole('link', { name: 'CLK-2' })).toHaveAttribute('href', '/incidents/OST-26-001?s=updates#CLK-2');
   await expect(section.getByText('Owner: Sam Analyst')).toBeVisible();
 });

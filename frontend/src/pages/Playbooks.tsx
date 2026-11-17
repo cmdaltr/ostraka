@@ -8,7 +8,7 @@ import { phasesOf } from '../brand';
 import type { RecordKind } from '../brand';
 import { Loading } from '../components/sherd/Ostrakon';
 import { Notice, messageOf } from '../components/ui';
-import { Workflow } from '../components/Workflow';
+import { Workflow, exampleRun } from '../components/Workflow';
 import { teamColour, teamSlots } from '../components/teamColour';
 import { splitTags } from './incident/shared';
 import './incident/incident.css';
@@ -328,6 +328,9 @@ function Editor({ playbook, teams, onDone }: { playbook: Playbook | null; teams:
         <Workflow
           steps={steps.map((s) => ({
             title: s.title || 'untitled',
+            description: s.description,
+            checklist: s.checklist.split('\n'),
+            due_minutes: s.due_minutes === '' ? null : Number(s.due_minutes),
             team: teams.find((t) => t.id === s.team_id) ?? null,
             after: s.after,
             phase: s.phase || null,
@@ -362,7 +365,7 @@ function PlaybookSummary({ playbook }: { playbook: Playbook }) {
   );
 }
 
-function Card({ playbook, onEdit }: { playbook: Playbook; onEdit: () => void }) {
+function Card({ playbook, onEdit, example }: { playbook: Playbook; onEdit: () => void; example: boolean }) {
   const queryClient = useQueryClient();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -380,7 +383,7 @@ function Card({ playbook, onEdit }: { playbook: Playbook; onEdit: () => void }) 
       </div>
       {playbook.description && <p className="prose hint">{playbook.description}</p>}
       <PlaybookSummary playbook={playbook} />
-      <Workflow steps={playbook.steps} />
+      <Workflow steps={example ? exampleRun(playbook.steps) : playbook.steps} />
       <div className="actions">
         <button className="btn btn-quiet" type="button" onClick={onEdit}>
           Edit
@@ -417,6 +420,8 @@ export function Playbooks({ me }: { me: Me }) {
   const playbooks = useQuery({ queryKey: ['playbooks'], queryFn: () => api<Playbook[]>('/api/playbooks') });
   const teams = useQuery({ queryKey: ['teams'], queryFn: () => api<Team[]>('/api/teams') });
   const [editing, setEditing] = useState<Playbook | 'new' | null>(null);
+  // Every playbook drawn as if part-way through a record: what's done, open, waiting or skipped
+  const [example, setExample] = useState(false);
   const writes = me.role === 'admin' || me.role === 'team_lead';
 
   return (
@@ -427,13 +432,20 @@ export function Playbooks({ me }: { me: Me }) {
           <p>
             How work moves between teams on an incident or a hunt: who does what, what waits for what, and where a
             decision sends it next. A playbook’s tags suggest it when someone declares an incident or starts a hunt.
+            Click a step for its detail; “Show an example” draws each one part-way through a record.
           </p>
         </div>
-        {writes && !editing && (
-          <button className="btn btn-primary" type="button" onClick={() => setEditing('new')}>
-            New playbook
-          </button>
-        )}
+        <div className="actions">
+          <label className="check">
+            <input type="checkbox" checked={example} onChange={(e) => setExample(e.target.checked)} />
+            <span>Show an example</span>
+          </label>
+          {writes && !editing && (
+            <button className="btn btn-primary" type="button" onClick={() => setEditing('new')}>
+              New playbook
+            </button>
+          )}
+        </div>
       </div>
       {editing && (
         <Editor
@@ -448,7 +460,7 @@ export function Playbooks({ me }: { me: Me }) {
         {playbooks.data?.length === 0 && !editing && <p className="hint">No playbooks yet.</p>}
         <ul className="records" aria-label="Playbooks">
           {playbooks.data?.map((p) => (
-            <Card key={p.id} playbook={p} onEdit={() => setEditing(p)} />
+            <Card key={p.id} playbook={p} example={example} onEdit={() => setEditing(p)} />
           ))}
         </ul>
       </Loading>

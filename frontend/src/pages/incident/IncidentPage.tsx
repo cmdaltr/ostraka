@@ -6,7 +6,7 @@ import { api, download } from '../../api/client';
 import { keys } from '../../api/incidents';
 import type { Incident } from '../../api/incidents';
 import type { Me } from '../../api/types';
-import { severities } from '../../brand';
+import { phasesOf, severities } from '../../brand';
 import { PhaseStrip, SeverityPill, TlpPill } from '../../components/Pills';
 import { Assembling, Loading, useFinishing } from '../../components/sherd/Ostrakon';
 import { Notice, messageOf } from '../../components/ui';
@@ -38,24 +38,28 @@ import './incident.css';
 const sections = [
   ['overview', 'Overview'],
   ['tasks', 'Tasks'],
-  ['clocks', 'Clocks'],
+  ['findings', 'Findings'],
   ['observables', 'Observables'],
   ['assets', 'Assets'],
-  ['findings', 'Findings'],
-  ['evidence', 'Evidence'],
   ['detections', 'Detections'],
-  ['graph', 'Graph'],
+  ['evidence', 'Evidence'],
   ['assessments', 'Assessments'],
   ['updates', 'Updates'],
-  ['ach', 'ACH'],
   ['timeline', 'Timeline'],
-  ['lessons', 'Lessons'],
   ['handover', 'Handover'],
   ['activity', 'Activity'],
 ] as const;
 type Section = (typeof sections)[number][0];
-// Rowanholt's jobs now sit with the exhibits under Evidence, and detection gaps are under Detections
-const renamed: Record<string, Section> = { rowanholt: 'evidence', 'detection-gaps': 'detections' };
+// Old sections and where they went: Rowanholt's jobs to Evidence, detection gaps to Detections, the graph
+// and lessons to Overview, ACH to Assessments, and the regulator clocks to Updates
+const renamed: Record<string, Section> = {
+  rowanholt: 'evidence',
+  'detection-gaps': 'detections',
+  graph: 'overview',
+  lessons: 'overview',
+  ach: 'assessments',
+  clocks: 'updates',
+};
 
 function Here({ people, me }: { people: Present[]; me: Me }) {
   const others = people.filter((p) => p.user_id !== me.id);
@@ -246,18 +250,17 @@ export function IncidentPage({ me }: { me: Me }) {
       {incident && (
     <div className="incident">
       <header className="incident-head">
-        <div className="incident-title">
-          <div className="incident-card-head">
+        <h1>{incident.title}</h1>
+        {/* the reference and its labels at the far end of the title's row, with what you can do */}
+        <div className="incident-head-side">
+          <span className="incident-card-head">
             <span className="mono ref">{incident.ref}</span>
             <SeverityPill level={incident.severity} />
             <TlpPill level={incident.tlp} />
             {incident.kind === 'hunt' && <span className="chip chip-accent">Hunt</span>}
             {incident.status === 'closed' && <span className="chip">Closed</span>}
             {!incident.can_edit && <span className="chip">Read only</span>}
-          </div>
-          <h1>{incident.title}</h1>
-        </div>
-        <div className="incident-head-side">
+          </span>
           <Here people={people} me={me} />
           {incident.can_export && <Export incident={incident} />}
           {incident.kind === 'hunt' && incident.can_edit && me.role !== 'observer' && !promoting && (
@@ -293,9 +296,17 @@ export function IncidentPage({ me }: { me: Me }) {
       <PresenceProvider value={{ incidentId: incident.id, meId: me.id, people }}>
       <div className="incident-body">
         <div className="incident-main">
-          {section === 'overview' && <Overview incident={incident} me={me} />}
+          {section === 'overview' && (
+            <>
+              <Overview incident={incident} me={me} />
+              {/* lessons learned are what the last phase is for: they join the overview once it's reached */}
+              {(incident.status === 'closed' || incident.phase === phasesOf(incident.kind).at(-1)) && (
+                <Lessons incident={incident} me={me} />
+              )}
+              <Graph incident={incident} />
+            </>
+          )}
           {section === 'tasks' && <Tasks incident={incident} me={me} />}
-          {section === 'clocks' && <Clocks incident={incident} me={me} />}
           {section === 'observables' && <Observables incident={incident} me={me} />}
           {section === 'assets' && <Assets incident={incident} />}
           {section === 'findings' && <Findings incident={incident} />}
@@ -306,12 +317,20 @@ export function IncidentPage({ me }: { me: Me }) {
             </>
           )}
           {section === 'detections' && <DetectionGaps incident={incident} me={me} />}
-          {section === 'graph' && <Graph incident={incident} />}
-          {section === 'assessments' && <Assessments incident={incident} />}
-          {section === 'updates' && <Updates incident={incident} />}
-          {section === 'ach' && <AchMatrix incident={incident} me={me} />}
+          {section === 'assessments' && (
+            <>
+              <Assessments incident={incident} />
+              <AchMatrix incident={incident} me={me} />
+            </>
+          )}
+          {section === 'updates' && (
+            <>
+              {/* the regulator's deadlines first: they're the updates the law sets the time for */}
+              <Clocks incident={incident} me={me} />
+              <Updates incident={incident} />
+            </>
+          )}
           {section === 'timeline' && <Timeline incident={incident} />}
-          {section === 'lessons' && <Lessons incident={incident} me={me} />}
           {section === 'handover' && <Handover incident={incident} me={me} />}
           {section === 'activity' && <Activity incident={incident} />}
         </div>

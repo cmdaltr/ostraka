@@ -6,13 +6,13 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ostraka import work, workflow
-from ostraka.auth import policy
+from ostraka import audit, work, workflow
+from ostraka.auth import policy, sessions
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
 from ostraka.incident_schemas import TeamRef
@@ -131,10 +131,14 @@ async def list_playbooks(
 
 @router.post("", response_model=PlaybookOut, status_code=status.HTTP_201_CREATED)
 async def create_playbook(
-    body: PlaybookIn, user: User = Depends(current_user), db: AsyncSession = Depends(get_session)
+    body: PlaybookIn,
+    request: Request,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_session),
 ) -> PlaybookOut:
     _require_author(user)
     playbook = Playbook(
+        id=uuid.uuid4(),  # now, for the security log; a flush here would hide a duplicate name's 409
         name=body.name.strip(),
         description=body.description.strip(),
         trigger_tags=body.trigger_tags,
@@ -144,6 +148,15 @@ async def create_playbook(
         steps=await _steps(db, body.steps, body.applies_to),
     )
     db.add(playbook)
+    audit.record(
+        db,
+        "playbook_added",
+        actor_id=user.id,
+        ip=sessions.client_ip(request),
+        playbook=str(playbook.id),
+        name=playbook.name,
+        steps=len(body.steps),
+    )
     await _save(db)
     await db.refresh(playbook, ["steps"])
     return await _out(db, playbook)
@@ -153,6 +166,7 @@ async def create_playbook(
 async def update_playbook(
     playbook_id: uuid.UUID,
     body: PlaybookPatch,
+    request: Request,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_session),
 ) -> PlaybookOut:
@@ -168,6 +182,15 @@ async def update_playbook(
         playbook.steps = await _steps(db, body.steps, body.applies_to or playbook.applies_to)
     playbook.version += 1
     playbook.updated_at = utcnow()
+    audit.record(
+        db,
+        "playbook_changed",
+        actor_id=user.id,
+        ip=sessions.client_ip(request),
+        playbook=str(playbook.id),
+        name=playbook.name,
+        fields=sorted([*changes, *(["steps"] if body.steps is not None else [])]),
+    )
     await _save(db)
     await db.refresh(playbook, ["steps"])
     return await _out(db, playbook)
@@ -175,10 +198,22 @@ async def update_playbook(
 
 @router.delete("/{playbook_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_playbook(
-    playbook_id: uuid.UUID, user: User = Depends(current_user), db: AsyncSession = Depends(get_session)
+    playbook_id: uuid.UUID,
+    request: Request,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_session),
 ) -> None:
     _require_author(user)
-    await db.delete(await _playbook(db, playbook_id))
+    playbook = await _playbook(db, playbook_id)
+    audit.record(
+        db,
+        "playbook_removed",
+        actor_id=user.id,
+        ip=sessions.client_ip(request),
+        playbook=str(playbook.id),
+        name=playbook.name,
+    )
+    await db.delete(playbook)
     await db.commit()
 
 

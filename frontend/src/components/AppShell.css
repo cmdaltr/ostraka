@@ -43,7 +43,7 @@
 .shell-declare {
   display: inline-flex;
   gap: var(--space-2);
-  margin-left: var(--space-3);
+  margin-right: var(--space-2);
 }
 .shell-header .btn {
   height: var(--header-h);

@@ -22,6 +22,13 @@
 .pill-select-button[aria-expanded='true'] {
   border-color: var(--accent);
 }
+.pill-select-button:disabled {
+  cursor: default;
+  background: var(--surface);
+}
+.pill-select-button:disabled:hover {
+  border-color: var(--line);
+}
 .pill-select-button.is-set {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
 }

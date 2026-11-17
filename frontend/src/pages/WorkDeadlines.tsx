@@ -24,7 +24,7 @@ export function WorkDeadlines() {
           return (
             <li key={`${d.clock_id}-${d.key}`} className={`record clock clock-${state}`}>
               <div className="record-head">
-                <Link className="ref-link mono" to={`/incidents/${d.incident.ref}?s=clocks#${d.clock_ref}`}>
+                <Link className="ref-link mono" to={`/incidents/${d.incident.ref}?s=updates#${d.clock_ref}`}>
                   {d.clock_ref}
                 </Link>
                 <span className={`clock-state clock-state-${state}`}>{stateNames[state]}</span>

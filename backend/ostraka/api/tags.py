@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ostraka import audit
+from ostraka.auth import sessions
 from ostraka.auth.deps import current_user, require_role
 from ostraka.db import get_session
 from ostraka.incident_schemas import TAG
@@ -43,7 +45,8 @@ async def list_tags(_: User = Depends(current_user), db: AsyncSession = Depends(
 async def define_tag(
     name: str,
     body: TagDefinitionIn,
-    _: User = Depends(admin_only),
+    request: Request,
+    admin: User = Depends(admin_only),
     db: AsyncSession = Depends(get_session),
 ) -> TagOut:
     if body.name != name:
@@ -51,16 +54,18 @@ async def define_tag(
     tag = await db.get(TagDefinition, name) or TagDefinition(name=name)
     tag.description = body.description
     db.add(tag)
+    audit.record(db, "tag_defined", actor_id=admin.id, ip=sessions.client_ip(request), tag=name)
     await db.commit()
     return TagOut(name=tag.name, description=tag.description, controlled=True)
 
 
 @router.delete("/{name}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def undefine_tag(
-    name: str, _: User = Depends(admin_only), db: AsyncSession = Depends(get_session)
+    name: str, request: Request, admin: User = Depends(admin_only), db: AsyncSession = Depends(get_session)
 ) -> None:
     """Remove a tag from the controlled vocabulary. Records already tagged keep it as a free tag."""
     tag = await db.get(TagDefinition, name)
     if tag is not None:
         await db.delete(tag)
+        audit.record(db, "tag_undefined", actor_id=admin.id, ip=sessions.client_ip(request), tag=name)
         await db.commit()

@@ -52,9 +52,13 @@ async def me(user: User = Depends(current_user), db: AsyncSession = Depends(get_
 
 @router.patch("/me", response_model=MeOut)
 async def update_me(
-    body: MePatch, user: User = Depends(current_user), db: AsyncSession = Depends(get_session)
+    body: MePatch,
+    request: Request,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_session),
 ) -> MeOut:
-    for field, value in body.model_dump(exclude_unset=True, exclude_none=True).items():
+    changes = body.model_dump(exclude_unset=True, exclude_none=True)
+    for field, value in changes.items():
         if field in ("quiet_from", "quiet_until"):
             value = value or None  # "" clears them
         elif isinstance(value, str) and field in ("name", "job_title"):
@@ -64,6 +68,15 @@ async def update_me(
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY, "Set both ends of your quiet hours, or neither."
         )
+    # Which fields, not what they now say: the profile holds a phone number
+    audit.record(
+        db,
+        "profile_changed",
+        actor_id=user.id,
+        subject_id=user.id,
+        ip=sessions.client_ip(request),
+        fields=sorted(changes),
+    )
     await db.commit()
     return await _me(db, user)
 

@@ -64,7 +64,9 @@ test('the ACH matrix takes your rating and shows the arithmetic and its flags', 
     if (method === 'PUT' && path === '/api/incidents/i-1/ach/ratings') return { json: ach('c') };
     return undefined;
   });
+  // ACH sits under Assessments; the old address still leads there
   await page.goto('/incidents/OST-26-001?s=ach');
+  await expect(page.getByRole('button', { name: 'Assessments' })).toHaveAttribute('aria-current', 'page');
   const matrix = page.getByRole('table', { name: 'ACH matrix' });
   await expect(matrix).toContainText('Leading');
   await expect(matrix).toContainText('Why: No ticket.');
@@ -85,16 +87,32 @@ test('a lesson to improve becomes a task for one of the incident’s teams', asy
     task: null, created_by: sam, created_at: '2026-11-10T10:00:00Z', version: 1,
   };
   const api = await stubApi(page, me(), (method, path) => {
+    if (path === '/api/incidents/by-ref/OST-26-001' || path === '/api/incidents/i-1')
+      return { json: incident({ phase: 'learn' }) };
     if (method === 'GET' && path === '/api/incidents/i-1/lessons') return { json: [lesson] };
     if (method === 'POST' && path === '/api/incidents/i-1/lessons/l-1/task')
       return { json: { ...lesson, task: { id: 't-9', ref: 'TSK-9', status: 'open' } } };
     return undefined;
   });
+  // lessons sit in the overview once the incident reaches Learn, and the old address still leads there
   await page.goto('/incidents/OST-26-001?s=lessons');
+  await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByText('What we’d change')).toBeVisible();
   await page.getByRole('button', { name: 'Make it a task' }).click();
   await page.getByRole('form', { name: 'Follow-up task for LSN-1' }).getByRole('button', { name: 'Make the task' }).click();
   await expect.poll(() => api.requests.find((r) => r.path.endsWith('/l-1/task'))?.body).toEqual({ team_id: 't-soc' });
+});
+
+test('lessons stay out of the overview until the incident reaches Learn', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me(), (method, path) => (method === 'GET' && path === '/api/incidents/i-1/lessons' ? { json: [] } : undefined));
+  await page.goto('/incidents/OST-26-001');
+  await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Record a lesson' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Incident sections' }).getByRole('button')).toHaveText([
+    /Overview/, /Tasks/, /Findings/, /Observables/, /Assets/, /Detections/, /Evidence/, /Assessments/, /Updates/,
+    /Timeline/, /Handover/, /Activity/,
+  ]);
 });
 
 test('export downloads the briefing, and is offered only to people who may export', async ({ page }) => {

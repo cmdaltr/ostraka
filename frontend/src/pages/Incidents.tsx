@@ -10,7 +10,7 @@ import type { Incident, IncidentSummary } from '../api/incidents';
 import type { Me, Team } from '../api/types';
 import { huntPhases, phases, phasesOf, severities, tlpLevels } from '../brand';
 import type { Phase, RecordKind, Severity, Tlp } from '../brand';
-import { PhaseStrip, SeverityPill, TlpPill } from '../components/Pills';
+import { PhasePill, PhaseStrip, SeverityPill, TlpPill } from '../components/Pills';
 import { PillSelect } from '../components/PillSelect';
 import { Loading } from '../components/sherd/Ostrakon';
 import { Notice, formatDate, messageOf } from '../components/ui';
@@ -250,7 +250,7 @@ export function Incidents({ me }: { me: Me }) {
           options={[
             ...(kind !== 'hunt' ? phases.map((v) => ({ value: v as Phase, group: 'Incidents' })) : []),
             ...(kind !== 'incident' ? huntPhases.map((v) => ({ value: v as Phase, group: 'Hunts' })) : []),
-          ].map((o) => ({ ...o, name: cap(o.value), look: <span className="pill phase-pill">{o.value}</span> }))}
+          ].map((o) => ({ ...o, name: cap(o.value), look: <PhasePill phase={o.value} /> }))}
         />
         {filtered && (
           <button

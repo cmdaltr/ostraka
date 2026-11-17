@@ -58,6 +58,7 @@ class Phase(StrEnum):
     CONTAIN = "contain"
     ERADICATE = "eradicate"
     RECOVER = "recover"
+    REPORT = "report"
     LEARN = "learn"
     # A hunt's phases
     HYPOTHESIS = "hypothesis"
@@ -73,6 +74,7 @@ PHASES_OF = {
         Phase.CONTAIN,
         Phase.ERADICATE,
         Phase.RECOVER,
+        Phase.REPORT,
         Phase.LEARN,
     ),
     RecordKind.HUNT: (Phase.HYPOTHESIS, Phase.COLLECT, Phase.ANALYSE, Phase.CONCLUDE),

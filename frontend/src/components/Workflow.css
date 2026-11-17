@@ -19,21 +19,22 @@
 .workflow-lines {
   z-index: 1;
 }
-.workflow-lines path {
+.workflow-lines .line {
   fill: none;
   stroke: var(--muted);
-  stroke-width: 1.8;
+  stroke-width: 2;
   stroke-linecap: round;
 }
-.workflow-lines path.dashed {
-  stroke: var(--accent);
-  stroke-dasharray: 5 4;
-}
-.workflow-lines marker path {
+.workflow-lines .head {
   fill: var(--muted);
-  /* the arrowhead takes its line's colour where the browser can */
-  fill: context-stroke;
   stroke: none;
+}
+.workflow-lines .dashed .line {
+  stroke: var(--accent);
+  stroke-dasharray: 6 4;
+}
+.workflow-lines .dashed .head {
+  fill: var(--accent);
 }
 .workflow-lines text {
   font: 500 var(--text-xs) / 1 var(--font-ui);
@@ -161,7 +162,7 @@
 .workflow-step.state-waiting {
   opacity: 0.7;
 }
-.workflow-step.state-skipped strong {
+.workflow-step.state-skipped .workflow-step-open {
   text-decoration: line-through;
 }
 .workflow-outcomes {
@@ -171,5 +172,85 @@
 }
 .workflow-outcomes .chosen {
   font-weight: 700;
+  color: var(--accent);
+}
+
+.workflow-wrap {
+  display: grid;
+  gap: var(--space-3);
+}
+/* The step's title is a button stretched over the whole card: click anywhere on it for the detail */
+.workflow-step-open {
+  font: 600 var(--text-sm) / 1.35 var(--font-ui);
+  color: var(--ink);
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.workflow-step-open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.workflow-step-open:focus-visible {
+  outline: none;
+}
+.workflow-step:has(.workflow-step-open:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.workflow-step:hover {
+  border-color: var(--team);
+}
+.workflow-step.is-picked {
+  box-shadow: 0 0 0 2px var(--team), var(--shadow);
+}
+/* links inside a card stay clickable above the stretched button */
+.workflow-step a {
+  position: relative;
+  z-index: 1;
+}
+
+.workflow-detail {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--team) 35%, var(--line));
+  border-left: 5px solid var(--team);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--team) 5%, var(--surface));
+}
+.workflow-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.workflow-detail-head h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.workflow-detail-head .link-button {
+  margin-left: auto;
+}
+.workflow-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.workflow-facts dt {
+  font: 600 var(--text-xs) / 1.2 var(--font-ui);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.workflow-facts dd {
+  margin: 2px 0 0;
+}
+.workflow-detail .chosen {
   color: var(--accent);
 }

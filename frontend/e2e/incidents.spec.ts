@@ -173,7 +173,8 @@ test('a stale edit is refused with an explanation, and the current version is fe
   );
   await page.goto('/incidents/OST-26-001');
   const before = count(api, 'GET', '/api/incidents/i-1');
-  await page.getByLabel('Severity').selectOption('critical');
+  await page.getByRole('button', { name: 'Severity: High' }).click();
+  await page.getByRole('option', { name: 'Critical' }).click();
   await expect(page.getByRole('alert')).toContainText('Someone else changed this while you were working on it');
   await expect.poll(() => count(api, 'GET', '/api/incidents/i-1')).toBeGreaterThan(before);
 });
@@ -270,8 +271,22 @@ test('the filters drop down in the records’ colours, all on one line, take sev
 test('declaring an incident and starting a hunt are in the header on every page', async ({ page }) => {
   await stubLive(page);
   await stubApi(page);
-  await page.goto('/people');
-  await page.getByRole('banner').getByRole('button', { name: 'Start a hunt' }).click();
+  await page.goto('/detection-gaps');
+  // on the right, with the bell, profile, Config and Sign out, in that order
+  const banner = page.getByRole('banner');
+  const x = async (name: string, role: 'button' | 'link' = 'button') =>
+    (await banner.getByRole(role, { name, exact: true }).boundingBox())!.x;
+  const order = [
+    await x('Detections', 'link'),
+    await x('Start a hunt'),
+    await x('Declare an incident'),
+    await x('Notifications'),
+    await x('Profile', 'link'),
+    await x('Config', 'link'),
+    await x('Sign out'),
+  ];
+  expect(order).toEqual([...order].sort((m, n) => m - n));
+  await banner.getByRole('button', { name: 'Start a hunt' }).click();
   await expect(page).toHaveURL(/\/\?declare=hunt$/);
   await expect(page.getByRole('form', { name: 'Start a hunt' })).toBeVisible();
   await page.getByRole('button', { name: 'Cancel' }).click();
