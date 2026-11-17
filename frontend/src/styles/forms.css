@@ -209,6 +209,13 @@ select.input,
   border: 1px solid var(--line);
   white-space: nowrap;
 }
+/* a hunt's chip, in Tyrian purple like its card */
+.chip-hunt {
+  background: color-mix(in srgb, var(--tyrian) 14%, var(--surface));
+  border-color: transparent;
+  color: var(--tyrian);
+  font-weight: 600;
+}
 .chip-accent {
   background: var(--accent-soft);
   border-color: transparent;

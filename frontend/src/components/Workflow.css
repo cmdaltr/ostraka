@@ -147,10 +147,10 @@
   letter-spacing: 0.04em;
 }
 .workflow-step.state-open {
-  box-shadow: 0 0 0 2px var(--accent), var(--shadow);
+  box-shadow: 0 0 0 2px var(--yellow-ochre), var(--shadow);
 }
 .workflow-step.state-open .workflow-state {
-  color: var(--accent);
+  color: var(--yellow-ochre);
 }
 .workflow-step.state-done .workflow-state {
   color: var(--ok);

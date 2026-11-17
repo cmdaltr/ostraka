@@ -257,7 +257,7 @@ export function IncidentPage({ me }: { me: Me }) {
             <span className="mono ref">{incident.ref}</span>
             <SeverityPill level={incident.severity} />
             <TlpPill level={incident.tlp} />
-            {incident.kind === 'hunt' && <span className="chip chip-accent">Hunt</span>}
+            {incident.kind === 'hunt' && <span className="chip chip-hunt">Hunt</span>}
             {incident.status === 'closed' && <span className="chip">Closed</span>}
             {!incident.can_edit && <span className="chip">Read only</span>}
           </span>

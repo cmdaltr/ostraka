@@ -25,7 +25,7 @@ PHASE_FILLS = {
     "contain": CLAY,
     "eradicate": (201, 138, 32),
     "recover": (168, 155, 142),
-    "report": (6, 118, 71),
+    "report": (46, 125, 91),
     "learn": (221, 211, 195),
 }
 

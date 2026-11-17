@@ -292,7 +292,7 @@ export function Incidents({ me }: { me: Me }) {
                 <Link to={`/incidents/${i.ref}`} className={`incident-card sev-edge-${i.severity} kind-${i.kind}`}>
                   <div className="incident-card-head">
                     <span className="mono ref">{i.ref}</span>
-                    {i.kind === 'hunt' && <span className="chip chip-accent">Hunt</span>}
+                    {i.kind === 'hunt' && <span className="chip chip-hunt">Hunt</span>}
                     <SeverityPill level={i.severity} />
                     <TlpPill level={i.tlp} />
                     <span className="hint">updated {formatDate(i.updated_at)}</span>

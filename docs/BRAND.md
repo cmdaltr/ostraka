@@ -52,6 +52,21 @@ The whole limestone sherd lies behind every page, sign-in included, in every pal
 
 A line of the same black chalk (`--chalk`, at `--chalk-line-opacity`) is dragged under each page's heading and an incident's head, and above the foot of the page: rough-edged and broken, as chalk is on stone. The line above the foot runs the width of the page's content, not the window. It marks the page's main divisions only; cards and panels keep their plain borders, so the chalk stays a separator and never a frame. Added 16 November 2026.
 
+## Period pigments
+
+Beside red ochre, the colours come from the palette of the scribes and potters who wrote on ostraka (17 November 2026):
+
+| Pigment | Token | Day | Night | Use |
+|---|---|---|---|---|
+| Red ochre | `--ochre` | `#a33a24` | `#e07a5f` | The brand: the name, active tabs, your avatar, the stroke under a heading |
+| Egyptian blue, the first made pigment | Cobalt's `--accent` | `#2456a6` | `#7ea6e8` | Buttons, links and the current phase in the default palette: ochre's complement |
+| Malachite, ground copper ore | `--ok` | `#2e7d5b` | `#5cc497` | Done, confirmed, benign |
+| Yellow ochre | `--yellow-ochre` | `#b07f1c` | `#e0b458` | What's open now in a playbook drawing |
+| Tyrian purple, from the murex shell | `--tyrian` | `#6b2a4f` | `#c27ba4` | Hunts: their chip and the faint ground of their cards |
+| Carbon black and limestone | `--chalk`, the sherd | | | The chalk lines and the stone behind every page |
+
+Cinnabar, the period's other famous red, isn't used: it would be read as Critical. Yellow ochre and Tyrian purple stay small, never on a label that means a state.
+
 ## The Ostrakon palette
 
 One of the three palettes in Settings, beside Cobalt (the default) and Ledger. No black anywhere: text is iron-gall brown, the ground is limestone, and fired clay is the accent.

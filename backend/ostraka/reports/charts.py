@@ -41,7 +41,7 @@ STATUS: dict[str, RGB] = {
     "lead": (201, 138, 32),  # #c98a20
     "refuted": (168, 155, 142),  # #a89b8e
 }
-OK: RGB = (6, 118, 71)  # --ok #067647
+OK: RGB = (46, 125, 91)  # --ok #2e7d5b, malachite
 
 _FONT_FILES = {
     "regular": "Inter-Regular.ttf",

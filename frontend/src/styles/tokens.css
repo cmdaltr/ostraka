@@ -47,10 +47,11 @@
   --ink: #171a1f;
   --muted: #5b6370;
   --line: #d9dde3;
-  --accent: #3d4fd6;
+  /* Cobalt's accent is Egyptian blue, the first made pigment: red ochre's complement on the same walls */
+  --accent: #2456a6;
   --accent-ink: #ffffff;
-  --accent-soft: #e6e9fb;
-  --focus: #3d4fd6;
+  --accent-soft: #e3ebf6;
+  --focus: #2456a6;
   --shadow: 0 1px 2px rgb(16 18 23 / 0.06), 0 4px 12px rgb(16 18 23 / 0.05);
 
   /* Severity follows Shikari's four-step scale */
@@ -59,7 +60,8 @@
   --sev-medium: #a15c07;
   --sev-low: #475467;
   --sev-ink: #ffffff;
-  --ok: #067647;
+  /* malachite, ground copper ore: done, confirmed, benign */
+  --ok: #2e7d5b;
   /* Regulator clock states (pages/incident/Clocks.tsx): urgency borrows the severity scale, so it
      reads the same in every palette */
   --clock-running: var(--accent);
@@ -83,8 +85,12 @@
   --team-6: #b42371;
   --team-7: #1d6fb8;
   --team-8: #7c5a3a;
-  /* a hunt's card in the list: a faint tint, where an incident's is plain */
-  --hunt-ground: color-mix(in srgb, var(--accent-soft) 60%, var(--surface));
+  /* the period's other pigments, for small accents only: yellow ochre for what's open now, Tyrian
+     purple (murex dye) for hunts */
+  --yellow-ochre: #b07f1c;
+  --tyrian: #6b2a4f;
+  /* a hunt's card in the list: a faint Tyrian tint, where an incident's is plain */
+  --hunt-ground: color-mix(in srgb, var(--tyrian) 7%, var(--surface));
 
   color-scheme: light;
 }
@@ -97,7 +103,7 @@
     --sev-medium: #fdb022;
     --sev-low: #98a2b3;
     --sev-ink: #101217;
-    --ok: #47cd89;
+    --ok: #5cc497;
     --graph-asset: #22b8cf;
     --graph-observable: #fdb022;
     --graph-evidence: #a3d65c;
@@ -111,6 +117,8 @@
     --team-6: #f472b6;
     --team-7: #60a5fa;
     --team-8: #c9a27e;
+    --yellow-ochre: #e0b458;
+    --tyrian: #c27ba4;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
     --mark-clay: none;
     --mark-limestone: block;
@@ -131,7 +139,7 @@
   --sev-high: #f670c7;
   --sev-medium: #fdb022;
   --sev-low: #98a2b3;
-  --ok: #47cd89;
+  --ok: #5cc497;
   --graph-asset: #22b8cf;
   --graph-observable: #fdb022;
   --graph-evidence: #a3d65c;
@@ -145,6 +153,8 @@
   --team-6: #f472b6;
   --team-7: #60a5fa;
   --team-8: #c9a27e;
+  --yellow-ochre: #e0b458;
+  --tyrian: #c27ba4;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
   --mark-clay: none;
   --mark-limestone: block;
@@ -187,12 +197,12 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-mode='light']):not([data-palette='ostrakon']):not([data-palette='ledger']) {
     --bg: #101217; --surface: #171a21; --raised: #1e222b; --ink: #e7e9ee; --muted: #959cab;
-    --line: #272b35; --accent: #8c9bff; --accent-ink: #101217; --accent-soft: #232846; --focus: #8c9bff;
+    --line: #272b35; --accent: #7ea6e8; --accent-ink: #101217; --accent-soft: #1b2840; --focus: #7ea6e8;
   }
 }
 :root[data-mode='dark']:not([data-palette='ostrakon']):not([data-palette='ledger']) {
   --bg: #101217; --surface: #171a21; --raised: #1e222b; --ink: #e7e9ee; --muted: #959cab;
-  --line: #272b35; --accent: #8c9bff; --accent-ink: #101217; --accent-soft: #232846; --focus: #8c9bff;
+  --line: #272b35; --accent: #7ea6e8; --accent-ink: #101217; --accent-soft: #1b2840; --focus: #7ea6e8;
 }
 
 /* ---- Ostrakon: limestone, fired clay and iron-gall ink, from the mark -------------------- */
