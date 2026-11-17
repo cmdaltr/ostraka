@@ -1,4 +1,4 @@
-// A layered layout for the incident graph: one column per kind of node, ordered within each column
+// A layered layout for the incident graph: one column (or, drawn downwards, one row) per kind of node, ordered within each column
 // to keep crossings down. Deterministic, so the same record always draws the same picture, and pure,
 // so it's unit-tested. No graph library: an incident's graph is tens of nodes, not thousands.
 
@@ -18,6 +18,13 @@ export const NODE_H = 34;
 export const COL_GAP = 96;
 export const ROW_GAP = 14;
 export const MARGIN = { top: 36, left: 72, right: 24, bottom: 24 };
+// Drawn downwards, the kinds are rows: a gap between rows for the links and the row's name, and between
+// nodes side by side
+export const LAYER_GAP = 72;
+export const SIDE_GAP = 16;
+
+/** Across: the kinds are columns, left to right. Down: they're rows, top to bottom. */
+export type Direction = 'across' | 'down';
 
 export interface Placed {
   node: GraphNode;
@@ -27,16 +34,17 @@ export interface Placed {
 }
 
 export interface Layout {
+  direction: Direction;
   placed: Map<string, Placed>;
   width: number;
   height: number;
-  columns: { column: number; x: number }[]; // the columns that have nodes, and where
+  columns: { column: number; x: number; y: number }[]; // the kinds that have nodes, and where they start
 }
 
 const byRef = (a: GraphNode, b: GraphNode) =>
   a.type.localeCompare(b.type) || a.ref.localeCompare(b.ref, 'en', { numeric: true });
 
-export function layout(nodes: GraphNode[], edges: GraphEdge[], sweeps = 4): Layout {
+export function layout(nodes: GraphNode[], edges: GraphEdge[], direction: Direction = 'across', sweeps = 4): Layout {
   const columns: GraphNode[][] = [[], [], [], []];
   for (const node of [...nodes].sort(byRef)) columns[columnOf[node.type]].push(node);
 
@@ -74,27 +82,60 @@ export function layout(nodes: GraphNode[], edges: GraphEdge[], sweeps = 4): Layo
 
   const used = columns.map((col, c) => (col.length ? c : -1)).filter((c) => c >= 0);
   const placed = new Map<string, Placed>();
-  const tallest = Math.max(1, ...columns.map((col) => col.length));
+  const widest = Math.max(1, ...columns.map((col) => col.length));
+  if (direction === 'down') {
+    const rowWidth = (count: number) => count * NODE_W + Math.max(0, count - 1) * SIDE_GAP;
+    const top = (slot: number) => MARGIN.top + slot * (NODE_H + LAYER_GAP);
+    used.forEach((c, slot) => {
+      // Shorter rows are centred against the widest
+      const offset = (rowWidth(widest) - rowWidth(columns[c].length)) / 2;
+      columns[c].forEach((node, i) => {
+        placed.set(node.id, { node, x: MARGIN.left + offset + i * (NODE_W + SIDE_GAP), y: top(slot), column: c });
+      });
+    });
+    return {
+      direction,
+      placed,
+      width: MARGIN.left + rowWidth(widest) + MARGIN.right,
+      height: MARGIN.top + used.length * NODE_H + Math.max(0, used.length - 1) * LAYER_GAP + MARGIN.bottom,
+      columns: used.map((column, slot) => ({ column, x: MARGIN.left, y: top(slot) })),
+    };
+  }
   const columnHeight = (count: number) => count * NODE_H + Math.max(0, count - 1) * ROW_GAP;
   used.forEach((c, slot) => {
     const x = MARGIN.left + slot * (NODE_W + COL_GAP);
     // Shorter columns are centred against the tallest
-    const offset = (columnHeight(tallest) - columnHeight(columns[c].length)) / 2;
+    const offset = (columnHeight(widest) - columnHeight(columns[c].length)) / 2;
     columns[c].forEach((node, i) => {
       placed.set(node.id, { node, x, y: MARGIN.top + offset + i * (NODE_H + ROW_GAP), column: c });
     });
   });
   return {
+    direction,
     placed,
     width: MARGIN.left + used.length * NODE_W + Math.max(0, used.length - 1) * COL_GAP + MARGIN.right,
-    height: MARGIN.top + columnHeight(tallest) + MARGIN.bottom,
-    columns: used.map((column, slot) => ({ column, x: MARGIN.left + slot * (NODE_W + COL_GAP) })),
+    height: MARGIN.top + columnHeight(widest) + MARGIN.bottom,
+    columns: used.map((column, slot) => ({ column, x: MARGIN.left + slot * (NODE_W + COL_GAP), y: MARGIN.top })),
   };
 }
 
 // An edge's path. Between columns, a curve from the right edge of the leftmost node to the left edge of
-// the other; within a column (asset connections), an arc out to the left of the column.
-export function edgePath(a: Placed, b: Placed): string {
+// the other; within a column (asset connections), an arc out to the left of the column. Drawn downwards,
+// the same turned a quarter: bottom edge to top edge between rows, and an arc above within a row.
+export function edgePath(a: Placed, b: Placed, direction: Direction = 'across'): string {
+  if (direction === 'down') {
+    const ax = a.x + NODE_W / 2;
+    const bx = b.x + NODE_W / 2;
+    if (a.y === b.y) {
+      const lift = Math.min(LAYER_GAP / 2, 20 + Math.abs(bx - ax) / 8);
+      return `M${ax},${a.y} C${ax},${a.y - lift} ${bx},${b.y - lift} ${bx},${b.y}`;
+    }
+    const [t, u, tx, ux] = a.y < b.y ? [a, b, ax, bx] : [b, a, bx, ax];
+    const y1 = t.y + NODE_H;
+    const y2 = u.y;
+    const mid = (y1 + y2) / 2;
+    return `M${tx},${y1} C${tx},${mid} ${ux},${mid} ${ux},${y2}`;
+  }
   const ay = a.y + NODE_H / 2;
   const by = b.y + NODE_H / 2;
   if (a.x === b.x) {

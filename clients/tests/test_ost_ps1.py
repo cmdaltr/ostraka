@@ -39,7 +39,7 @@ def fake() -> Iterator[FakeOstraka]:
     fake.routes.update(
         {
             ("GET", "/api/users/me"): (200, ME),
-            ("GET", "/api/incidents/by-ref/OST-2026-001"): (200, {"id": INCIDENT_ID, "ref": "OST-2026-001"}),
+            ("GET", "/api/incidents/by-ref/OST-26-001"): (200, {"id": INCIDENT_ID, "ref": "OST-26-001"}),
         }
     )
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -80,7 +80,7 @@ def pwsh(
 
 
 def test_declare(fake: FakeOstraka) -> None:
-    fake.routes[("POST", "/api/incidents")] = (201, {"id": INCIDENT_ID, "ref": "OST-2026-002"})
+    fake.routes[("POST", "/api/incidents")] = (201, {"id": INCIDENT_ID, "ref": "OST-26-002"})
     proc = pwsh(fake, "declare", "Beacon from WS042", "--severity", "High", "--tlp", "TLP:AMBER+STRICT")
     assert proc.returncode == 0, proc.stderr
     [req] = fake.sent("POST", "/api/incidents")
@@ -93,7 +93,7 @@ def test_declare(fake: FakeOstraka) -> None:
         "summary": "",
         "tags": [],
     }
-    assert "Declared OST-2026-002" in proc.stdout
+    assert "Declared OST-26-002" in proc.stdout
 
 
 def test_ioc_add_from_stdin_and_a_single_task_row(fake: FakeOstraka) -> None:
@@ -102,7 +102,7 @@ def test_ioc_add_from_stdin_and_a_single_task_row(fake: FakeOstraka) -> None:
         201,
         {"id": "o", "ref": "OBS-1", "kind": "domain", "value": b["value"]},
     )
-    proc = pwsh(fake, "ioc", "add", "OST-2026-001", stdin="# list\nevil[.]example\n\n198.51.100.7\n")
+    proc = pwsh(fake, "ioc", "add", "OST-26-001", stdin="# list\nevil[.]example\n\n198.51.100.7\n")
     assert proc.returncode == 0, proc.stderr
     assert [r.body["value"] for r in fake.sent("POST", path)] == ["evil[.]example", "198.51.100.7"]
 
@@ -116,7 +116,7 @@ def test_ioc_add_from_stdin_and_a_single_task_row(fake: FakeOstraka) -> None:
                 "due_at": "2026-11-12T09:30:00Z",
                 "assignee": {"id": ME["id"], "name": ME["name"]},
                 "team": {"name": "Blue"},
-                "incident": {"ref": "OST-2026-001"},
+                "incident": {"ref": "OST-26-001"},
             },
         ],
     )

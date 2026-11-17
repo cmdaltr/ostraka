@@ -203,7 +203,7 @@ test('responders see the directory without invite or admin controls', async ({ p
 
 test('the raw-IOC switch appears for observers only, and starts off', async ({ page }) => {
   await signedInAs(page, me({ role: 'observer', team: { id: 't-l', name: 'Leadership', description: '' } }));
-  await page.goto('/profile?tab=appearance');
+  await page.goto('/profile');
   await expect(page.locator('#show-raw-iocs')).not.toBeChecked();
 });
 

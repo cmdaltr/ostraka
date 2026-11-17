@@ -171,7 +171,7 @@ s.save("notifications.svg")
 # ---- 4. MCP -----------------------------------------------------------------------------------------
 s = Svg(1240, 360, "Ostraka · MCP at /mcp")
 row = [("MCP client", ["POST /mcp", "Bearer ost_…"]), ("Token check", ["an API token, never", "a browser JWT"]),
-       ("Tools offered", ["read-only token:", "read tools only"]), ("Tool call", ["e.g. get_record", "OST-2026-014"]),
+       ("Tools offered", ["read-only token:", "read tools only"]), ("Tool call", ["e.g. get_record", "OST-26-014"]),
        ("ostraka's own API", ["in-process (ASGI)", "as the token's owner"])]
 for i, (t, l) in enumerate(row):
     s.box(30 + i * 242, 90, 210, 80, t, l)

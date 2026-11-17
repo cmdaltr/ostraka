@@ -65,7 +65,7 @@ export function DesignSystem() {
       <section className="ds-section">
         <h2 className="label">Type</h2>
         <p className="ds-type-ui">Mailbox rule forwarding finance mail to an external domain</p>
-        <p className="ds-type-mono mono">185.220.101.47 · T1114.003 · OST-2026-014</p>
+        <p className="ds-type-mono mono">185.220.101.47 · T1114.003 · OST-26-014</p>
         <Wordmark size="md" />
       </section>
     </>

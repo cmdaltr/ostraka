@@ -802,7 +802,6 @@ const tabs = [
   { key: 'security', label: 'Security' },
   { key: 'tokens', label: 'API tokens' },
   { key: 'notifications', label: 'Notifications' },
-  { key: 'appearance', label: 'Appearance' },
 ] as const;
 type Tab = (typeof tabs)[number]['key'];
 
@@ -831,7 +830,12 @@ export function Profile({ me }: { me: Me }) {
           </button>
         ))}
       </nav>
-      {tab === 'profile' && <AboutYou me={me} />}
+      {tab === 'profile' && (
+        <>
+          <AboutYou me={me} />
+          <Appearance me={me} />
+        </>
+      )}
       {tab === 'security' && (
         <>
           <Browsers />
@@ -850,7 +854,6 @@ export function Profile({ me }: { me: Me }) {
           <QuietHours me={me} />
         </>
       )}
-      {tab === 'appearance' && <Appearance me={me} />}
     </>
   );
 }

@@ -226,7 +226,7 @@ def test_hashes_are_cleaned_and_checked():
 
 def _scene():
     incident = SimpleNamespace(
-        id=uuid.uuid4(), ref="OST-2026-001", tlp=Tlp.AMBER_STRICT, kind=RecordKind.INCIDENT
+        id=uuid.uuid4(), ref="OST-26-001", tlp=Tlp.AMBER_STRICT, kind=RecordKind.INCIDENT
     )
     ws = SimpleNamespace(
         id=uuid.uuid4(), seq=1, hostname="FIN-WS-0142", is_patient_zero=True,

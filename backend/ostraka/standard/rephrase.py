@@ -1,6 +1,6 @@
 """The check an AI rewording must pass before Ostraka will use it. Fixed rules, no model.
 
-A rephrase may only reword. Line by line it must keep every reference (FND-12, ASM-4, OST-2026-014),
+A rephrase may only reword. Line by line it must keep every reference (FND-12, ASM-4, OST-26-014),
 every number, every PHIA term with its range, every masked indicator, and the words that say how
 strong a claim is: confirmed, lead, refuted, no evidence, and negation. It may not add likelihood
 words outside the yardstick, certainty words or loaded adjectives. Any difference rejects the whole
@@ -15,7 +15,9 @@ from collections import Counter
 from ostraka.standard import yardstick
 from ostraka.standard.assessment import CERTAINTY, LOADED
 
-REFS = re.compile(r"\b(?:(?:OST|HNT)-\d{4}-\d{3,}|(?:FND|AST|OBS|TSK|ASM|HYP|EVD|LSN|UPD)-\d+)\b", re.I)
+REFS = re.compile(
+    r"\b(?:(?:OST|HNT)-\d{2}(?:\d{2})?-\d{3,}|(?:FND|AST|OBS|TSK|ASM|HYP|EVD|LSN|UPD)-\d+)\b", re.I
+)
 NUMBERS = re.compile(r"\d+(?:[.,:]\d+)*")
 MASKED = re.compile(r"\[[a-z0-9 ]+\]", re.I)
 # Words that carry a claim's strength; their counts must survive the rewording

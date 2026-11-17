@@ -56,7 +56,7 @@ def test_tlp_guard_keeps_restricted_incidents_on_your_own_network():
     own = Integration(product=Product.ROWANHOLT, url="https://rowanholt.tail180683.ts.net")
     for tlp in (Tlp.RED, Tlp.AMBER_STRICT):
         refusal = tlp_refusal(Product.ROWANHOLT, _incident(tlp), public)
-        assert refusal and "OST-2026-007" in refusal and "own network" in refusal
+        assert refusal and "OST-26-007" in refusal and "own network" in refusal
         assert tlp_refusal(Product.ROWANHOLT, _incident(tlp), own) is None
     for tlp in (Tlp.AMBER, Tlp.GREEN, Tlp.CLEAR):
         assert tlp_refusal(Product.SHIKARI, _incident(tlp), public) is None

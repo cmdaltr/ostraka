@@ -16,7 +16,7 @@ test('the list shows open incidents, and declaring one opens it', async ({ page 
   await page.locator('#declare-tags').fill('phishing, bec');
   await page.getByRole('button', { name: 'Declare', exact: true }).click();
 
-  await expect(page).toHaveURL(/\/incidents\/OST-2026-001$/);
+  await expect(page).toHaveURL(/\/incidents\/OST-26-001$/);
   const sent = api.requests.find((r) => r.method === 'POST' && r.path === '/api/incidents')!.body as Record<string, unknown>;
   expect(sent).toMatchObject({ severity: 'high', team_ids: ['t-soc'], tags: ['phishing', 'bec'] });
 });
@@ -24,7 +24,7 @@ test('the list shows open incidents, and declaring one opens it', async ({ page 
 test('the incident page shows who else is here and refetches what a live event changed', async ({ page }) => {
   const live = await stubLive(page);
   const api = await stubApi(page);
-  await page.goto('/incidents/OST-2026-001?s=findings');
+  await page.goto('/incidents/OST-26-001?s=findings');
 
   await expect(page.getByRole('heading', { name: 'Phishing leads to a foothold on FIN-WS-07' })).toBeVisible();
   await expect(page.getByRole('list', { name: 'Also here' })).toContainText('Dana Lead editing');
@@ -49,7 +49,7 @@ test('pasted text becomes a pick list, and only the chosen indicators are added'
       };
     if (method === 'POST' && path === '/api/incidents/i-1/observables') return { status: 201, json: observable };
   });
-  await page.goto('/incidents/OST-2026-001?s=observables');
+  await page.goto('/incidents/OST-26-001?s=observables');
 
   await expect(page.getByRole('note')).toContainText('Seen in 1 other incident');
   await expect(page.getByRole('note')).toContainText('ask DFIR (lead: Dana Lead)');
@@ -96,7 +96,7 @@ test('a lead is confirmed only after a verification is recorded', async ({ page 
     }
     if (path === '/api/incidents/i-1/findings/f-1/confirm') return { json: { ...current, status: 'confirmed' } };
   });
-  await page.goto('/incidents/OST-2026-001?s=findings');
+  await page.goto('/incidents/OST-26-001?s=findings');
 
   const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
   await expect(confirm).toBeDisabled();
@@ -137,8 +137,11 @@ test('comments complete @mentions and #references, and render them as links', as
     comments.push(comment);
     return { status: 201, json: comment };
   });
-  await page.goto('/incidents/OST-2026-001');
+  await page.goto('/incidents/OST-26-001');
 
+  // the discussion waits behind its tab on the right edge
+  await expect(page.getByRole('textbox', { name: 'Comment' })).toBeHidden();
+  await page.getByRole('button', { name: 'Discussion' }).click();
   const box = page.getByRole('textbox', { name: 'Comment' });
   await box.pressSequentially('Over to @da');
   const suggestions = page.getByRole('listbox', { name: 'Suggestions' });
@@ -168,7 +171,7 @@ test('a stale edit is refused with an explanation, and the current version is fe
         }
       : undefined,
   );
-  await page.goto('/incidents/OST-2026-001');
+  await page.goto('/incidents/OST-26-001');
   const before = count(api, 'GET', '/api/incidents/i-1');
   await page.getByLabel('Severity').selectOption('critical');
   await expect(page.getByRole('alert')).toContainText('Someone else changed this while you were working on it');
@@ -178,16 +181,48 @@ test('a stale edit is refused with an explanation, and the current version is fe
 test('observers get the briefing view: no editing, and indicator values withheld', async ({ page }) => {
   await stubLive(page);
   await stubApi(page, me({ role: 'observer' }), (method, path) => {
-    if (path === '/api/incidents/by-ref/OST-2026-001' || path === '/api/incidents/i-1')
+    if (path === '/api/incidents/by-ref/OST-26-001' || path === '/api/incidents/i-1')
       return { json: incident({ can_edit: false, can_manage: false }) };
     if (method === 'GET' && path === '/api/incidents/i-1/observables')
       return { json: [{ ...observable, value: null, masked: true }] };
   });
-  await page.goto('/incidents/OST-2026-001?s=observables');
+  await page.goto('/incidents/OST-26-001?s=observables');
   await expect(page.getByText('Read only')).toBeVisible();
   await expect(page.getByText('Indicator values are hidden in the briefing view')).toBeVisible();
   await expect(page.locator('#OBS-7 .masked')).toHaveText('[domain]');
   await expect(page.getByText('evil.example')).toHaveCount(0);
   await expect(page.getByRole('form', { name: 'Add an observable' })).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: 'Comment' })).toHaveCount(0);
+});
+
+test('the list filters by severity, TLP and phase, and edges each card in its severity', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me(), (method, path) =>
+    method === 'GET' && path === '/api/incidents'
+      ? {
+          json: [
+            incident(),
+            incident({ id: 'i-2', ref: 'OST-26-002', title: 'Ransomware on the file server', severity: 'critical', tlp: 'red', phase: 'contain' }),
+            incident({ id: 'i-3', ref: 'HNT-26-001', kind: 'hunt', title: 'Kerberoasting', severity: 'low', tlp: 'green', phase: 'collect' }),
+          ],
+        }
+      : undefined,
+  );
+  await page.goto('/');
+  const cards = page.locator('.incident-card');
+  await expect(cards).toHaveCount(3);
+  await expect(cards.nth(1)).toHaveClass(/sev-edge-critical/);
+
+  await page.locator('#filter-severity').selectOption('critical');
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toContainText('Ransomware on the file server');
+  await page.locator('#filter-tlp').selectOption('amber');
+  await expect(page.getByRole('heading', { name: 'No open incidents or hunts match' })).toBeVisible();
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await page.locator('#filter-phase').selectOption('collect');
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toContainText('Kerberoasting');
+  // an incident's phases go when only hunts are shown, and a hunt's phase filter clears for incidents
+  await page.getByRole('button', { name: 'Incidents', exact: true }).click();
+  await expect(page.locator('#filter-phase')).toHaveValue('');
 });

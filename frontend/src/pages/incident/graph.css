@@ -12,12 +12,53 @@
   align-items: center;
   margin-bottom: var(--space-3);
 }
-.graph-key .swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  background: var(--kind);
+.graph-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.graph-tools button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.gicon {
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.graph-key {
+  align-items: center;
+}
+.graph-key .gicon {
+  color: var(--kind);
+  stroke-width: 2;
+}
+.gnode .gkind {
+  fill: none;
+  stroke: var(--kind);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Full screen: the browser's own, or the whole window where there's none */
+.graph-section:fullscreen,
+.graph-section.is-full {
+  overflow: auto;
+  padding: var(--space-5);
+  background: var(--bg);
+}
+.graph-section.is-full {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
 }
 .graph-key-asset, .gnode-asset { --kind: var(--graph-asset); }
 .graph-key-observable, .gnode-observable { --kind: var(--graph-observable); }

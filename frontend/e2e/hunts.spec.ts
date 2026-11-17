@@ -4,7 +4,7 @@ import { dana, incident, noLinks, sam, stubApi, stubLive, teams } from './fixtur
 const hunt = incident({
   id: 'h-1',
   kind: 'hunt',
-  ref: 'HNT-2026-003',
+  ref: 'HNT-26-003',
   title: 'Scheduled tasks pointing at user-writable paths',
   severity: 'low',
   phase: 'collect',
@@ -58,7 +58,7 @@ test('hunts sit beside incidents: filtered, started with their own wording, and 
   const api = await stubApi(page, undefined, (method, path) => {
     if (method === 'GET' && path === '/api/incidents') return { json: [incident(), hunt] };
     if (method === 'POST' && path === '/api/incidents') return { status: 201, json: hunt };
-    if (path === '/api/incidents/by-ref/HNT-2026-003' || path === '/api/incidents/h-1') return { json: hunt };
+    if (path === '/api/incidents/by-ref/HNT-26-003' || path === '/api/incidents/h-1') return { json: hunt };
     if (path === '/api/incidents/h-1/links') return { json: noLinks };
     if (path === '/api/playbooks')
       return {
@@ -69,7 +69,7 @@ test('hunts sit beside incidents: filtered, started with their own wording, and 
       };
   });
   await page.goto('/');
-  const card = page.getByRole('link', { name: /HNT-2026-003/ });
+  const card = page.getByRole('link', { name: /HNT-26-003/ });
   await expect(card.getByText('Hunt', { exact: true })).toBeVisible();
   await expect(card.getByRole('list', { name: 'Phase: collect' })).toContainText('hypothesis');
 
@@ -85,7 +85,7 @@ test('hunts sit beside incidents: filtered, started with their own wording, and 
   await page.locator('#declare-tags').fill('persistence');
   await expect(form.getByRole('checkbox', { name: /Threat hunt/ })).toBeChecked();
   await form.getByRole('button', { name: 'Start' }).click();
-  await expect(page).toHaveURL(/\/incidents\/HNT-2026-003$/);
+  await expect(page).toHaveURL(/\/incidents\/HNT-26-003$/);
   const sent = api.requests.find((r) => r.method === 'POST' && r.path === '/api/incidents')!.body;
   expect(sent).toMatchObject({ kind: 'hunt', playbook_ids: ['pb-h'] });
   await expect(page.getByRole('list', { name: 'Phase: collect' })).toContainText('conclude');
@@ -93,34 +93,34 @@ test('hunts sit beside incidents: filtered, started with their own wording, and 
 
 test('a hunt is promoted to a linked incident', async ({ page }) => {
   await stubLive(page);
-  const promoted = incident({ id: 'i-9', ref: 'OST-2026-009', title: 'Persistence on FIN-WS-0142' });
+  const promoted = incident({ id: 'i-9', ref: 'OST-26-009', title: 'Persistence on FIN-WS-0142' });
   const api = await stubApi(page, undefined, (method, path) => {
-    if (path === '/api/incidents/by-ref/HNT-2026-003' || path === '/api/incidents/h-1') return { json: hunt };
+    if (path === '/api/incidents/by-ref/HNT-26-003' || path === '/api/incidents/h-1') return { json: hunt };
     if (path === '/api/incidents/h-1/links') return { json: noLinks };
     if (method === 'POST' && path === '/api/incidents/h-1/promote') return { status: 201, json: promoted };
-    if (path === '/api/incidents/by-ref/OST-2026-009' || path === '/api/incidents/i-9') return { json: promoted };
+    if (path === '/api/incidents/by-ref/OST-26-009' || path === '/api/incidents/i-9') return { json: promoted };
     if (path === '/api/incidents/i-9/links') return { json: { ...noLinks, promoted_from: brief(hunt, 'l-1') } };
   });
-  await page.goto('/incidents/HNT-2026-003');
+  await page.goto('/incidents/HNT-26-003');
   await page.getByRole('button', { name: 'Promote to an incident' }).click();
   const form = page.getByRole('form', { name: 'Promote to an incident' });
   await form.getByLabel('Incident title').fill('Persistence on FIN-WS-0142');
   await form.getByRole('button', { name: 'Declare the incident' }).click();
-  await expect(page).toHaveURL(/\/incidents\/OST-2026-009$/);
+  await expect(page).toHaveURL(/\/incidents\/OST-26-009$/);
   expect(api.requests.find((r) => r.path === '/api/incidents/h-1/promote')!.body).toMatchObject({
     title: 'Persistence on FIN-WS-0142',
     severity: 'high',
   });
   const linked = page.getByRole('region', { name: 'Linked records' });
   await expect(linked.getByText('Promoted from')).toBeVisible();
-  await expect(linked.getByRole('link', { name: 'HNT-2026-003' })).toBeVisible();
+  await expect(linked.getByRole('link', { name: 'HNT-26-003' })).toBeVisible();
   // A promotion is history: it can't be unlinked
-  await expect(linked.getByRole('button', { name: 'Unlink HNT-2026-003' })).toHaveCount(0);
+  await expect(linked.getByRole('button', { name: 'Unlink HNT-26-003' })).toHaveCount(0);
 });
 
 test('linking records: children with progress, a hidden count, and unlinking', async ({ page }) => {
   await stubLive(page);
-  const child = incident({ id: 'i-2', ref: 'OST-2026-002', title: 'Domain admin used out of hours', status: 'closed' });
+  const child = incident({ id: 'i-2', ref: 'OST-26-002', title: 'Domain admin used out of hours', status: 'closed' });
   let links: Record<string, unknown> = { ...noLinks, children: [brief(child, 'l-2')], hidden: 1 };
   const api = await stubApi(page, undefined, (method, path) => {
     if (path === '/api/incidents/i-1/links' && method === 'GET') return { json: links };
@@ -133,32 +133,32 @@ test('linking records: children with progress, a hidden count, and unlinking', a
       return { status: 204 };
     }
   });
-  await page.goto('/incidents/OST-2026-001');
+  await page.goto('/incidents/OST-26-001');
   const panel = page.getByRole('region', { name: 'Linked records' });
   await expect(panel.getByText('1 of 1 closed')).toBeVisible();
   await expect(panel.getByText('One more linked record you can’t open.')).toBeVisible();
 
   const form = panel.getByRole('form', { name: 'Link a record' });
   await form.getByRole('combobox').selectOption('related_to');
-  await form.getByLabel('Reference').fill('HNT-2026-003');
+  await form.getByLabel('Reference').fill('HNT-26-003');
   await form.getByRole('button', { name: 'Link' }).click();
-  await expect(panel.getByRole('link', { name: 'HNT-2026-003' })).toBeVisible();
+  await expect(panel.getByRole('link', { name: 'HNT-26-003' })).toBeVisible();
   expect(api.requests.find((r) => r.method === 'POST' && r.path === '/api/incidents/i-1/links')!.body).toEqual({
-    ref: 'HNT-2026-003',
+    ref: 'HNT-26-003',
     relation: 'related_to',
   });
 
   await form.getByRole('combobox').selectOption('duplicate_of');
   await expect(panel.getByText('Marking this a duplicate closes it')).toBeVisible();
 
-  await panel.getByRole('button', { name: 'Unlink OST-2026-002' }).click();
-  await expect(panel.getByRole('link', { name: 'OST-2026-002' })).toHaveCount(0);
+  await panel.getByRole('button', { name: 'Unlink OST-26-002' }).click();
+  await expect(panel.getByRole('link', { name: 'OST-26-002' })).toHaveCount(0);
 });
 
 test('subtasks sit under their parent, and a task shows what it waits on', async ({ page }) => {
   await stubLive(page);
   let tasks = [
-    task({ blocked_by: [{ id: 'k-9', ref: 'TSK-9', title: 'Rebuild DC03', status: 'in_progress', incident_ref: 'OST-2026-002' }] }),
+    task({ blocked_by: [{ id: 'k-9', ref: 'TSK-9', title: 'Rebuild DC03', status: 'in_progress', incident_ref: 'OST-26-002' }] }),
     task({ id: 'k-2', ref: 'TSK-5', parent_id: 'k-1', title: 'Isolate FIN-WS-0142', status: 'done' }),
   ];
   const api = await stubApi(page, undefined, (method, path) => {
@@ -169,12 +169,12 @@ test('subtasks sit under their parent, and a task shows what it waits on', async
     }
     if (path === '/api/incidents/i-1/tasks/k-1/blocked-by' && method === 'POST') return { status: 201, json: tasks[0] };
   });
-  await page.goto('/incidents/OST-2026-001?s=tasks');
+  await page.goto('/incidents/OST-26-001?s=tasks');
   const parent = page.locator('#TSK-4');
   await expect(parent.getByRole('list', { name: 'Subtasks of TSK-4' }).getByText('Isolate FIN-WS-0142')).toBeVisible();
   await expect(parent.getByText('1/1')).toBeVisible();
   const waits = parent.getByRole('list', { name: 'TSK-4 waits on' });
-  await expect(waits.getByRole('link', { name: 'TSK-9' })).toHaveAttribute('href', '/incidents/OST-2026-002?s=tasks#TSK-9');
+  await expect(waits.getByRole('link', { name: 'TSK-9' })).toHaveAttribute('href', '/incidents/OST-26-002?s=tasks#TSK-9');
   await expect(parent.getByText('1 to go')).toBeVisible();
 
   await parent.getByRole('button', { name: 'Add a subtask' }).first().click();

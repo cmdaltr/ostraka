@@ -15,7 +15,7 @@ NOW = datetime(2026, 11, 11, 18, 0, tzinfo=UTC)
 
 def state(**overrides) -> handover.State:
     base = dict(
-        ref="OST-2026-014",
+        ref="OST-26-014",
         title="Ransomware on the finance file servers",
         phase="contain",
         severity="critical",
@@ -46,7 +46,7 @@ def test_an_empty_shift_still_says_every_section_was_looked_at():
     ]
     assert "No open tasks." in made.text and "Nothing recorded." in made.text
     assert "no new log entries" in made.text
-    assert made.text.startswith("Handover: OST-2026-014 Ransomware on the finance file servers\n")
+    assert made.text.startswith("Handover: OST-26-014 Ransomware on the finance file servers\n")
 
 
 def test_tasks_are_ordered_by_deadline_with_owners_and_overdue_flagged():

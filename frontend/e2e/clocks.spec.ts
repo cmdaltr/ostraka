@@ -92,7 +92,7 @@ test('a clock counts down live and a milestone is marked met with its reference'
       return { json: current };
     }
   });
-  await page.goto('/incidents/OST-2026-001?s=clocks');
+  await page.goto('/incidents/OST-26-001?s=clocks');
 
   const timer = page.getByRole('timer', { name: 'Report to the ICO countdown' });
   await expect(timer).toHaveText(/^0[56]:\d\d:\d\d to go$/);
@@ -117,7 +117,7 @@ test('the commander starts a DORA clock with its classification time', async ({ 
     if (method === 'GET' && path === '/api/clocks/regimes') return { json: regimes };
     if (method === 'POST' && path === '/api/incidents/i-1/clocks') return { status: 201, json: clock() };
   });
-  await page.goto('/incidents/OST-2026-001?s=clocks');
+  await page.goto('/incidents/OST-26-001?s=clocks');
   await expect(page.getByText('No clocks running.')).toBeVisible();
   await page.getByRole('button', { name: 'Start a clock' }).click();
   await page.getByLabel('Regime').selectOption('dora');
@@ -136,7 +136,7 @@ test('a custom clock takes its own milestones', async ({ page }) => {
     if (method === 'GET' && path === '/api/clocks/regimes') return { json: regimes };
     if (method === 'POST' && path === '/api/incidents/i-1/clocks') return { status: 201, json: clock() };
   });
-  await page.goto('/incidents/OST-2026-001?s=clocks');
+  await page.goto('/incidents/OST-26-001?s=clocks');
   await page.getByRole('button', { name: 'Start a clock' }).click();
   await page.getByLabel('Regime').selectOption('custom');
   await page.getByLabel('Whose deadline').fill('Cyber insurer');
@@ -161,11 +161,11 @@ test('an observer sees clocks but can’t start, change or mark them', async ({ 
   await stubLive(page);
   const observing = incident({ can_edit: false, can_manage: false, members: [] });
   await stubApi(page, me({ role: 'observer' }), (method, path) => {
-    if (path === '/api/incidents/by-ref/OST-2026-001' || path === '/api/incidents/i-1') return { json: observing };
+    if (path === '/api/incidents/by-ref/OST-26-001' || path === '/api/incidents/i-1') return { json: observing };
     if (method === 'GET' && path === '/api/incidents/i-1/clocks')
       return { json: [clock({ can_manage: false, can_mark: false })] };
   });
-  await page.goto('/incidents/OST-2026-001?s=clocks');
+  await page.goto('/incidents/OST-26-001?s=clocks');
   await expect(page.getByRole('timer', { name: 'Report to the ICO countdown' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Start a clock' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Mark met' })).toHaveCount(0);
@@ -187,7 +187,7 @@ test('your work lists the next regulator deadline, breached ones first', async (
     state: 'running',
     owner: sam,
     as_owner,
-    incident: { id: 'i-1', ref: 'OST-2026-001', title: 'Phishing leads to a foothold', severity: 'high', tlp: 'amber' },
+    incident: { id: 'i-1', ref: 'OST-26-001', title: 'Phishing leads to a foothold', severity: 'high', tlp: 'amber' },
   });
   await stubApi(page, me(), (method, path) => {
     if (method === 'GET' && path === '/api/clocks/mine')
@@ -197,6 +197,6 @@ test('your work lists the next regulator deadline, breached ones first', async (
   const section = page.getByRole('region', { name: 'Regulator deadlines' });
   await expect(section.getByRole('timer').first()).toHaveText(/overdue$/);
   await expect(section.getByText('Breached')).toBeVisible();
-  await expect(section.getByRole('link', { name: 'CLK-2' })).toHaveAttribute('href', '/incidents/OST-2026-001?s=clocks#CLK-2');
+  await expect(section.getByRole('link', { name: 'CLK-2' })).toHaveAttribute('href', '/incidents/OST-26-001?s=clocks#CLK-2');
   await expect(section.getByText('Owner: Sam Analyst')).toBeVisible();
 });

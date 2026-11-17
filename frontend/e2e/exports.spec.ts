@@ -19,24 +19,24 @@ test('the Export menu downloads STIX and the Navigator layer, and sends to MISP 
   await page.route('**/api/incidents/i-1/export/**', (r) => {
     const url = new URL(r.request().url());
     const format = url.pathname.split('/').pop();
-    const name = `OST-2026-001-${format}${url.searchParams.get('leads') ? '-leads' : ''}.json`;
+    const name = `OST-26-001-${format}${url.searchParams.get('leads') ? '-leads' : ''}.json`;
     return r.fulfill({
       body: '{}',
       headers: { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="${name}"` },
     });
   });
-  await page.goto('/incidents/OST-2026-001');
+  await page.goto('/incidents/OST-26-001');
   await page.locator('summary', { hasText: 'Export' }).click();
   await expect(page.getByRole('heading', { name: 'For other tools' })).toBeVisible();
   expect(api.requests.filter((r) => r.method === 'POST' && r.path.endsWith('/misp'))).toHaveLength(0);
 
   const stix = page.locator('.export-row', { hasText: 'STIX 2.1 bundle' });
   const [file] = await Promise.all([page.waitForEvent('download'), stix.getByRole('menuitem', { name: 'JSON' }).click()]);
-  expect(file.suggestedFilename()).toBe('OST-2026-001-stix.json');
+  expect(file.suggestedFilename()).toBe('OST-26-001-stix.json');
 
   const layer = page.locator('.export-row', { hasText: 'ATT&CK Navigator layer' });
   const [leads] = await Promise.all([page.waitForEvent('download'), layer.getByRole('menuitem', { name: 'With leads' }).click()]);
-  expect(leads.suggestedFilename()).toBe('OST-2026-001-navigator-leads.json');
+  expect(leads.suggestedFilename()).toBe('OST-26-001-navigator-leads.json');
 
   await page.getByRole('menuitem', { name: 'Send to MISP' }).click();
   await expect(page.getByText('Sent to MISP (event 41).')).toBeVisible();
@@ -47,12 +47,12 @@ test('a TLP:RED incident offers no MISP push, and says why', async ({ page }) =>
   await stubLive(page);
   const red = incident({ tlp: 'red' });
   await stubApi(page, me(), (method, path) => {
-    if (method === 'GET' && (path === '/api/incidents/i-1' || path === '/api/incidents/by-ref/OST-2026-001')) return { json: red };
+    if (method === 'GET' && (path === '/api/incidents/i-1' || path === '/api/incidents/by-ref/OST-26-001')) return { json: red };
     if (path === '/api/incidents/i-1/exports')
       return { json: offered(false, 'TLP:RED and TLP:AMBER+STRICT incidents are never sent to another system.') };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001');
+  await page.goto('/incidents/OST-26-001');
   await page.locator('summary', { hasText: 'Export' }).click();
   await expect(page.getByText('TLP:RED: a download for the commander only, never sent to another system.')).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Send to MISP' })).toHaveCount(0);

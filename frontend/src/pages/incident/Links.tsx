@@ -116,7 +116,7 @@ export function Links({ incident }: { incident: Incident }) {
           </label>
           <label className="field">
             <span>Reference</span>
-            <input name="ref" required placeholder="OST-2026-014" pattern="#?[A-Za-z]{3}-\d{4}-\d{3,}" />
+            <input name="ref" required placeholder="OST-26-014" pattern="#?[A-Za-z]{3}-\d{2}(\d{2})?-\d{3,}" />
           </label>
           <button className="btn" type="submit">
             Link

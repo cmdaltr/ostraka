@@ -25,11 +25,14 @@ test('Help → Licence opens without signing in and shows both documents', async
   expect(refreshed).toBe(false); // a public page doesn't try to restore a session
 });
 
-test('signed in, Help is in the navigation and leads back', async ({ page }) => {
+test('signed in, the licence is at the foot of the page, with GitHub, and leads back', async ({ page }) => {
   await stubLive(page);
   await stubApi(page, me(), (_method, path) => (path === '/api/legal' ? { json: legal } : undefined));
   await page.goto('/');
-  await page.getByRole('link', { name: 'Help' }).click();
+  await expect(page.getByRole('link', { name: 'Help' })).toHaveCount(0);
+  const footer = page.getByRole('contentinfo');
+  await expect(footer.getByRole('link', { name: 'cmdaltr on GitHub' })).toHaveAttribute('href', 'https://github.com/cmdaltr');
+  await footer.getByRole('link', { name: 'Licence' }).click();
   await expect(page.getByLabel('Elastic License 2.0', { exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Back to Ostraka' }).click();
   await expect(page.getByRole('link', { name: 'Incidents' })).toBeVisible();

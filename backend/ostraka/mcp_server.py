@@ -138,7 +138,7 @@ class Tool:
         )
 
 
-REF = {"type": "string", "description": "The record's reference, e.g. OST-2026-004 or HNT-2026-002"}
+REF = {"type": "string", "description": "The record's reference, e.g. OST-26-004 or HNT-26-002"}
 
 
 async def whoami(api: Api) -> Any:

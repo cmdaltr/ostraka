@@ -18,7 +18,7 @@
       ost.ps1 tasks [REF] [--mine] [--json]
 
     With no VALUE, `ioc add` reads indicators one per line from the pipeline or redirected input
-    (Get-Content iocs.txt | .\ost.ps1 ioc add OST-2026-001), or asks for them, ending at a blank line.
+    (Get-Content iocs.txt | .\ost.ps1 ioc add OST-26-001), or asks for them, ending at a blank line.
 
     Settings: OSTRAKA_URL and OSTRAKA_TOKEN override %APPDATA%\Ostraka\client, which `login` writes
     readable by you alone. Plain http:// is refused for anything but this computer unless
@@ -34,7 +34,7 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
 $OstVersion = '0.1.0'
-$RefPattern = '^(OST|HNT)-[0-9]{4}-[0-9]{3,}$'
+$RefPattern = '^(OST|HNT)-[0-9]{2}([0-9]{2})?-[0-9]{3,}$'
 $TokenPattern = '^ost_[A-Za-z0-9_-]+$'
 $Severities = @('critical', 'high', 'medium', 'low')
 $Tlps = @('red', 'amber+strict', 'amber', 'green', 'clear')
@@ -79,7 +79,7 @@ ost: the Ostraka responder client
   ost.ps1 tasks [REF] [--mine] [--json]  no REF: your tasks and your team's queue
   ost.ps1 version
 
-REF is an incident or hunt reference such as OST-2026-001.
+REF is an incident or hunt reference such as OST-26-001.
 Settings: OSTRAKA_URL and OSTRAKA_TOKEN, or %APPDATA%\Ostraka\client from `login`.
 '@
 }
@@ -227,7 +227,7 @@ function Assert-Ok($Resp) {
 
 function Resolve-Ref([string] $Ref) {
     $r = $Ref.TrimStart('#').ToUpperInvariant()
-    if ($r -notmatch $RefPattern) { UsageFail "'$Ref' isn't an incident or hunt reference (like OST-2026-001)." }
+    if ($r -notmatch $RefPattern) { UsageFail "'$Ref' isn't an incident or hunt reference (like OST-26-001)." }
     $resp = Invoke-Ost GET "/api/incidents/by-ref/$r"
     if ($resp.Code -eq 404) { Fail "No incident $r, or not one you can see." }
     $incident = Assert-Ok $resp

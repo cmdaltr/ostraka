@@ -70,7 +70,7 @@ function updates(overrides: Record<string, unknown> = {}) {
 }
 
 const briefing = {
-  ref: 'OST-2026-001',
+  ref: 'OST-26-001',
   title: 'Phishing leads to a foothold on FIN-WS-07',
   severity: 'high',
   tlp: 'amber',
@@ -106,7 +106,7 @@ test('comms checks the draft Ostraka built, adds a note and approves it', async 
     }
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=updates');
+  await page.goto('/incidents/OST-26-001?s=updates');
 
   const preview = page.getByLabel('What stakeholders will read');
   await expect(preview).toContainText('We assess it is highly likely (80–90%)');
@@ -133,7 +133,7 @@ test('an update with a linter error cannot be approved', async ({ page }) => {
     if (method === 'GET' && path === '/api/incidents/i-1/briefing') return { json: briefing };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=updates');
+  await page.goto('/incidents/OST-26-001?s=updates');
   await expect(page.getByLabel('Checks')).toContainText('Must fix · Every update carries an assessment.');
   await expect(page.getByRole('button', { name: /Approve and send/ })).toBeDisabled();
 });
@@ -147,7 +147,7 @@ test('a rejected AI rewording leaves the draft as Ostraka wrote it', async ({ pa
       return { json: { accepted: false, problems: ['Line 3 changed how strongly it’s put (“lead”).'], update: draft() } };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=updates');
+  await page.goto('/incidents/OST-26-001?s=updates');
   await page.getByRole('button', { name: 'Reword with AI (ollama)' }).click();
   await expect(page.getByText('Ostraka rejected the rewording')).toContainText('Line 3 changed how strongly');
 });
@@ -155,12 +155,12 @@ test('a rejected AI rewording leaves the draft as Ostraka wrote it', async ({ pa
 test('observers get the read-only briefing: updates in order and where things stand', async ({ page }) => {
   await stubLive(page);
   const api = await stubApi(page, me({ role: 'observer' }), (method, path) => {
-    if (method === 'GET' && path === '/api/incidents/by-ref/OST-2026-001') return { json: incident({ can_edit: false }) };
+    if (method === 'GET' && path === '/api/incidents/by-ref/OST-26-001') return { json: incident({ can_edit: false }) };
     if (method === 'GET' && path === '/api/incidents/i-1') return { json: incident({ can_edit: false }) };
     if (method === 'GET' && path === '/api/incidents/i-1/briefing') return { json: briefing };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=updates');
+  await page.goto('/incidents/OST-26-001?s=updates');
   const view = page.getByLabel('Briefing');
   await expect(view).toContainText('Confirmed findings');
   await expect(view).toContainText('Update 1');

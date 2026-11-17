@@ -67,7 +67,7 @@ Colour directions: https://claude.ai/artifact/N5V8BUNbGEBcgWsCjX7Lpk
 ## Core model
 
 - **Team**: has leads and its own task queue. A user has one home team and may join others as a guest.
-- **Incident**: has severity, TLP, current phase, roles (Incident Commander, Comms, Scribe) and a list of involved teams. IDs look like `OST-2026-014`.
+- **Incident**: has severity, TLP, current phase, roles (Incident Commander, Comms, Scribe) and a list of involved teams. IDs look like `OST-26-014`.
 - **Observable**: one record per IOC across the whole platform. A **sighting** records the incident, host, user, when it was seen, the source and who added it.
 - **Finding**: a claim backed by evidence. It starts as Lead and moves to Confirmed or Refuted, and only an analyst can confirm it. It must cite evidence: Rowanholt rows, observables or attachments.
 - **Asset**: a system of interest; one per incident can be patient zero. Each **asset connection** records lateral movement, C2 or exfiltration between two assets.

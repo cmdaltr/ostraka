@@ -7,20 +7,20 @@
   white-space: nowrap;
 }
 .sev-critical {
-  color: var(--sev-critical);
-  background: color-mix(in srgb, var(--sev-critical) 14%, transparent);
+  color: var(--sev-ink);
+  background: var(--sev-critical);
 }
 .sev-high {
-  color: var(--sev-high);
-  background: color-mix(in srgb, var(--sev-high) 14%, transparent);
+  color: var(--sev-ink);
+  background: var(--sev-high);
 }
 .sev-medium {
-  color: var(--sev-medium);
-  background: color-mix(in srgb, var(--sev-medium) 14%, transparent);
+  color: var(--sev-ink);
+  background: var(--sev-medium);
 }
 .sev-low {
-  color: var(--sev-low);
-  background: color-mix(in srgb, var(--sev-low) 14%, transparent);
+  color: var(--sev-ink);
+  background: var(--sev-low);
 }
 .tlp {
   background: var(--tlp-ground);
@@ -54,13 +54,16 @@
   padding: 7px 2px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
-  background: var(--raised);
+  background: var(--surface);
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* done phases in a wash of the accent, the current one solid, those to come plain */
 .phase-strip li.done {
-  color: var(--ink);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
 }
 .phase-strip li.on {
   background: var(--accent);

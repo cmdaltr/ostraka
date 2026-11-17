@@ -20,6 +20,7 @@ import { Assets } from './Assets';
 import { Clocks } from './Clocks';
 import { Comments } from './Comments';
 import { DetectionGaps } from './DetectionGaps';
+import { Discussion } from './Discussion';
 import { Findings } from './Findings';
 import { Handover, SinceYouLeftBanner } from './Handover';
 import { IntelExports } from './IntelExports';
@@ -41,9 +42,8 @@ const sections = [
   ['observables', 'Observables'],
   ['assets', 'Assets'],
   ['findings', 'Findings'],
-  ['rowanholt', 'Rowanholt'],
-  ['detection-gaps', 'Detection gaps'],
   ['evidence', 'Evidence'],
+  ['detections', 'Detections'],
   ['graph', 'Graph'],
   ['assessments', 'Assessments'],
   ['updates', 'Updates'],
@@ -54,6 +54,8 @@ const sections = [
   ['activity', 'Activity'],
 ] as const;
 type Section = (typeof sections)[number][0];
+// Rowanholt's jobs now sit with the exhibits under Evidence, and detection gaps are under Detections
+const renamed: Record<string, Section> = { rowanholt: 'evidence', 'detection-gaps': 'detections' };
 
 function Here({ people, me }: { people: Present[]; me: Me }) {
   const others = people.filter((p) => p.user_id !== me.id);
@@ -196,7 +198,8 @@ export function IncidentPage({ me }: { me: Me }) {
   const { ref = '' } = useParams();
   const [params, setParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const section = (sections.find(([s]) => s === params.get('s'))?.[0] ?? 'overview') as Section;
+  const asked = params.get('s') ?? '';
+  const section = (sections.find(([s]) => s === (renamed[asked] ?? asked))?.[0] ?? 'overview') as Section;
 
   // Found by reference first, then cached and kept fresh by id like every section
   const found = useQuery({
@@ -296,9 +299,13 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'observables' && <Observables incident={incident} me={me} />}
           {section === 'assets' && <Assets incident={incident} />}
           {section === 'findings' && <Findings incident={incident} />}
-          {section === 'rowanholt' && <Rowanholt incident={incident} />}
-          {section === 'detection-gaps' && <DetectionGaps incident={incident} me={me} />}
-          {section === 'evidence' && <Evidence incident={incident} />}
+          {section === 'evidence' && (
+            <>
+              <Evidence incident={incident} />
+              <Rowanholt incident={incident} />
+            </>
+          )}
+          {section === 'detections' && <DetectionGaps incident={incident} me={me} />}
           {section === 'graph' && <Graph incident={incident} />}
           {section === 'assessments' && <Assessments incident={incident} />}
           {section === 'updates' && <Updates incident={incident} />}
@@ -308,9 +315,9 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'handover' && <Handover incident={incident} me={me} />}
           {section === 'activity' && <Activity incident={incident} />}
         </div>
-        <aside className="incident-rail" aria-label="Discussion">
+        <Discussion count={incident.counts.comments}>
           <Comments incident={incident} me={me} />
-        </aside>
+        </Discussion>
       </div>
       </PresenceProvider>
     </div>

@@ -55,6 +55,7 @@
   --sev-high: #c4320a;
   --sev-medium: #a15c07;
   --sev-low: #475467;
+  --sev-ink: #ffffff;
   --ok: #067647;
   /* Regulator clock states (pages/incident/Clocks.tsx): urgency borrows the severity scale, so it
      reads the same in every palette */
@@ -81,6 +82,8 @@
     --sev-high: #fd853a;
     --sev-medium: #fdb022;
     --sev-low: #98a2b3;
+  --sev-ink: #101217;
+    --sev-ink: #101217;
     --ok: #47cd89;
     --graph-asset: #22b8cf;
     --graph-observable: #fdb022;
@@ -98,6 +101,7 @@
   --inscription-name: #e07a5f;
   --inscription-name-ink: #1e1612;
   --chalk: #8b8f97;
+  --chalk-line-opacity: 0.45;
     color-scheme: dark;
   }
 }
@@ -123,6 +127,7 @@
   --inscription-name: #e07a5f;
   --inscription-name-ink: #1e1612;
   --chalk: #8b8f97;
+  --chalk-line-opacity: 0.45;
   color-scheme: dark;
 }
 
@@ -143,6 +148,7 @@
   --inscription-name: #a33a24;
   --inscription-name-ink: #ffffff;
   --chalk: #161514;
+  --chalk-line-opacity: 0.55;
 }
 
 /* ---- Cobalt ---------------------------------------------------------------------------- */

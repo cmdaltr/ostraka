@@ -52,11 +52,31 @@
 .field select {
   font: 400 var(--text-md) / 1.4 var(--font-ui);
   color: var(--ink);
-  background: var(--bg);
+  background-color: var(--bg);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 9px 11px;
   width: 100%;
+  /* one height for every box and list, so they line up side by side */
+  min-height: 2.75rem;
+}
+/* Native lists ignore padding in Safari, so a styled select draws its own chevron */
+.field select,
+select.input,
+.theme-picker select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    right 16px center,
+    right 11px center;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+.input:is(select),
+.field select {
+  padding-right: 32px;
 }
 .field input:focus,
 .field select:focus {
@@ -80,6 +100,9 @@
   accent-color: var(--accent);
 }
 
+.form-row .btn {
+  min-height: 2.75rem;
+}
 .form-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -241,15 +264,6 @@
   margin: 0;
   text-align: center;
 }
-.auth-links {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: var(--space-4);
-}
-.auth-links a {
-  display: inline-flex;
-}
 /* The card's buttons are the name's red ochre, whatever the palette */
 .auth-card .btn-primary {
   background: var(--inscription-name);
@@ -301,6 +315,34 @@
   color: var(--ink);
 }
 .tabs button[aria-current='page'] {
-  color: var(--ink);
+  color: var(--accent);
+  font-weight: 600;
   border-bottom-color: var(--accent);
+}
+
+/* A line of black chalk, dragged rather than ruled, between the parts of a page: under a page's heading,
+   under an incident's head, above the foot. Only there, so it separates without cluttering. */
+.page-head,
+.incident-head {
+  position: relative;
+  padding-bottom: var(--space-4);
+}
+.page-head::after,
+.incident-head::after,
+.shell-footer::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+  background: var(--chalk);
+  opacity: var(--chalk-line-opacity);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 8' preserveAspectRatio='none'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9 0.4' numOctaves='2' seed='3'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='3'/%3E%3C/filter%3E%3Cg filter='url(%23c)' fill='none' stroke='black' stroke-linecap='round'%3E%3Cpath d='M2 4.5 C120 3 240 5.5 360 4 S540 3.5 598 4.6' stroke-width='3.4' stroke-dasharray='90 3 140 2 60 4 200 3'/%3E%3Cpath d='M8 3.6 C160 5 300 3 450 4.6 S570 4 592 3.4' stroke-width='1.8' opacity='0.6' stroke-dasharray='40 6 120 4 80 9'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 8' preserveAspectRatio='none'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9 0.4' numOctaves='2' seed='3'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='3'/%3E%3C/filter%3E%3Cg filter='url(%23c)' fill='none' stroke='black' stroke-linecap='round'%3E%3Cpath d='M2 4.5 C120 3 240 5.5 360 4 S540 3.5 598 4.6' stroke-width='3.4' stroke-dasharray='90 3 140 2 60 4 200 3'/%3E%3Cpath d='M8 3.6 C160 5 300 3 450 4.6 S570 4 592 3.4' stroke-width='1.8' opacity='0.6' stroke-dasharray='40 6 120 4 80 9'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.shell-footer::before {
+  top: -4px;
+  bottom: auto;
 }

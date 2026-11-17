@@ -6,6 +6,7 @@ import { roleNames } from '../api/types';
 import type { Enrolment, Grant, InvitationPreview } from '../api/types';
 import { startWith } from '../auth/session';
 import { BrandMark } from '../components/BrandMark';
+import { SiteLinks } from '../components/SiteLinks';
 import { Progress } from '../components/sherd/Progress';
 import { BackupCodes, CopyBox, Notice, messageOf } from '../components/ui';
 
@@ -153,6 +154,7 @@ export function AcceptInvite() {
         )}
 
         {step === 'codes' && done && <BackupCodes codes={done.backup_codes} onDone={finish} />}
+        <SiteLinks />
       </div>
     </main>
   );

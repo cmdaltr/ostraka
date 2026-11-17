@@ -95,7 +95,7 @@ def record(tlp: Tlp = Tlp.AMBER) -> IntelRecord:
         observable_ids=(ip, hash_),
         created_at=T0,
         decided_at=T0 + timedelta(hours=2),
-        url="http://ostraka.test/incidents/OST-2026-014?s=findings#FND-12",
+        url="http://ostraka.test/incidents/OST-26-014?s=findings#FND-12",
     )
     lead = IntelFinding(
         id=uuid.uuid4(),
@@ -107,12 +107,12 @@ def record(tlp: Tlp = Tlp.AMBER) -> IntelRecord:
         techniques=("T1041", "T1071.001"),
         observable_ids=(url, ip),
         created_at=T0 + timedelta(hours=1),
-        url="http://ostraka.test/incidents/OST-2026-014?s=findings#FND-13",
+        url="http://ostraka.test/incidents/OST-26-014?s=findings#FND-13",
     )
     seen = IntelSighting(id=uuid.uuid4(), seen_at=T0, host="FIN-WS-07", source="Defender XDR")
     return IntelRecord(
         id=uuid.uuid4(),
-        ref="OST-2026-014",
+        ref="OST-26-014",
         kind=RecordKind.INCIDENT,
         title="Cobalt Strike on the finance floor",
         summary="A beacon on one workstation.",
@@ -121,7 +121,7 @@ def record(tlp: Tlp = Tlp.AMBER) -> IntelRecord:
         declared_at=T0,
         updated_at=T0,
         closed_at=None,
-        url="http://ostraka.test/incidents/OST-2026-014",
+        url="http://ostraka.test/incidents/OST-26-014",
         producer="Northwind Ltd",
         producer_key="http://ostraka.test/|Northwind Ltd",
         findings=(confirmed, lead),
@@ -283,8 +283,8 @@ def test_a_bundle_follows_the_spec_and_every_reference_resolves():
     } == set(report["object_refs"])
     assert report["external_references"][0] == {
         "source_name": "ostraka",
-        "external_id": "OST-2026-014",
-        "url": "http://ostraka.test/incidents/OST-2026-014",
+        "external_id": "OST-26-014",
+        "url": "http://ostraka.test/incidents/OST-26-014",
     }
     # An alias has no STIX form and is left out rather than forced into one
     assert not any("OBS-7" in json.dumps(o) for o in objects.values())
@@ -460,7 +460,7 @@ def test_the_layer_matches_rowanholts_and_holds_confirmed_techniques_only():
     assert technique["color"] == navigator.CONFIRMED_COLOUR
     assert technique["comment"] == "FND-12 Beacon to the C2 address from FIN-WS-07 (confirmed)"
     assert technique["links"] == [
-        {"label": "FND-12", "url": "http://ostraka.test/incidents/OST-2026-014?s=findings#FND-12"}
+        {"label": "FND-12", "url": "http://ostraka.test/incidents/OST-26-014?s=findings#FND-12"}
     ]
     assert data["legendItems"] == [{"label": "Confirmed finding", "color": navigator.CONFIRMED_COLOUR}]
     assert {"name": "TLP", "value": "TLP:AMBER"} in data["metadata"]
@@ -478,4 +478,4 @@ def test_with_leads_the_layer_shows_them_in_their_own_colour():
         and "FND-13 Possible exfiltration over the same channel (lead)" in (both["comment"])
     )
     assert {"label": "Lead, not confirmed", "color": navigator.LEAD_COLOUR} in data["legendItems"]
-    assert data["name"] == "OST-2026-014 (confirmed and leads)"
+    assert data["name"] == "OST-26-014 (confirmed and leads)"

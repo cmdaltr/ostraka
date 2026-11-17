@@ -50,14 +50,14 @@ def test_vapid_header_names_the_push_service_origin():
 
 
 def incident(tlp: Tlp):
-    return SimpleNamespace(ref="OST-2026-007", tlp=tlp)
+    return SimpleNamespace(ref="OST-26-007", tlp=tlp)
 
 
 def test_restricted_incidents_send_only_the_reference():
     title, body = outward(NotificationKind.OVERDUE, "TSK-3 Reset the CFO's MFA", "Details", incident(Tlp.RED))
-    assert title == "A task is overdue in OST-2026-007" and "CFO" not in body
+    assert title == "A task is overdue in OST-26-007" and "CFO" not in body
     title, _ = outward(NotificationKind.OVERDUE, "TSK-3", "", incident(Tlp.AMBER_STRICT))
-    assert title == "A task is overdue in OST-2026-007"
+    assert title == "A task is overdue in OST-26-007"
 
 
 def test_indicators_are_masked_in_anything_that_leaves():

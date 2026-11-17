@@ -151,7 +151,7 @@ class Incident(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     kind: Mapped[RecordKind] = mapped_column(_enum(RecordKind, "record_kind"), default=RecordKind.INCIDENT)
     year: Mapped[int] = mapped_column(Integer)
-    number: Mapped[int] = mapped_column(Integer)  # within the kind and year: OST-2026-014, HNT-2026-003
+    number: Mapped[int] = mapped_column(Integer)  # within the kind and year: OST-26-014, HNT-26-003
     title: Mapped[str] = mapped_column(String(200))
     summary: Mapped[str] = mapped_column(Text, default="")
     severity: Mapped[Severity] = mapped_column(_enum(Severity, "severity"))
@@ -180,9 +180,10 @@ class Incident(Base):
     @property
     def ref(self) -> str:
         from ostraka import branding
+        from ostraka.incidents.refs import short_year
 
         prefix = branding.HUNT_PREFIX if self.kind is RecordKind.HUNT else branding.INCIDENT_PREFIX
-        return f"{prefix}-{self.year}-{self.number:03d}"
+        return f"{prefix}-{short_year(self.year)}-{self.number:03d}"
 
 
 class IncidentCounter(Base):

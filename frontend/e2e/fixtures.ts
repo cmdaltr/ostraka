@@ -39,7 +39,7 @@ export function incident(overrides: Record<string, unknown> = {}) {
   return {
     id: 'i-1',
     kind: 'incident',
-    ref: 'OST-2026-001',
+    ref: 'OST-26-001',
     title: 'Phishing leads to a foothold on FIN-WS-07',
     severity: 'high',
     tlp: 'amber',
@@ -181,7 +181,7 @@ export async function stubApi(page: Page, who = me(), handle: Api['handle'] = ()
     'GET /api/teams': teams,
     'GET /api/users': [{ ...me(), ...sam }, { ...me(), ...dana, team: teams[1], role: 'team_lead' }],
     'GET /api/incidents': [incident()],
-    'GET /api/incidents/by-ref/OST-2026-001': incident(),
+    'GET /api/incidents/by-ref/OST-26-001': incident(),
     'GET /api/incidents/i-1': incident(),
     'GET /api/incidents/i-1/observables': [observable],
     'GET /api/incidents/i-1/assets': [],

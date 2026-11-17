@@ -271,7 +271,7 @@ test('the assessment check assembles while it runs, then glows', async ({ page }
     return undefined;
   });
   const open = await hold(page, '**/api/incidents/i-1/assessments/lint');
-  await page.goto('/incidents/OST-2026-001?s=assessments');
+  await page.goto('/incidents/OST-26-001?s=assessments');
   await page.getByRole('button', { name: 'Make an assessment' }).click();
   await page.locator('#assessment-judgement').fill('the actor staged the payroll export');
 

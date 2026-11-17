@@ -48,6 +48,12 @@ async def test_declaring_makes_you_commander_and_brings_your_team(db, client, pe
     p = await people()
     incident = await declare(client, p["soc"])
     assert incident["ref"].startswith("OST-") and incident["ref"].endswith("-001")
+    # the year in two digits, and the reference found by its old four-digit form too
+    year = incident["ref"].split("-")[1]
+    assert len(year) == 2
+    for ref in (incident["ref"], f"OST-20{year}-001"):
+        r = await client.get(f"/api/incidents/by-ref/{ref}", headers=p["soc"].headers)
+        assert r.status_code == 200 and r.json()["id"] == incident["id"], ref
     assert incident["commander"]["name"] == "Sam Soc"
     assert [t["name"] for t in incident["teams"]] == ["SOC"]
     assert incident["phase"] == "detect" and incident["status"] == "open"

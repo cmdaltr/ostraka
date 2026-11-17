@@ -108,3 +108,15 @@ test('the directory shows job titles, availability and out-of-hours phones', asy
   await expect(row).toContainText('Away');
   await expect(row.getByRole('link', { name: 'Out-of-hours phone for Dee' })).toHaveAttribute('href', 'tel:+447700900456');
 });
+
+test('appearance sits under the profile, and boxes and lists are one height', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me());
+  await page.goto('/profile');
+  await expect(page.getByRole('button', { name: 'Appearance' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Appearance' })).toBeVisible();
+  const phone = await page.locator('#profile-phone').boundingBox();
+  const zone = await page.locator('#profile-timezone').boundingBox();
+  expect(Math.round(zone!.height)).toBe(Math.round(phone!.height));
+  expect(Math.round(zone!.y)).toBe(Math.round(phone!.y));
+});

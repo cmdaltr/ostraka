@@ -57,6 +57,20 @@ describe('the graph layout', () => {
     expect(Number(/C(-?[\d.]+)/.exec(path)![1])).toBeLessThan(x);
   });
 
+  it('drawn downwards, puts each kind in its own row, top to bottom, and links bottom to top', () => {
+    const { placed, columns, width, height } = layout([t1, f1, f2, a1], [edge(f1, a1)], 'down');
+    expect(columns.map((c) => c.column)).toEqual([0, 2, 3]);
+    const at = (n: GraphNode) => placed.get(n.id)!;
+    expect(at(a1).y).toBeLessThan(at(f1).y);
+    expect(at(f1).y).toBeLessThan(at(t1).y);
+    expect(at(f1).y).toBe(at(f2).y);
+    expect(at(f2).x - at(f1).x).toBe(NODE_W + 16);
+    expect(width).toBe(MARGIN.left + 2 * NODE_W + 16 + MARGIN.right);
+    expect(height).toBeGreaterThan(width / 2);
+    const path = edgePath(at(f1), at(a1), 'down');
+    expect(path.startsWith(`M${at(a1).x + NODE_W / 2},${at(a1).y + NODE_H}`)).toBe(true);
+  });
+
   it('drops links to hidden kinds', () => {
     const shown = visible([a1, f1, t1], [edge(f1, a1), edge(f1, t1, 'uses_technique')], new Set<NodeType>(['finding', 'technique']));
     expect(shown.nodes.map((n) => n.ref)).toEqual(['FND-1', 'T1021.002']);

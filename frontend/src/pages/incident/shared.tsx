@@ -76,7 +76,7 @@ export function refTarget(ref: string) {
   return { search: `?s=${sectionOf[upper.slice(0, 3)] ?? 'overview'}`, hash: `#${upper}` };
 }
 
-const TOKEN = /(@\[([^\]]{1,120})\]\((user|team):[0-9a-f-]{36}\))|#(((?:OST|HNT)-\d{4}-\d{3,})|((FND|AST|OBS|TSK)-\d+))\b|(\[(?:[a-z0-9 ]+)\])/gi;
+const TOKEN = /(@\[([^\]]{1,120})\]\((user|team):[0-9a-f-]{36}\))|#(((?:OST|HNT)-\d{2}(?:\d{2})?-\d{3,})|((FND|AST|OBS|TSK)-\d+))\b|(\[(?:[a-z0-9 ]+)\])/gi;
 
 // Free text with mentions, #references and masked indicators drawn as chips
 export function Rich({ text }: { text: string }) {

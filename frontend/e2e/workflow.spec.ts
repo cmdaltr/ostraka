@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { dana, incident, me, noLinks, stubApi, stubLive, teams } from './fixtures';
 
-const hunt = incident({ id: 'h-1', kind: 'hunt', ref: 'HNT-2026-003', title: 'Kerberoasting', phase: 'analyse' });
+const hunt = incident({ id: 'h-1', kind: 'hunt', ref: 'HNT-26-003', title: 'Kerberoasting', phase: 'analyse' });
 const outcomes = [
   { label: 'Confirmed: promote to an incident', action: 'promote', phase: null, opens: [2] },
   { label: 'Refuted: close the hunt', action: 'close', phase: null, opens: [] },
@@ -64,7 +64,7 @@ const run = {
 async function open(page: import('@playwright/test').Page) {
   await stubLive(page);
   return stubApi(page, me(), (method, path) => {
-    if (path === '/api/incidents/by-ref/HNT-2026-003' || path === '/api/incidents/h-1') return { json: hunt };
+    if (path === '/api/incidents/by-ref/HNT-26-003' || path === '/api/incidents/h-1') return { json: hunt };
     if (path === '/api/incidents/h-1/links') return { json: noLinks };
     if (path === '/api/incidents/h-1/tasks') return { json: [conclude] };
     if (path === '/api/incidents/h-1/playbooks') return { json: [run] };
@@ -74,7 +74,7 @@ async function open(page: import('@playwright/test').Page) {
 
 test('a decision is finished by choosing an outcome; promoting asks for the incident first', async ({ page }) => {
   const api = await open(page);
-  await page.goto('/incidents/HNT-2026-003?s=tasks');
+  await page.goto('/incidents/HNT-26-003?s=tasks');
   const card = page.locator('#TSK-5');
   await expect(card.getByRole('button', { name: 'Mark done' })).toHaveCount(0);
   await expect(card.getByRole('combobox', { name: 'Status of TSK-5' }).locator('option[value=done]')).toHaveCount(0);
@@ -96,7 +96,7 @@ test('a decision is finished by choosing an outcome; promoting asks for the inci
 
 test('an outcome that doesn’t promote is sent straight away', async ({ page }) => {
   const api = await open(page);
-  await page.goto('/incidents/HNT-2026-003?s=tasks');
+  await page.goto('/incidents/HNT-26-003?s=tasks');
   await page.getByRole('button', { name: 'Refuted: close the hunt' }).click();
   await expect.poll(() => api.requests.find((r) => r.path.endsWith('/decide'))?.body).toMatchObject({
     outcome: 'Refuted: close the hunt',
@@ -105,14 +105,14 @@ test('an outcome that doesn’t promote is sent straight away', async ({ page })
 
 test('the workflow view shows each step’s lane and state', async ({ page }) => {
   await open(page);
-  await page.goto('/incidents/HNT-2026-003?s=tasks');
+  await page.goto('/incidents/HNT-26-003?s=tasks');
   await expect(page.getByText('1 more step to come')).toBeVisible();
   await page.getByRole('group', { name: 'View' }).getByRole('button', { name: 'Workflow' }).click();
   const flow = page.getByRole('region', { name: 'Threat hunt workflow' });
   await expect(flow.getByLabel('Step 2: Conclude, open')).toBeVisible();
   await expect(flow.getByLabel('Step 3: Share what was found with Intelligence, waiting')).toBeVisible();
   await expect(flow.getByText(teams[1].name, { exact: true })).toBeVisible();
-  await expect(flow.getByRole('link', { name: 'TSK-5' })).toHaveAttribute('href', '/incidents/HNT-2026-003?s=tasks#TSK-5');
+  await expect(flow.getByRole('link', { name: 'TSK-5' })).toHaveAttribute('href', '/incidents/HNT-26-003?s=tasks#TSK-5');
 });
 
 test('the editor makes steps wait, open at a phase, and decide', async ({ page }) => {

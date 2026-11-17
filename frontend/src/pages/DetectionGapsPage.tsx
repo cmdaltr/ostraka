@@ -25,7 +25,7 @@ export function DetectionGapsPage() {
     <>
       <div className="page-head">
         <div>
-          <h1>Detection gaps</h1>
+          <h1>Detections</h1>
           <p className="hint">Confirmed techniques Shikari has no detection for, in every incident you can see.</p>
         </div>
       </div>
@@ -76,7 +76,7 @@ function IncidentGap({ gap }: { gap: Gap }) {
     <>
       <tr className="gap-incident">
         <td colSpan={4}>
-          <Link to={`/incidents/${incident.ref}?s=detection-gaps`} className="mono ref-link">
+          <Link to={`/incidents/${incident.ref}?s=detections`} className="mono ref-link">
             {incident.ref}
           </Link>{' '}
           {incident.title} <SeverityPill level={incident.severity} /> <TlpPill level={incident.tlp} />

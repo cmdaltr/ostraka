@@ -24,7 +24,7 @@ test('what changed since you left is shown once, and your place moves on', async
     if (method === 'GET' && path === '/api/incidents/i-1/since') return { json: since };
     if (method === 'POST' && path === '/api/incidents/i-1/seen') return { status: 204 };
   });
-  await page.goto('/incidents/OST-2026-001');
+  await page.goto('/incidents/OST-26-001');
 
   const banner = page.getByRole('region', { name: 'Since you left' });
   await expect(banner).toContainText('1 finding, 1 task by Dana Lead');
@@ -45,7 +45,7 @@ test('the handover is drafted by Ostraka, edited, and posted with the stretch of
     through_position: 9,
     since: '2026-11-10T09:00:00Z',
     sections: [{ title: 'Open tasks (1)', lines: ['TSK-1 Pull the mailbox log: SOC queue, unclaimed'] }],
-    text: 'Handover: OST-2026-001\n\nOpen tasks (1)\n- TSK-1 Pull the mailbox log: SOC queue, unclaimed',
+    text: 'Handover: OST-26-001\n\nOpen tasks (1)\n- TSK-1 Pull the mailbox log: SOC queue, unclaimed',
   };
   const api = await stubApi(page, me(), (method, path, body) => {
     if (path === '/api/incidents/i-1/handover/draft') return { json: draft };
@@ -56,7 +56,7 @@ test('the handover is drafted by Ostraka, edited, and posted with the stretch of
       return { status: 201, json: note };
     }
   });
-  await page.goto('/incidents/OST-2026-001?s=handover');
+  await page.goto('/incidents/OST-26-001?s=handover');
   await expect(page.getByText('No handovers posted yet.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Write the handover' }).click();
@@ -95,19 +95,19 @@ test('a record shows who else has it open, and an indicator worked elsewhere is 
         json: [
           {
             item_id: 'o-1',
-            visible: [{ incident_id: 'i-2', ref: 'OST-2026-004', title: 'Beaconing', people: ['Dee Dfir'], editing: false, last_at: '2026-11-11T17:40:00Z' }],
+            visible: [{ incident_id: 'i-2', ref: 'OST-26-004', title: 'Beaconing', people: ['Dee Dfir'], editing: false, last_at: '2026-11-11T17:40:00Z' }],
             hidden: 1,
             ask: ['DFIR'],
           },
         ],
       };
   });
-  await page.goto('/incidents/OST-2026-001?s=observables');
+  await page.goto('/incidents/OST-26-001?s=observables');
 
   const row = page.locator(`[id="${observable.ref}"]`);
   await expect(row.getByRole('status', { name: 'Also on this record' })).toContainText('Dana Lead editing');
   const warning = row.getByRole('note', { name: 'Being worked elsewhere' });
-  await expect(warning).toContainText('Dee Dfir working this in #OST-2026-004');
+  await expect(warning).toContainText('Dee Dfir working this in #OST-26-004');
   await expect(warning).toContainText('1 incident you can’t open; ask DFIR');
 
   // Recording a sighting is editing the observable: the focus goes out by id, never its value

@@ -31,6 +31,7 @@ function ReportBrand({ incident, onChoose }: { incident: Incident; onChoose: (id
       <dt>Report brand</dt>
       <dd>
         <select
+          className="input"
           aria-label="Report brand"
           value={incident.brand_id ?? ''}
           disabled={!incident.can_manage}

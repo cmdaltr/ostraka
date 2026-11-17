@@ -54,7 +54,7 @@ class Cover:
 
     kind: str  # "Incident Report", "Incident Briefing", "Hunt Report"
     title: str
-    reference: str  # "OST-2026-014"
+    reference: str  # "OST-26-014"
     date: str
     tlp: str
     prepared_for: str = ""

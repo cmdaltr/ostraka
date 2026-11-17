@@ -7,6 +7,8 @@ import { signOut } from '../auth/session';
 import { brand } from '../brand';
 import { startLive } from '../live/live';
 import { Bell } from './Bell';
+import { PersonIcon } from './PersonIcon';
+import { SiteLinks } from './SiteLinks';
 import { SherdField } from './sherd/SherdField';
 import { Wordmark } from './Wordmark';
 import './AppShell.css';
@@ -35,23 +37,28 @@ export function AppShell({ me }: { me: Me }) {
       <SherdField />
       <header className="shell-header">
         <NavLink to="/" className="shell-home" aria-label="Ostraka home">
-          <Wordmark size="sm" />
+          <Wordmark size="md" />
         </NavLink>
         <nav className="shell-nav">
           <NavLink to="/" end>
             Incidents
           </NavLink>
           {me.role !== 'observer' && <NavLink to="/work">Your work</NavLink>}
-          <NavLink to="/detection-gaps">Detection gaps</NavLink>
+          <NavLink to="/detection-gaps">Detections</NavLink>
           {manages && <NavLink to="/playbooks">Playbooks</NavLink>}
           <NavLink to="/people">{manages ? 'People' : 'Directory'}</NavLink>
-          <NavLink to="/profile">Profile</NavLink>
-          {me.role === 'admin' && <NavLink to="/installation">Installation</NavLink>}
-          <NavLink to="/help/licence">Help</NavLink>
         </nav>
         <div className="shell-user">
+          {me.role === 'admin' && (
+            <NavLink to="/installation" className="shell-link">
+              Installation
+            </NavLink>
+          )}
           <Bell />
           <span className="shell-name">{me.name}</span>
+          <NavLink to="/profile" className="shell-icon" aria-label="Profile" title="Profile">
+            <PersonIcon />
+          </NavLink>
           <button className="btn btn-quiet" type="button" onClick={() => signOut()}>
             Sign out
           </button>
@@ -62,6 +69,7 @@ export function AppShell({ me }: { me: Me }) {
         <Outlet />
       </main>
       <footer className="shell-footer">
+        <SiteLinks inApp />
         <p className="hint">{brand.trademark}</p>
       </footer>
     </div>

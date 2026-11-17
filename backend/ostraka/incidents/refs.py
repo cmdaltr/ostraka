@@ -1,4 +1,4 @@
-"""Short references (#OST-2026-014, #HNT-2026-003, #FND-12, #AST-27, #OBS-311, #TSK-8) and mentions in
+"""Short references (#OST-26-014, #HNT-26-003, #FND-12, #AST-27, #OBS-311, #TSK-8) and mentions in
 comments.
 
 Mentions are written by the editor as `@[Name](user:<uuid>)` or `@[Team](team:<uuid>)`, so a name
@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from ostraka import branding
 
 REF = re.compile(
-    rf"#(({branding.INCIDENT_PREFIX}|{branding.HUNT_PREFIX})-(\d{{4}})-(\d{{3,}})|(FND|AST|OBS|TSK)-(\d+))\b"
+    rf"#(({branding.INCIDENT_PREFIX}|{branding.HUNT_PREFIX})-(\d{{2}}(?:\d{{2}})?)-(\d{{3,}})|(FND|AST|OBS|TSK)-(\d+))\b"
 )
 MENTION = re.compile(r"@\[([^\]]{1,120})\]\((user|team):([0-9a-f-]{36})\)")
 
@@ -22,7 +22,7 @@ MENTION = re.compile(r"@\[([^\]]{1,120})\]\((user|team):([0-9a-f-]{36})\)")
 @dataclass(frozen=True)
 class Ref:
     kind: str  # incident (an incident or a hunt) | finding | asset | observable | task
-    year: int | None = None
+    year: int | None = None  # in full: OST-26-014 and the older OST-2026-014 are both 2026
     number: int | None = None
     record: str = "incident"  # for kind "incident": incident or hunt
 
@@ -30,9 +30,20 @@ class Ref:
     def text(self) -> str:
         if self.kind == "incident":
             prefix = branding.HUNT_PREFIX if self.record == "hunt" else branding.INCIDENT_PREFIX
-            return f"{prefix}-{self.year}-{self.number:03d}"
+            return f"{prefix}-{short_year(self.year or 0)}-{self.number:03d}"
         prefix = {"finding": "FND", "asset": "AST", "observable": "OBS", "task": "TSK"}[self.kind]
         return f"{prefix}-{self.number}"
+
+
+def short_year(year: int) -> str:
+    """The year as a reference writes it: two digits (2026 is 26)."""
+    return f"{year % 100:02d}"
+
+
+def full_year(digits: str) -> int:
+    """A reference's year in full: 26 is 2026; a four-digit year, from before references were shortened,
+    is taken as it is."""
+    return 2000 + int(digits) if len(digits) == 2 else int(digits)
 
 
 _KINDS = {"FND": "finding", "AST": "asset", "OBS": "observable", "TSK": "task"}
@@ -44,7 +55,7 @@ def parse_ref(text: str) -> Ref | None:
         return None
     if match.group(3):
         record = "hunt" if match.group(2).upper() == branding.HUNT_PREFIX else "incident"
-        return Ref("incident", int(match.group(3)), int(match.group(4)), record)
+        return Ref("incident", full_year(match.group(3)), int(match.group(4)), record)
     return Ref(_KINDS[match.group(5)], number=int(match.group(6)))
 
 

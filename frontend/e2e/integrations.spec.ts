@@ -127,7 +127,7 @@ test('an incident shows its Rowanholt case status, and says when Rowanholt is do
     }
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=rowanholt');
+  await page.goto('/incidents/OST-26-001?s=rowanholt');
   await expect(page.getByText('Not linked to Rowanholt yet.')).toBeVisible();
   await page.getByLabel('Rowanholt job id or case number').fill(JOB);
   await page.getByRole('button', { name: 'Link' }).click();
@@ -164,10 +164,10 @@ test('detection gaps close only when Shikari says so, and are listed across inci
       };
     }
     if (method === 'GET' && path === '/api/detection-gaps')
-      return { json: [gap({ incident: { id: 'i-1', ref: 'OST-2026-001', title: 'Phishing leads to a foothold', severity: 'high', tlp: 'amber' } })] };
+      return { json: [gap({ incident: { id: 'i-1', ref: 'OST-26-001', title: 'Phishing leads to a foothold', severity: 'high', tlp: 'amber' } })] };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=detection-gaps');
+  await page.goto('/incidents/OST-26-001?s=detection-gaps');
   const section = page.getByRole('region', { name: 'Detection gaps' });
   await expect(section.getByText('Waiting for a detection')).toBeVisible();
   await expect(section.getByRole('link', { name: 'T1003.001' })).toHaveAttribute(
@@ -179,22 +179,22 @@ test('detection gaps close only when Shikari says so, and are listed across inci
   await expect(section.getByText('Detected in Shikari')).toBeVisible();
   expect(api.requests.filter((r) => r.path === '/api/incidents/i-1/detection-gaps/check')).toHaveLength(1);
 
-  await page.getByRole('link', { name: 'Detection gaps' }).click();
-  await expect(page.getByRole('heading', { name: 'Detection gaps' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'OST-2026-001' })).toBeVisible();
+  await page.getByRole('link', { name: 'Detections' }).click();
+  await expect(page.getByRole('heading', { name: 'Detections', level: 1 })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'OST-26-001' })).toBeVisible();
   await expect(page.getByText('LSASS Memory')).toBeVisible();
 });
 
 test('an observer reads the gaps but cannot ask Shikari or give tasks', async ({ page }) => {
   await stubLive(page);
   await stubApi(page, me({ role: 'observer' }), (method, path) => {
-    if (path === '/api/incidents/i-1' || path === '/api/incidents/by-ref/OST-2026-001')
+    if (path === '/api/incidents/i-1' || path === '/api/incidents/by-ref/OST-26-001')
       return { json: incident({ can_edit: false, can_manage: false }) };
     if (method === 'GET' && path === '/api/incidents/i-1/detection-gaps')
       return { json: { configured: true, automation: true, coverage_url: null, message: '', gaps: [gap({ task: null })] } };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=detection-gaps');
+  await page.goto('/incidents/OST-26-001?s=detections');
   const section = page.getByRole('region', { name: 'Detection gaps' });
   await expect(section.getByText('No task yet')).toBeVisible();
   await expect(section.getByRole('button')).toHaveCount(0);

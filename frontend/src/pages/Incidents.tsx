@@ -8,8 +8,8 @@ import { suggested } from '../api/work';
 import type { Playbook } from '../api/work';
 import type { Incident, IncidentSummary } from '../api/incidents';
 import type { Me, Team } from '../api/types';
-import { severities, tlpLevels } from '../brand';
-import type { RecordKind, Severity, Tlp } from '../brand';
+import { huntPhases, phases, phasesOf, severities, tlpLevels } from '../brand';
+import type { Phase, RecordKind, Severity, Tlp } from '../brand';
 import { PhaseStrip, SeverityPill, TlpPill } from '../components/Pills';
 import { Loading } from '../components/sherd/Ostrakon';
 import { Notice, formatDate, messageOf } from '../components/ui';
@@ -171,6 +171,13 @@ export function Incidents({ me }: { me: Me }) {
   const [kind, setKind] = useState<RecordKind | 'all'>('all');
   const [declaring, setDeclaring] = useState<RecordKind | null>(null);
   const list = useQuery(listQuery(status, kind));
+  const [severity, setSeverity] = useState<Severity | ''>('');
+  const [tlp, setTlp] = useState<Tlp | ''>('');
+  const [phase, setPhase] = useState<Phase | ''>('');
+  const shown = list.data?.filter(
+    (i) => (!severity || i.severity === severity) && (!tlp || i.tlp === tlp) && (!phase || i.phase === phase),
+  );
+  const filtered = Boolean(severity || tlp || phase);
   const noun = kind === 'hunt' ? 'hunts' : kind === 'incident' ? 'incidents' : 'incidents or hunts';
   const canDeclare = me.role !== 'observer';
 
@@ -190,7 +197,16 @@ export function Incidents({ me }: { me: Me }) {
                 ['hunt', 'Hunts'],
               ] as const
             ).map(([k, name]) => (
-              <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)}>
+              <button
+                key={k}
+                type="button"
+                aria-pressed={kind === k}
+                onClick={() => {
+                  setKind(k);
+                  // a hunt's phases aren't an incident's
+                  if (k !== 'all' && phase && !(phasesOf(k) as readonly string[]).includes(phase)) setPhase('');
+                }}
+              >
                 {name}
               </button>
             ))}
@@ -215,28 +231,92 @@ export function Incidents({ me }: { me: Me }) {
         </div>
       </div>
 
+      <div className="list-filters" role="group" aria-label="Filter">
+        <label className="field">
+          <span>Severity</span>
+          <select id="filter-severity" value={severity} onChange={(e) => setSeverity(e.target.value as Severity | '')}>
+            <option value="">Any</option>
+            {severities.map((s) => (
+              <option key={s} value={s}>
+                {s[0].toUpperCase() + s.slice(1)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>TLP</span>
+          <select id="filter-tlp" value={tlp} onChange={(e) => setTlp(e.target.value as Tlp | '')}>
+            <option value="">Any</option>
+            {tlpLevels.map((t) => (
+              <option key={t} value={t}>
+                TLP:{t.toUpperCase()}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Phase</span>
+          <select id="filter-phase" value={phase} onChange={(e) => setPhase(e.target.value as Phase | '')}>
+            <option value="">Any</option>
+            {kind !== 'hunt' && (
+              <optgroup label="Incidents">
+                {phases.map((p) => (
+                  <option key={p} value={p}>
+                    {p[0].toUpperCase() + p.slice(1)}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {kind !== 'incident' && (
+              <optgroup label="Hunts">
+                {huntPhases.map((p) => (
+                  <option key={p} value={p}>
+                    {p[0].toUpperCase() + p.slice(1)}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+        </label>
+        {filtered && (
+          <button
+            className="btn btn-quiet"
+            type="button"
+            onClick={() => {
+              setSeverity('');
+              setTlp('');
+              setPhase('');
+            }}
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
       {declaring && <DeclareForm key={declaring} me={me} kind={declaring} onClose={() => setDeclaring(null)} />}
 
       {list.error && <Notice kind="error">{messageOf(list.error)}</Notice>}
       {/* Keyed by the filter, so one that isn't cached yet assembles afresh */}
       <Loading key={`${status}-${kind}`} ready={!list.isPending} label={`Loading ${status} ${noun}`}>
-        {list.data && list.data.length === 0 && (
+        {shown && shown.length === 0 && (
           <section className="panel">
             <header>
-              <h2>{`No ${status} ${noun}`}</h2>
+              <h2>{filtered ? `No ${status} ${noun} match` : `No ${status} ${noun}`}</h2>
               <p>
-                {status === 'open'
-                  ? 'Nothing your teams are involved in is open right now.'
-                  : `Closed ${noun} your teams worked on appear here.`}
+                {filtered
+                  ? 'Nothing matches those filters. Clear them to see the rest.'
+                  : status === 'open'
+                    ? 'Nothing your teams are involved in is open right now.'
+                    : `Closed ${noun} your teams worked on appear here.`}
               </p>
             </header>
           </section>
         )}
-        {list.data && list.data.length > 0 && (
+        {shown && shown.length > 0 && (
           <ul className="incident-list" aria-label={`${status} ${noun}`}>
-            {list.data.map((i) => (
+            {shown.map((i) => (
               <li key={i.id}>
-                <Link to={`/incidents/${i.ref}`} className="incident-card">
+                <Link to={`/incidents/${i.ref}`} className={`incident-card sev-edge-${i.severity}`}>
                   <div className="incident-card-head">
                     <span className="mono ref">{i.ref}</span>
                     {i.kind === 'hunt' && <span className="chip chip-accent">Hunt</span>}

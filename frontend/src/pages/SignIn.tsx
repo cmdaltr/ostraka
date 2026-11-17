@@ -5,7 +5,7 @@ import type { Grant } from '../api/types';
 import { brand } from '../brand';
 import { startWith, useSession } from '../auth/session';
 import { BrandMark } from '../components/BrandMark';
-import { GitHubMark } from '../components/GitHubMark';
+import { SiteLinks } from '../components/SiteLinks';
 import { Progress } from '../components/sherd/Progress';
 import { Notice, messageOf } from '../components/ui';
 
@@ -110,17 +110,7 @@ export function SignIn() {
             </button>
           </form>
         )}
-        <p className="hint auth-links">
-          <a href="/help/licence">Licence</a>
-          <a
-            href="https://github.com/cmdaltr"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="cmdaltr on GitHub"
-          >
-            <GitHubMark />
-          </a>
-        </p>
+        <SiteLinks />
         <p className="hint" style={{ textAlign: 'center' }}>
           {brand.trademark}
         </p>

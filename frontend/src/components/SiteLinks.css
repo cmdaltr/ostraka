@@ -1,0 +1,10 @@
+.site-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-4);
+  margin: 0;
+}
+.site-links a {
+  display: inline-flex;
+}

@@ -34,11 +34,11 @@ async def test_busy_check_that_raises_counts_as_busy(client):
 
 
 async def test_busy_never_leaks_reasons(client):
-    busy.register("ben editing OST-2026-014", lambda: True)
+    busy.register("ben editing OST-26-014", lambda: True)
     try:
         assert set((await client.get("/api/busy")).json()) == {"busy"}
     finally:
-        busy.unregister("ben editing OST-2026-014")
+        busy.unregister("ben editing OST-26-014")
 
 
 async def test_ready_reports_503_when_a_dependency_is_down(client, monkeypatch):

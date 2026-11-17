@@ -96,9 +96,9 @@ def fake() -> Iterator[FakeOstraka]:
         {
             ("GET", "/api/meta"): (200, {"name": "Ostraka", "version": "0.1.0"}),
             ("GET", "/api/users/me"): (200, ME),
-            ("GET", "/api/incidents/by-ref/OST-2026-001"): (
+            ("GET", "/api/incidents/by-ref/OST-26-001"): (
                 200,
-                {"id": INCIDENT_ID, "ref": "OST-2026-001", "title": "Ransom note on FS01"},
+                {"id": INCIDENT_ID, "ref": "OST-26-001", "title": "Ransom note on FS01"},
             ),
         }
     )
@@ -161,7 +161,7 @@ def run(
 
 
 def test_declare_sends_title_severity_and_tlp(run, fake: FakeOstraka) -> None:
-    fake.routes[("POST", "/api/incidents")] = lambda body: (201, {"id": INCIDENT_ID, "ref": "OST-2026-002"})
+    fake.routes[("POST", "/api/incidents")] = lambda body: (201, {"id": INCIDENT_ID, "ref": "OST-26-002"})
     proc = run(
         "declare", "Beacon", "from", "WS042", "--severity", "HIGH", "--tlp", "TLP:AMBER+STRICT", "--tag", "c2"
     )
@@ -177,8 +177,8 @@ def test_declare_sends_title_severity_and_tlp(run, fake: FakeOstraka) -> None:
         "summary": "",
         "tags": ["c2"],
     }
-    assert "Declared OST-2026-002" in proc.stdout
-    assert f"{fake.url}/incidents/OST-2026-002" in proc.stdout
+    assert "Declared OST-26-002" in proc.stdout
+    assert f"{fake.url}/incidents/OST-26-002" in proc.stdout
 
 
 def test_declare_needs_a_known_severity(run, fake: FakeOstraka) -> None:
@@ -203,15 +203,15 @@ def test_ioc_add_from_stdin_one_per_line(run, fake: FakeOstraka) -> None:
 
     fake.routes[("POST", path)] = add
     pasted = "# from the proxy logs\nevil[.]example\n\n  198.51.100.7  \nhxxp://evil.example/x\n"
-    proc = run("ioc", "add", "ost-2026-001", "--verdict", "malicious", stdin=pasted)
+    proc = run("ioc", "add", "ost-26-001", "--verdict", "malicious", stdin=pasted)
     assert proc.returncode == 0, proc.stderr
-    assert len(fake.sent("GET", "/api/incidents/by-ref/OST-2026-001")) == 1
+    assert len(fake.sent("GET", "/api/incidents/by-ref/OST-26-001")) == 1
     sent = fake.sent("POST", path)
     assert [r.body["value"] for r in sent] == ["evil[.]example", "198.51.100.7", "hxxp://evil.example/x"]
     assert all(r.body["verdict"] == "malicious" for r in sent)
     assert all(r.headers["Authorization"] == f"Bearer {TOKEN}" for r in sent)
     assert "OBS-1" in proc.stdout and "OBS-3" in proc.stdout
-    assert "Added 3 to OST-2026-001" in proc.stderr
+    assert "Added 3 to OST-26-001" in proc.stderr
 
 
 def test_ioc_add_values_as_arguments_and_a_failure(run, fake: FakeOstraka) -> None:
@@ -223,7 +223,7 @@ def test_ioc_add_values_as_arguments_and_a_failure(run, fake: FakeOstraka) -> No
         return 201, {"id": "o", "ref": "OBS-9", "kind": "ipv4", "value": "203.0.113.5"}
 
     fake.routes[("POST", path)] = add
-    proc = run("ioc", "add", "OST-2026-001", "203.0.113.5", "xxx")
+    proc = run("ioc", "add", "OST-26-001", "203.0.113.5", "xxx")
     assert proc.returncode == 1
     assert len(fake.sent("POST", path)) == 2
     assert "value: not an indicator" in proc.stderr
@@ -243,7 +243,7 @@ def test_a_read_only_token_is_named(run, fake: FakeOstraka) -> None:
         403,
         {"detail": "This token is read-only."},
     )
-    proc = run("comment", "OST-2026-001", "Isolated", "the", "host")
+    proc = run("comment", "OST-26-001", "Isolated", "the", "host")
     assert proc.returncode == 4
     assert "read-only (an MCP token)" in proc.stderr
 
@@ -253,23 +253,23 @@ def test_a_conflict_is_explained(run, fake: FakeOstraka) -> None:
         409,
         {"detail": "Someone else changed this first."},
     )
-    proc = run("comment", "OST-2026-001", "hello")
+    proc = run("comment", "OST-26-001", "hello")
     assert proc.returncode == 5
     assert "Conflict: Someone else changed this first." in proc.stderr
 
 
 def test_comment_from_stdin(run, fake: FakeOstraka) -> None:
     fake.routes[("POST", f"/api/incidents/{INCIDENT_ID}/comments")] = (201, {"id": "c1"})
-    proc = run("comment", "#OST-2026-001", stdin='Line one\n"quoted" and \\ backslash\n')
+    proc = run("comment", "#OST-26-001", stdin='Line one\n"quoted" and \\ backslash\n')
     assert proc.returncode == 0, proc.stderr
     [req] = fake.sent("POST", f"/api/incidents/{INCIDENT_ID}/comments")
     assert req.body == {"body": 'Line one\n"quoted" and \\ backslash'}
 
 
 def test_unknown_reference(run, fake: FakeOstraka) -> None:
-    proc = run("comment", "OST-2026-404", "hello")
+    proc = run("comment", "OST-26-404", "hello")
     assert proc.returncode == 1
-    assert "No incident OST-2026-404" in proc.stderr
+    assert "No incident OST-26-404" in proc.stderr
     assert run("comment", "TSK-4", "hello").returncode == 2
 
 
@@ -278,7 +278,7 @@ def test_host_add_with_given_values(run, fake: FakeOstraka) -> None:
     proc = run(
         "host",
         "add",
-        "OST-2026-001",
+        "OST-26-001",
         "--hostname",
         "FS01",
         "--ip",
@@ -302,12 +302,12 @@ def test_host_add_with_given_values(run, fake: FakeOstraka) -> None:
         "is_patient_zero": True,
         "notes": "",
     }
-    assert "Added AST-7 to OST-2026-001: FS01" in proc.stdout
+    assert "Added AST-7 to OST-26-001: FS01" in proc.stdout
 
 
 def test_host_add_reads_this_machine(run, fake: FakeOstraka) -> None:
     fake.routes[("POST", f"/api/incidents/{INCIDENT_ID}/assets")] = (201, {"id": "a1", "ref": "AST-8"})
-    proc = run("host", "add", "OST-2026-001")
+    proc = run("host", "add", "OST-26-001")
     assert proc.returncode == 0, proc.stderr
     [req] = fake.sent("POST", f"/api/incidents/{INCIDENT_ID}/assets")
     assert req.body["hostname"]
@@ -328,7 +328,7 @@ def test_tasks_mine_drops_the_team_queue(run, fake: FakeOstraka) -> None:
                 "due_at": "2026-11-12T09:30:00Z",
                 "assignee": {"id": ME["id"], "name": ME["name"]},
                 "team": {"name": "Blue"},
-                "incident": {"ref": "OST-2026-001"},
+                "incident": {"ref": "OST-26-001"},
             },
             {
                 "ref": "TSK-2",
@@ -337,7 +337,7 @@ def test_tasks_mine_drops_the_team_queue(run, fake: FakeOstraka) -> None:
                 "due_at": None,
                 "assignee": None,
                 "team": {"name": "Blue"},
-                "incident": {"ref": "OST-2026-001"},
+                "incident": {"ref": "OST-26-001"},
             },
         ],
     )
@@ -354,7 +354,7 @@ def test_incidents_and_whoami(run, fake: FakeOstraka) -> None:
         200,
         [
             {
-                "ref": "OST-2026-001",
+                "ref": "OST-26-001",
                 "severity": "high",
                 "tlp": "amber",
                 "phase": "contain",
@@ -365,7 +365,7 @@ def test_incidents_and_whoami(run, fake: FakeOstraka) -> None:
     )
     listed = run("incidents")
     assert listed.returncode == 0, listed.stderr
-    assert "OST-2026-001" in listed.stdout and "Ransom note on FS01" in listed.stdout
+    assert "OST-26-001" in listed.stdout and "Ransom note on FS01" in listed.stdout
     who = run("whoami")
     assert "Ada Responder <ada@example.org>" in who.stdout
     assert "responder, Blue" in who.stdout

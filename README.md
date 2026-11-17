@@ -93,8 +93,8 @@ On Windows Server it runs under WSL 2: `.\deploy\windows\install-service.ps1 -Ur
 ```bash
 ost login https://ostraka.example.org
 ost declare "Beacon from WS042" --severity high --tlp amber
-pbpaste | ost ioc add OST-2026-001
-ost comment OST-2026-001 "Isolated"
+pbpaste | ost ioc add OST-26-001
+ost comment OST-26-001 "Isolated"
 ost tasks --mine
 ```
 

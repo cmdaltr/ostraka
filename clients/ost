@@ -8,7 +8,7 @@
 set -euo pipefail
 
 OST_VERSION="0.1.0"
-REF_RE='^(OST|HNT)-[0-9]{4}-[0-9]{3,}$'
+REF_RE='^(OST|HNT)-[0-9]{2}([0-9]{2})?-[0-9]{3,}$'
 TOKEN_RE='^ost_[A-Za-z0-9_-]+$'
 SEVERITIES="critical high medium low"
 TLPS="red amber+strict amber green clear"
@@ -36,7 +36,7 @@ Usage:
   ost tasks [REF] [--mine] [--json]     no REF: your tasks and your team's queue across incidents
   ost version
 
-REF is an incident or hunt reference such as OST-2026-001 or HNT-2026-003.
+REF is an incident or hunt reference such as OST-26-001 or HNT-26-003.
 Severity: critical, high, medium, low. TLP: red, amber+strict, amber (default), green, clear.
 
 Settings: OSTRAKA_URL and OSTRAKA_TOKEN (an ost_ token from Profile -> API tokens) override the
@@ -315,7 +315,7 @@ INCIDENT_REF=""
 resolve_ref() {
     local ref
     ref=$(upper "${1#\#}")
-    [[ $ref =~ $REF_RE ]] || usage_error "'$1' isn't an incident or hunt reference (like OST-2026-001)."
+    [[ $ref =~ $REF_RE ]] || usage_error "'$1' isn't an incident or hunt reference (like OST-26-001)."
     api GET "/api/incidents/by-ref/$ref"
     if [ "$RESP_CODE" = 404 ]; then
         die "No incident $ref, or not one you can see."

@@ -94,7 +94,7 @@ test('under Services an incident’s commander chooses its report brand', async 
     if (method === 'PATCH' && path === '/api/incidents/i-1') return { json: incident(body as Record<string, unknown>) };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001');
+  await page.goto('/incidents/OST-26-001');
   const picker = page.getByLabel('Report brand');
   await expect(picker.locator('option')).toHaveText(['Northwind (default)', 'Contoso']);
   await picker.selectOption('b-2');

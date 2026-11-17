@@ -56,7 +56,7 @@ def test_docx_has_sections_tlp_and_tagline(docx_text, blocks):
     for title in branded.sections_of(blocks):
         assert title in docx_text
     assert TLP_LABEL in docx_text
-    assert "OST-2026-014" in docx_text
+    assert "OST-26-014" in docx_text
     assert "Findings†" in docx_text
     assert branding.TAGLINE in docx_text
 

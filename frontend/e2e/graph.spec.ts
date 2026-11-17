@@ -3,7 +3,7 @@ import { dana, me, sam, stubApi, stubLive } from './fixtures';
 
 const graph = {
   incident_id: 'i-1',
-  ref: 'OST-2026-001',
+  ref: 'OST-26-001',
   tlp: 'amber',
   restricted: false,
   masked: false,
@@ -31,9 +31,9 @@ const graph = {
 test('the graph draws the record, filters by kind and clicks through to the object', async ({ page }) => {
   await stubLive(page);
   await stubApi(page, me(), (method, path) => (method === 'GET' && path === '/api/incidents/i-1/graph' ? { json: graph } : undefined));
-  await page.goto('/incidents/OST-2026-001?s=graph');
+  await page.goto('/incidents/OST-26-001?s=graph');
 
-  const canvas = page.getByRole('group', { name: /Graph of OST-2026-001: 6 nodes, 5 links/ });
+  const canvas = page.getByRole('group', { name: /Graph of OST-26-001: 6 nodes, 5 links/ });
   await expect(canvas).toBeVisible();
   await expect(canvas.getByRole('button', { name: 'Exhibit EXH-1: FIN-WS-07 disk image' })).toBeVisible();
 
@@ -45,6 +45,31 @@ test('the graph draws the record, filters by kind and clicks through to the obje
   await expect(detail).toContainText('FND-1 cites exhibit EXH-1');
   await detail.getByRole('link', { name: 'Open FND-1' }).click();
   await expect(page).toHaveURL(/s=findings#FND-1$/);
+});
+
+test('the graph turns from across to down, remembers it, and goes full screen', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me(), (method, path) => (method === 'GET' && path === '/api/incidents/i-1/graph' ? { json: graph } : undefined));
+  await page.goto('/incidents/OST-26-001?s=graph');
+  const asset = page.getByRole('button', { name: /^Asset AST-1/ });
+  const finding = page.getByRole('button', { name: /^Finding FND-1/ });
+  await expect(asset).toBeVisible();
+  const across = [(await asset.boundingBox())!, (await finding.boundingBox())!];
+  expect(across[1].x).toBeGreaterThan(across[0].x + 100);
+
+  await page.getByRole('button', { name: 'Down' }).click();
+  await expect(page.getByRole('button', { name: 'Down' })).toHaveAttribute('aria-pressed', 'true');
+  const down = [(await asset.boundingBox())!, (await finding.boundingBox())!];
+  expect(down[1].y).toBeGreaterThan(down[0].y + 60);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Down' })).toHaveAttribute('aria-pressed', 'true');
+
+  await page.getByRole('button', { name: 'Full screen' }).click();
+  await expect(page.getByRole('button', { name: 'Leave full screen' })).toBeVisible();
+  const box = (await page.getByRole('region', { name: 'Graph' }).boundingBox())!;
+  expect(box.width).toBeGreaterThanOrEqual(page.viewportSize()!.width - 1);
+  await page.getByRole('button', { name: 'Leave full screen' }).click();
+  await expect(page.getByRole('button', { name: 'Full screen' })).toBeVisible();
 });
 
 const offer = {
@@ -98,7 +123,7 @@ test('the person offered an exhibit accepts it in their own words, with the hash
     if (method === 'POST' && path === '/api/incidents/i-1/evidence/x-1/accept') return { json: exhibit };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=evidence');
+  await page.goto('/incidents/OST-26-001?s=evidence');
   const card = page.locator('#EXH-1');
   await expect(card).toContainText('Held by Dana Lead');
   await expect(card).toContainText('Chain intact · 2');

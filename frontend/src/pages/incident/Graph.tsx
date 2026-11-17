@@ -1,13 +1,15 @@
 // The incident graph: assets, observables, exhibits, findings and techniques, and how the record joins
 // them. Plain SVG over a layered layout (graphLayout.ts); colours are tokens, set by class.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Graph as GraphData, GraphNode, NodeType } from '../../api/evidence';
 import { edgeWords, nodeTypes } from '../../api/evidence';
 import type { Incident } from '../../api/incidents';
 import { label as words } from '../../api/incidents';
 import { NODE_H, NODE_W, edgePath, layout, truncate, visible } from './graphLayout';
+import type { Direction } from './graphLayout';
 import { refTarget, useSection } from './shared';
 import './graph.css';
 
@@ -20,6 +22,97 @@ const typeWord: Record<NodeType, string> = {
 };
 
 const columnNames = ['Assets', 'Observables and exhibits', 'Findings', 'Techniques'];
+
+// A small drawing for each kind, on a 16-unit square in the current colour: a screen, an eye, a box of
+// exhibits, a magnifier and a target
+const kindDrawing: Record<NodeType, ReactNode> = {
+  asset: (
+    <>
+      <rect x="2" y="3" width="12" height="8" rx="1" />
+      <path d="M5 14h6M8 11v3" />
+    </>
+  ),
+  observable: (
+    <>
+      <path d="M1.5 8C4 3.8 12 3.8 14.5 8 12 12.2 4 12.2 1.5 8z" />
+      <circle cx="8" cy="8" r="2" />
+    </>
+  ),
+  evidence: <path d="M2 5l6-3 6 3v6l-6 3-6-3zM2 5l6 3 6-3M8 8v6" />,
+  finding: (
+    <>
+      <circle cx="7" cy="7" r="4.5" />
+      <path d="M10.5 10.5L14 14" />
+    </>
+  ),
+  technique: (
+    <>
+      <circle cx="8" cy="8" r="6" />
+      <circle cx="8" cy="8" r="2.5" />
+    </>
+  ),
+};
+
+function KindIcon({ type, size = 14 }: { type: NodeType; size?: number }) {
+  return (
+    <svg className="gicon" width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      {kindDrawing[type]}
+    </svg>
+  );
+}
+
+const toolDrawing = {
+  across: <path d="M1 8h12M10 4.5L13.5 8 10 11.5" />,
+  down: <path d="M8 1v12M4.5 10L8 13.5 11.5 10" />,
+  full: <path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" />,
+  shrink: <path d="M6 2v4H2M14 6h-4V2M10 14v-4h4M2 10h4v4" />,
+};
+
+function ToolIcon({ name }: { name: keyof typeof toolDrawing }) {
+  return (
+    <svg className="gicon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      {toolDrawing[name]}
+    </svg>
+  );
+}
+
+const DIRECTION_KEY = 'ostraka.graph-direction';
+
+function rememberedDirection(): Direction {
+  try {
+    return localStorage.getItem(DIRECTION_KEY) === 'down' ? 'down' : 'across';
+  } catch {
+    return 'across';
+  }
+}
+
+// Full screen through the browser where it can, and as a full-window overlay where it can't (an iPhone)
+function useFullScreen() {
+  const ref = useRef<HTMLElement>(null);
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    const changed = () => setFull(document.fullscreenElement === ref.current && ref.current !== null);
+    document.addEventListener('fullscreenchange', changed);
+    return () => document.removeEventListener('fullscreenchange', changed);
+  }, []);
+  useEffect(() => {
+    if (!full || document.fullscreenElement) return;
+    const close = (e: KeyboardEvent) => e.key === 'Escape' && setFull(false);
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [full]);
+  const toggle = () => {
+    const element = ref.current;
+    if (!element) return;
+    if (full) {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else setFull(false);
+    } else if (element.requestFullscreen) {
+      element.requestFullscreen().catch(() => setFull(true));
+    } else setFull(true);
+  };
+  return { ref, full, toggle };
+}
 
 function nodeClass(node: GraphNode, state: 'none' | 'selected' | 'near' | 'far'): string {
   const status = node.type === 'finding' ? ` status-${String(node.attrs.status)}` : '';
@@ -34,7 +127,9 @@ function Detail({ node, graph }: { node: GraphNode; graph: GraphData }) {
   return (
     <aside className="panel graph-detail" aria-label={`${node.ref} in the graph`}>
       <header>
-        <span className="hint">{typeWord[node.type]}</span>
+        <span className={`hint graph-key graph-key-${node.type}`}>
+          <KindIcon type={node.type} /> {typeWord[node.type]}
+        </span>
         <h3>
           <span className="mono">{node.ref}</span> {node.type !== 'technique' && node.label}
           {technique?.name && ` ${technique.name}`}
@@ -84,13 +179,23 @@ export function Graph({ incident }: { incident: Incident }) {
   const [shown, setShown] = useState<Set<NodeType>>(() => new Set(nodeTypes.map(([t]) => t)));
   const [hideRefuted, setHideRefuted] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+  const [direction, setDirection] = useState<Direction>(rememberedDirection);
+  const screen = useFullScreen();
+  const turn = (to: Direction) => {
+    setDirection(to);
+    try {
+      localStorage.setItem(DIRECTION_KEY, to);
+    } catch {
+      // a private window: it just won't be remembered
+    }
+  };
 
   const view = useMemo(() => {
     if (!graph.data) return null;
     const nodes = graph.data.nodes.filter((n) => !(hideRefuted && n.type === 'finding' && n.attrs.status === 'refuted'));
     const kept = visible(nodes, graph.data.edges, shown);
-    return { ...kept, layout: layout(kept.nodes, kept.edges) };
-  }, [graph.data, shown, hideRefuted]);
+    return { ...kept, layout: layout(kept.nodes, kept.edges, direction) };
+  }, [graph.data, shown, hideRefuted, direction]);
 
   if (graph.error) return <p className="hint">The graph couldn’t be loaded.</p>;
   if (!graph.data || !view) return null;
@@ -115,12 +220,29 @@ export function Graph({ incident }: { incident: Incident }) {
   const { placed, width, height } = view.layout;
 
   return (
-    <section className="graph-section">
+    <section
+      ref={screen.ref}
+      className={`graph-section${screen.full ? ' is-full' : ''}`}
+      aria-label="Graph"
+    >
+      <div className="graph-tools">
+        <div className="segmented" role="group" aria-label="Draw the graph">
+          <button type="button" aria-pressed={direction === 'across'} onClick={() => turn('across')}>
+            <ToolIcon name="across" /> Across
+          </button>
+          <button type="button" aria-pressed={direction === 'down'} onClick={() => turn('down')}>
+            <ToolIcon name="down" /> Down
+          </button>
+        </div>
+        <button className="btn btn-quiet" type="button" aria-pressed={screen.full} onClick={screen.toggle}>
+          <ToolIcon name={screen.full ? 'shrink' : 'full'} /> {screen.full ? 'Leave full screen' : 'Full screen'}
+        </button>
+      </div>
       <div className="graph-filters" role="group" aria-label="Show in the graph">
         {nodeTypes.map(([type, name]) => (
           <label key={type} className={`check graph-key graph-key-${type}`}>
             <input type="checkbox" checked={shown.has(type)} onChange={() => toggle(type)} />
-            <span className="swatch" aria-hidden />
+            <KindIcon type={type} />
             <span>
               {name} <span className="num hint">{graph.data!.nodes.filter((n) => n.type === type).length}</span>
             </span>
@@ -147,8 +269,8 @@ export function Graph({ incident }: { incident: Incident }) {
                 <path d="M0,0 L8,4 L0,8 z" className="garrow" />
               </marker>
             </defs>
-            {view.layout.columns.map(({ column, x }) => (
-              <text key={column} x={x} y={18} className="gcolumn">
+            {view.layout.columns.map(({ column, x, y }) => (
+              <text key={column} x={x} y={y - 12} className="gcolumn">
                 {columnNames[column]}
               </text>
             ))}
@@ -159,7 +281,7 @@ export function Graph({ incident }: { incident: Incident }) {
               const lit = selected && (e.source === selected || e.target === selected);
               const cls = `gedge gedge-${e.kind}${e.attrs.status === 'refuted' ? ' refuted' : ''}${lit ? ' lit' : selected ? ' dim' : ''}`;
               return (
-                <path key={e.id} d={edgePath(a, b)} className={cls} markerEnd={e.kind === 'connection' ? 'url(#graph-arrow)' : undefined}>
+                <path key={e.id} d={edgePath(a, b, direction)} className={cls} markerEnd={e.kind === 'connection' ? 'url(#graph-arrow)' : undefined}>
                   <title>
                     {a.node.ref} {e.kind === 'connection' ? words(String(e.attrs.link_kind)) : edgeWords[e.kind]} {b.node.ref}
                   </title>
@@ -189,11 +311,14 @@ export function Graph({ incident }: { incident: Incident }) {
                 <title>{`${n.ref} ${n.label}`}</title>
                 <rect width={NODE_W} height={NODE_H} rx={6} />
                 <rect width={5} height={NODE_H} rx={2} className="gband" />
-                <text x={12} y={14} className="gref">
+                <g transform={`translate(11 ${(NODE_H - 16) / 2})`} className="gkind">
+                  {kindDrawing[n.type]}
+                </g>
+                <text x={33} y={14} className="gref">
                   {n.ref}
                 </text>
-                <text x={12} y={27} className="glabel">
-                  {truncate(n.type === 'technique' ? String(n.attrs.name || n.label) : n.label)}
+                <text x={33} y={27} className="glabel">
+                  {truncate(n.type === 'technique' ? String(n.attrs.name || n.label) : n.label, 23)}
                 </text>
               </g>
             ))}

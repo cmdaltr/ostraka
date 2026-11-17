@@ -34,7 +34,7 @@ def cover() -> Cover:
     return Cover(
         kind="Incident Report",
         title="Ransomware staging on the finance file server",
-        reference="OST-2026-014",
+        reference="OST-26-014",
         date="11 November 2026",
         tlp=TLP,
         prepared_for="Contoso Ltd",

@@ -234,7 +234,7 @@ function ServerPanel({
           {!automation && (
             <Notice kind="info">
               Acting on Shikari’s webhook is part of the Pro and Services editions, as sending webhooks is. Without it,
-              check gaps from each incident’s Detection gaps section.
+              check gaps from each incident’s Detections section.
             </Notice>
           )}
         </div>

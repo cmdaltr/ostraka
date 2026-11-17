@@ -50,6 +50,8 @@ The name as an inscription, with the tagline under it, over the whole sherd (bel
 
 The whole limestone sherd lies behind every page, sign-in included, in every palette and mode: large, centred and faint (`--sherd-whole-opacity`, 0.2 in light mode and 0.054 in dark). In the app, loose fragments of the mark drift round the edges above it. The first ciphr's blue gradient and drifting cipher glyphs are gone: sign-in sits on the palette's own ground like every other page.
 
+A line of the same black chalk (`--chalk`, at `--chalk-line-opacity`) is dragged under each page's heading and an incident's head, and above the foot of the page: rough-edged and broken, as chalk is on stone. It marks the page's main divisions only; cards and panels keep their plain borders, so the chalk stays a separator and never a frame. Added 16 November 2026.
+
 ## The Ostrakon palette
 
 One of the three palettes in Settings, beside Cobalt (the default) and Ledger. No black anywhere: text is iron-gall brown, the ground is limestone, and fired clay is the accent.

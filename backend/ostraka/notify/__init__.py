@@ -251,7 +251,10 @@ async def dispatch(db: AsyncSession) -> None:
 async def wait() -> None:
     """Let in-flight deliveries finish (shutdown and tests)."""
     while _background:
-        await asyncio.gather(*list(_background), return_exceptions=True)
+        jobs = list(_background)
+        await asyncio.gather(*jobs, return_exceptions=True)
+        # A job that finished on a loop since closed never ran its discard callback
+        _background.difference_update(job for job in jobs if job.done())
 
 
 def busy_sending() -> bool:

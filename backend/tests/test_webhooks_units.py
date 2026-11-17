@@ -1,6 +1,7 @@
 """Webhooks without a database: which URLs are allowed, which activity raises which event, the
 signature, and what a restricted incident's body may carry."""
 
+import asyncio
 import hashlib
 import hmac
 import json
@@ -75,20 +76,20 @@ def test_activity_raises_these_events(action, data, kind, events):
 
 
 def test_the_signature_is_an_hmac_of_the_raw_body():
-    body = webhooks.body_of("incident.created", {"ref": "OST-2026-001"})
+    body = webhooks.body_of("incident.created", {"ref": "OST-26-001"})
     expected = hmac.new(b"s3cret-s3cret-s3cret", body, hashlib.sha256).hexdigest()
     assert webhooks.sign("s3cret-s3cret-s3cret", body) == f"sha256={expected}"
     assert set(json.loads(body)) == {"event", "sent_at", "data"}
 
 
 def incident(tlp: Tlp):
-    return SimpleNamespace(ref="OST-2026-007", tlp=tlp)
+    return SimpleNamespace(ref="OST-26-007", tlp=tlp)
 
 
 @pytest.mark.parametrize("tlp", [Tlp.RED, Tlp.AMBER_STRICT])
 def test_a_restricted_incident_is_named_by_its_reference_only(tlp):
-    data = {"ref": "OST-2026-007", "title": "Board member's account", "task": {"title": "Reset MFA"}}
-    assert notify.outward_data(incident(tlp), data) == {"ref": "OST-2026-007"}
+    data = {"ref": "OST-26-007", "title": "Board member's account", "task": {"title": "Reset MFA"}}
+    assert notify.outward_data(incident(tlp), data) == {"ref": "OST-26-007"}
 
 
 def test_indicators_are_masked_all_the_way_down():
@@ -96,3 +97,13 @@ def test_indicators_are_masked_all_the_way_down():
     out = notify.outward_data(incident(Tlp.AMBER), data)
     assert "203.0.113.9" not in json.dumps(out)
     assert out["title"] == "Beaconing to [ip address]" and out["seats"] == 3
+
+
+@pytest.mark.parametrize("module", [webhooks, notify])
+async def test_wait_drops_a_finished_job_whose_discard_never_ran(module, monkeypatch):
+    # As when a job finished on a test's event loop that has since closed: done, but still in the set
+    done = asyncio.get_running_loop().create_future()
+    done.set_result(None)
+    monkeypatch.setattr(module, "_background", {done})
+    await asyncio.wait_for(module.wait(), 1)
+    assert not module.busy_sending()

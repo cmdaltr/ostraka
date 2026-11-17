@@ -21,7 +21,7 @@ test('an assessment is previewed and linted as it is written, and saved from its
     if (method === 'POST' && path === '/api/incidents/i-1/assessments') return { status: 201, json: {} };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=assessments');
+  await page.goto('/incidents/OST-26-001?s=assessments');
   await page.getByRole('button', { name: 'Make an assessment' }).click();
   await page.locator('#assessment-judgement').fill('the actor definitely staged the payroll export');
   await page.locator('#assessment-probability').selectOption('likely');
@@ -64,7 +64,7 @@ test('the ACH matrix takes your rating and shows the arithmetic and its flags', 
     if (method === 'PUT' && path === '/api/incidents/i-1/ach/ratings') return { json: ach('c') };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=ach');
+  await page.goto('/incidents/OST-26-001?s=ach');
   const matrix = page.getByRole('table', { name: 'ACH matrix' });
   await expect(matrix).toContainText('Leading');
   await expect(matrix).toContainText('Why: No ticket.');
@@ -90,7 +90,7 @@ test('a lesson to improve becomes a task for one of the incident’s teams', asy
       return { json: { ...lesson, task: { id: 't-9', ref: 'TSK-9', status: 'open' } } };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001?s=lessons');
+  await page.goto('/incidents/OST-26-001?s=lessons');
   await expect(page.getByText('What we’d change')).toBeVisible();
   await page.getByRole('button', { name: 'Make it a task' }).click();
   await page.getByRole('form', { name: 'Follow-up task for LSN-1' }).getByRole('button', { name: 'Make the task' }).click();
@@ -103,25 +103,25 @@ test('export downloads the briefing, and is offered only to people who may expor
   await page.route('**/api/incidents/i-1/export?*', (r) =>
     r.fulfill({
       body: '%PDF-1.4 stub',
-      headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="OST-2026-001-briefing.pdf"' },
+      headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="OST-26-001-briefing.pdf"' },
     }),
   );
-  await page.goto('/incidents/OST-2026-001');
+  await page.goto('/incidents/OST-26-001');
   await page.locator('summary', { hasText: 'Export' }).click();
   const row = page.locator('.export-row', { hasText: 'Briefing' });
   const [file] = await Promise.all([page.waitForEvent('download'), row.getByRole('menuitem', { name: 'PDF' }).click()]);
-  expect(file.suggestedFilename()).toBe('OST-2026-001-briefing.pdf');
+  expect(file.suggestedFilename()).toBe('OST-26-001-briefing.pdf');
 });
 
 test('without permission there is no export, and a manager marks the incident sensitive', async ({ page }) => {
   await stubLive(page);
   const api = await stubApi(page, me(), (method, path, body) => {
-    if (method === 'GET' && (path === '/api/incidents/i-1' || path === '/api/incidents/by-ref/OST-2026-001'))
+    if (method === 'GET' && (path === '/api/incidents/i-1' || path === '/api/incidents/by-ref/OST-26-001'))
       return { json: incident({ can_export: false }) };
     if (path === '/api/incidents/i-1' && method === 'PATCH') return { json: incident({ ...(body as object), can_export: false }) };
     return undefined;
   });
-  await page.goto('/incidents/OST-2026-001');
+  await page.goto('/incidents/OST-26-001');
   await expect(page.getByLabel('Sensitive')).toBeVisible();
   await expect(page.locator('details.export')).toHaveCount(0);
   await page.getByLabel('Sensitive').click();

@@ -54,8 +54,8 @@ test('the bell counts unread notifications, opens them and refreshes on a live s
       id: 'n-1',
       kind: 'assigned',
       title: 'TSK-4: Pull the mailbox audit log',
-      body: 'Dana Lead gave you a task in OST-2026-001.',
-      link: '/incidents/OST-2026-001?s=tasks#TSK-4',
+      body: 'Dana Lead gave you a task in OST-26-001.',
+      link: '/incidents/OST-26-001?s=tasks#TSK-4',
       actor: dana,
       created_at: '2026-11-10T10:00:00Z',
       read_at: null as string | null,
@@ -75,7 +75,7 @@ test('the bell counts unread notifications, opens them and refreshes on a live s
 
   await bell.click();
   await page.getByRole('dialog', { name: 'Notifications' }).getByRole('button', { name: /Pull the mailbox audit log/ }).click();
-  await expect(page).toHaveURL(/\/incidents\/OST-2026-001\?s=tasks#TSK-4$/);
+  await expect(page).toHaveURL(/\/incidents\/OST-26-001\?s=tasks#TSK-4$/);
   await expect(page.locator('#TSK-4')).toBeVisible();
   await expect(bell).toHaveAccessibleName('Notifications');
 
@@ -104,7 +104,7 @@ test('a team task can be claimed, ticked, blocked with a reason and nudged', asy
     }
     if (path === '/api/incidents/i-1/tasks/k-1/nudge') return { status: 204 };
   });
-  await page.goto('/incidents/OST-2026-001?s=tasks');
+  await page.goto('/incidents/OST-26-001?s=tasks');
   const card = page.locator('#TSK-4');
   await expect(card).toContainText('SOC’s queue');
   await expect(card).toContainText('2 h overdue');
@@ -137,7 +137,7 @@ test('adding a task for a person sends the checklist line by line', async ({ pag
   const api = await stubApi(page, me(), (method, path) =>
     method === 'POST' && path === '/api/incidents/i-1/tasks' ? { status: 201, json: task() } : undefined,
   );
-  await page.goto('/incidents/OST-2026-001?s=tasks');
+  await page.goto('/incidents/OST-26-001?s=tasks');
   await page.getByRole('button', { name: 'Add a task' }).click();
   await page.locator('#task-title').fill('Image the laptop');
   await page.getByRole('radio', { name: 'A person' }).click();
@@ -151,7 +151,7 @@ test('adding a task for a person sends the checklist line by line', async ({ pag
 
 test('your work lists assigned tasks and the team queue, and claims from it', async ({ page }) => {
   await stubLive(page);
-  const brief = { id: 'i-1', ref: 'OST-2026-001', title: 'Phishing leads to a foothold', severity: 'high', tlp: 'amber' };
+  const brief = { id: 'i-1', ref: 'OST-26-001', title: 'Phishing leads to a foothold', severity: 'high', tlp: 'amber' };
   const api = await stubApi(page, me(), (_method, path) => {
     if (path === '/api/tasks/mine')
       return {
@@ -185,7 +185,7 @@ test('declaring with a matching tag pre-ticks the playbook, and unticking sticks
   await expect(pick).toBeChecked();
   await expect(page.getByText('suggested by tag')).toBeVisible();
   await page.getByRole('button', { name: 'Declare', exact: true }).click();
-  await expect(page).toHaveURL(/OST-2026-001/);
+  await expect(page).toHaveURL(/OST-26-001/);
   const sent = api.requests.find((r) => r.method === 'POST' && r.path === '/api/incidents')!.body;
   expect(sent).toMatchObject({ tags: ['phishing'], playbook_ids: ['pb-1'] });
 });
