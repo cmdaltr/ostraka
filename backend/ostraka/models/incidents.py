@@ -62,9 +62,7 @@ class Phase(StrEnum):
     LEARN = "learn"
     # A hunt's phases
     HYPOTHESIS = "hypothesis"
-    COLLECT = "collect"
     ANALYSE = "analyse"
-    CONCLUDE = "conclude"
 
 
 PHASES_OF = {
@@ -77,7 +75,7 @@ PHASES_OF = {
         Phase.REPORT,
         Phase.LEARN,
     ),
-    RecordKind.HUNT: (Phase.HYPOTHESIS, Phase.COLLECT, Phase.ANALYSE, Phase.CONCLUDE),
+    RecordKind.HUNT: (Phase.HYPOTHESIS, Phase.SCOPE, Phase.ANALYSE, Phase.REPORT, Phase.LEARN),
 }
 
 

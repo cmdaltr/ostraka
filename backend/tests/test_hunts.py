@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from alembic.operations import Operations
 from alembic.runtime.migration import MigrationContext
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from ostraka.models import Playbook, Role
 from tests.test_incidents import declare, team_id
@@ -87,9 +87,9 @@ async def test_a_hunt_moves_through_its_own_phases_only(client, people):
     h = await hunt(client, p["soc"])
     url = f"/api/incidents/{h['id']}"
     wrong = await client.patch(url, json={"version": 1, "phase": "contain"}, headers=p["soc"].headers)
-    assert wrong.status_code == 422 and "hypothesis, collect, analyse, conclude" in wrong.json()["detail"]
-    right = await client.patch(url, json={"version": 1, "phase": "collect"}, headers=p["soc"].headers)
-    assert right.status_code == 200 and right.json()["phase"] == "collect"
+    assert wrong.status_code == 422 and "hypothesis, scope, analyse, report, learn" in wrong.json()["detail"]
+    right = await client.patch(url, json={"version": 1, "phase": "scope"}, headers=p["soc"].headers)
+    assert right.status_code == 200 and right.json()["phase"] == "scope"
 
     incident = await declare(client, p["soc"])
     r = await client.patch(
@@ -320,3 +320,45 @@ async def test_the_seed_playbooks(db):
     }
     assert seeded["Threat hunt"].applies_to.value == "hunt"
     assert all(pb.applies_to.value == "incident" for name, pb in seeded.items() if name != "Threat hunt")
+
+
+async def test_hunts_move_to_scope_report_and_learn_and_back(db, seed_playbooks, client, people):
+    """0020: a hunt in Collect or Conclude, and the hunt playbook's steps and decisions, take the new names;
+    going back undoes it. (seed_playbooks has already run the upgrade on the seeded playbooks.)"""
+    path = Path(__file__).resolve().parents[1] / "migrations/versions/0020_hunt_phases.py"
+    spec = importlib.util.spec_from_file_location("hunt_phases", path)
+    revision = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(revision)
+    p = await people()
+    collecting, concluded = await hunt(client, p["soc"]), await hunt(client, p["soc"], title="Done")
+    connection = await db.connection()
+    put = text("UPDATE incidents SET phase = :phase WHERE id = :id")
+    await connection.execute(put, {"phase": "collect", "id": collecting["id"]})
+    await connection.execute(put, {"phase": "conclude", "id": concluded["id"]})
+
+    def move(names):
+        def run(sync):
+            with Operations.context(MigrationContext.configure(sync)):
+                revision._move(names)
+
+        return run
+
+    async def phases():
+        rows = await connection.exec_driver_sql(
+            "SELECT title, phase FROM incidents WHERE kind = 'hunt' ORDER BY title"
+        )
+        steps = await connection.exec_driver_sql(
+            "SELECT s.title, s.phase, s.outcomes FROM playbook_steps s "
+            "JOIN playbooks p ON p.id = s.playbook_id WHERE p.name = 'Threat hunt' ORDER BY s.position"
+        )
+        return dict(rows.all()), {t: (ph, o) for t, ph, o in steps.all()}
+
+    await connection.run_sync(move(revision.UP))
+    records, steps = await phases()
+    assert records["Done"] == "report" and set(records.values()) == {"scope", "report"}
+    assert steps["Choose data sources and time range"][0] == "scope"
+
+    await connection.run_sync(move(revision.DOWN))
+    records, steps = await phases()
+    assert set(records.values()) == {"collect", "conclude"}
+    assert steps["Choose data sources and time range"][0] == "collect"

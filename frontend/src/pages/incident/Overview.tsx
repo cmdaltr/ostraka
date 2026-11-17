@@ -58,7 +58,9 @@ function Details({ incident }: { incident: Incident }) {
   const [editing, setEditing] = useState(false);
   const save = useSave(incident, []);
   const patch = (json: Record<string, unknown>) =>
-    save.run(() => api(`/api/incidents/${incident.id}`, { method: 'PATCH', json: { version: incident.version, ...json } }));
+    save.run(() =>
+      api(`/api/incidents/${incident.id}`, { method: 'PATCH', json: { version: incident.version, ...json } }),
+    );
 
   const edit = (on: boolean) => {
     setEditing(on);
@@ -80,11 +82,29 @@ function Details({ incident }: { incident: Incident }) {
     <section className="panel">
       <header className="panel-head">
         <h2>Summary</h2>
-        {incident.can_edit && !editing && (
-          <button className="icon-button" type="button" onClick={() => edit(true)} aria-label="Edit the summary" title="Edit">
-            <PencilIcon />
-          </button>
-        )}
+        {/* closing or reopening is an action on the record, so it sits with the pencil, not among the facts */}
+        <span className="actions">
+          {incident.can_manage && (
+            <button
+              className="btn btn-quiet"
+              type="button"
+              onClick={() => patch({ status: incident.status === 'open' ? 'closed' : 'open' })}
+            >
+              {incident.status === 'open' ? `Close ${kindName(incident.kind)}` : `Reopen ${kindName(incident.kind)}`}
+            </button>
+          )}
+          {incident.can_edit && !editing && (
+            <button
+              className="icon-button"
+              type="button"
+              onClick={() => edit(true)}
+              aria-label="Edit the summary"
+              title="Edit"
+            >
+              <PencilIcon />
+            </button>
+          )}
+        </span>
       </header>
       {editing ? (
         <form className="stack" onSubmit={submit}>
@@ -111,7 +131,9 @@ function Details({ incident }: { incident: Incident }) {
         </form>
       ) : (
         <>
-          <p className="prose prose-wide">{incident.summary ? <Rich text={incident.summary} /> : <span className="hint">No summary yet.</span>}</p>
+          <p className="prose prose-wide">
+            {incident.summary ? <Rich text={incident.summary} /> : <span className="hint">No summary yet.</span>}
+          </p>
           <Tags tags={incident.tags} />
         </>
       )}
@@ -126,7 +148,11 @@ function Details({ incident }: { incident: Incident }) {
               value={[incident.severity]}
               disabled={!incident.can_edit}
               onChange={([v]) => patch({ severity: v })}
-              options={severities.map((v) => ({ value: v, name: v[0].toUpperCase() + v.slice(1), look: <SeverityPill level={v} /> }))}
+              options={severities.map((v) => ({
+                value: v,
+                name: v[0].toUpperCase() + v.slice(1),
+                look: <SeverityPill level={v} />,
+              }))}
             />
           </dd>
         </div>
@@ -139,7 +165,11 @@ function Details({ incident }: { incident: Incident }) {
               value={[incident.phase]}
               disabled={!incident.can_edit}
               onChange={([v]) => patch({ phase: v })}
-              options={phasesOf(incident.kind).map((v) => ({ value: v, name: v[0].toUpperCase() + v.slice(1), look: <PhasePill phase={v} /> }))}
+              options={phasesOf(incident.kind).map((v) => ({
+                value: v,
+                name: v[0].toUpperCase() + v.slice(1),
+                look: <PhasePill phase={v} />,
+              }))}
             />
           </dd>
         </div>
@@ -152,7 +182,11 @@ function Details({ incident }: { incident: Incident }) {
               value={[incident.tlp]}
               disabled={!incident.can_manage}
               onChange={([v]) => patch({ tlp: v })}
-              options={tlpLevels.map((v) => ({ value: v, name: `TLP:${v.toUpperCase()}`, look: <TlpPill level={v} /> }))}
+              options={tlpLevels.map((v) => ({
+                value: v,
+                name: `TLP:${v.toUpperCase()}`,
+                look: <TlpPill level={v} />,
+              }))}
             />
           </dd>
         </div>
@@ -167,7 +201,7 @@ function Details({ incident }: { incident: Incident }) {
                 disabled={!incident.can_manage}
                 onChange={(e) => patch({ sensitive: e.target.checked })}
               />
-              <span>{incident.sensitive ? 'Sensitive: commander only' : 'Anyone who worked on it'}</span>
+              <span>Commander only</span>
             </label>
           </dd>
         </div>
@@ -179,22 +213,6 @@ function Details({ incident }: { incident: Incident }) {
         <div>
           <dt>Aware since</dt>
           <dd className="num">{formatDate(incident.aware_at)}</dd>
-        </div>
-        <div>
-          <dt>Status</dt>
-          <dd>
-            {incident.can_manage ? (
-              <button
-                className="btn btn-quiet"
-                type="button"
-                onClick={() => patch({ status: incident.status === 'open' ? 'closed' : 'open' })}
-              >
-                {incident.status === 'open' ? `Close ${kindName(incident.kind)}` : `Reopen ${kindName(incident.kind)}`}
-              </button>
-            ) : (
-              incident.status
-            )}
-          </dd>
         </div>
       </dl>
       {save.error && <Notice kind="error">{save.error}</Notice>}
@@ -221,8 +239,7 @@ function People({ incident, me }: { incident: Incident; me: Me }) {
       <header>
         <h2>Teams and people</h2>
         <p>
-          Everyone in an involved team can see and work on this {kindName(incident.kind)}. People added by name can
-          too.
+          Everyone in an involved team can see and work on this {kindName(incident.kind)}. People added by name can too.
         </p>
       </header>
 
@@ -249,7 +266,9 @@ function People({ incident, me }: { incident: Incident; me: Me }) {
               className="input inline"
               aria-label="Involve a team"
               value=""
-              onChange={(e) => save.run(() => api(`${base}/teams`, { method: 'POST', json: { team_id: e.target.value } }))}
+              onChange={(e) =>
+                save.run(() => api(`${base}/teams`, { method: 'POST', json: { team_id: e.target.value } }))
+              }
             >
               <option value="">Involve a team…</option>
               {teams.data

@@ -498,7 +498,7 @@
           "at": "+2m",
           "do": "update",
           "with": {
-            "phase": "collect"
+            "phase": "scope"
           }
         },
         {
@@ -663,7 +663,7 @@
           "at": "+20m",
           "do": "update",
           "with": {
-            "phase": "conclude"
+            "phase": "learn"
           }
         },
         {
@@ -2434,7 +2434,7 @@
           "at": "+3m",
           "do": "update",
           "with": {
-            "phase": "collect"
+            "phase": "scope"
           }
         },
         {

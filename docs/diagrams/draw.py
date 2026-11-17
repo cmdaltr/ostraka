@@ -115,21 +115,23 @@ s.save("architecture.svg")
 
 # ---- 2. Records: incidents, hunts, findings --------------------------------------------------------
 s = Svg(1240, 590, "Ostraka · records, phases and findings")
-s.group(20, 60, 1200, 130, "hunt  ·  HNT-YYYY-NNN")
-hx = [40, 335, 630, 925]
-for x, (t, l) in zip(hx, [("Hypothesis", ["what we expect to find,", "and where"]), ("Collect", ["searches run in Shikari,", "evidence in Rowanholt"]),
-                          ("Analyse", ["leads, not verdicts"]), ("Conclude", ["found something, or not"])]):
-    s.box(x, 95, 265, 80, t, l)
+s.group(20, 60, 1200, 130, "hunt  ·  HNT-YY-NNN")
+hx = [40, 280, 520, 760, 1000]
+for x, (t, l) in zip(hx, [("Hypothesis", ["what we expect to find,", "and where"]), ("Scope", ["searches run in Shikari,", "evidence in Rowanholt"]),
+                          ("Analyse", ["leads, not verdicts"]), ("Report", ["found something, or not"]),
+                          ("Learn", ["new detections,", "visibility gaps"])]):
+    s.box(x, 95, 200, 80, t, l)
 for a, b in zip(hx, hx[1:]):
-    s.arrow([(a + 265, 135), (b, 135)])
-s.group(20, 230, 1200, 130, "incident  ·  OST-YYYY-NNN", lx=250)
-ix = [40, 238, 436, 634, 832, 1030]
-for x, (t, l) in zip(ix, [("Detect", ["declared, roles set"]), ("Scope", ["assets, observables"]), ("Contain", ["stop the spread"]),
-                          ("Eradicate", ["remove the foothold"]), ("Recover", ["back to normal"]), ("Learn", ["lessons, write-up"])]):
-    s.box(x, 265, 175, 80, t, l)
+    s.arrow([(a + 200, 135), (b, 135)])
+s.group(20, 230, 1200, 130, "incident  ·  OST-YY-NNN", lx=250)
+ix = [40, 210, 380, 550, 720, 890, 1060]
+for x, (t, l) in zip(ix, [("Detect", ["declared,", "roles set"]), ("Scope", ["assets,", "observables"]), ("Contain", ["stop the spread"]),
+                          ("Eradicate", ["remove the", "foothold"]), ("Recover", ["back to normal"]), ("Report", ["the write-up"]),
+                          ("Learn", ["lessons"])]):
+    s.box(x, 265, 145, 80, t, l)
 for a, b in zip(ix, ix[1:]):
-    s.arrow([(a + 175, 305), (b, 305)])
-s.arrow([(1057, 175), (1057, 215), (127, 215), (127, 265)], "promote: found something", AMBER, lx=590, ly=208)
+    s.arrow([(a + 145, 305), (b, 305)])
+s.arrow([(860, 175), (860, 215), (112, 215), (112, 265)], "promote: found something", AMBER, lx=490, ly=208)
 s.group(20, 395, 1200, 175, "findings  ·  FND-N  ·  the reporting standard")
 s.box(40, 440, 250, 90, "Lead", ["anyone, an MCP client,", "or the importer", "never confirmed by itself"])
 s.box(400, 440, 250, 90, "Verification", ["source reliability and", "information credibility,", "what it was checked against"])

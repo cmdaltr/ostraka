@@ -191,7 +191,6 @@ export function Incidents({ me }: { me: Me }) {
       <div className="page-head">
         <div>
           <h1>Incidents</h1>
-          <p>Hello, {me.name.split(' ')[0]}. These are the incidents and hunts your teams are involved in.</p>
         </div>
       </div>
 

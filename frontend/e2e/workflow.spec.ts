@@ -125,7 +125,7 @@ test('the editor makes steps wait, open at a phase, and decide', async ({ page }
   await page.locator('#playbook-name').fill('Hunt');
   await page.locator('#playbook-for').selectOption('hunt');
   await page.getByLabel('Task 1 title').fill('Look');
-  await page.getByLabel('Task 1 phase').selectOption('collect');
+  await page.getByLabel('Task 1 phase').selectOption('scope');
   await page.getByRole('button', { name: 'Add a task' }).click();
   await page.getByLabel('Task 2 title').fill('Decide');
   await page.getByLabel('Task 2 after task 1').click();
@@ -139,7 +139,7 @@ test('the editor makes steps wait, open at a phase, and decide', async ({ page }
   await expect.poll(() => api.requests.find((r) => r.method === 'POST' && r.path === '/api/playbooks')?.body).toMatchObject({
     applies_to: 'hunt',
     steps: [
-      { title: 'Look', phase: 'collect', after: [], outcomes: [] },
+      { title: 'Look', phase: 'scope', after: [], outcomes: [] },
       { title: 'Decide', after: [0], outcomes: [{ label: 'Look again', action: 'phase', phase: 'hypothesis', opens: [0] }] },
     ],
   });

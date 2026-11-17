@@ -111,29 +111,70 @@
 .shell-user {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
-.shell-name {
-  color: var(--muted);
-  font-weight: 500;
-}
-/* the way to your profile, the bell's twin */
-.shell-icon {
+/* The account's controls are quiet: no borders, a ground only on hover, so the actions stand out */
+.shell-icon,
+.shell-header .bell-button {
+  cursor: pointer;
   display: inline-grid;
   place-items: center;
   width: var(--header-h);
   height: var(--header-h);
   border-radius: var(--radius-md);
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
 }
-.shell-icon:hover {
+.shell-icon:hover,
+.shell-header .bell-button:hover {
+  color: var(--ink);
   background: var(--raised);
 }
-.shell-icon.active {
+.shell-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--line);
+  margin: 0 var(--space-1);
+}
+.shell-me {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--header-h);
+  max-width: 16rem;
+  padding: 0 10px 0 4px;
+  border-radius: 999px;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 500;
+}
+.shell-me:hover {
+  background: var(--raised);
+}
+.shell-me.active {
   background: var(--accent-soft);
-  border-color: var(--accent);
+}
+.shell-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font: 600 11px / 1 var(--font-ui);
+  letter-spacing: 0.02em;
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+.shell-me .shell-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shell-icon.active {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 @media (max-width: 640px) {
   .shell-name {

@@ -11,7 +11,7 @@ export const brand = {
 } as const;
 
 export const phases = ['detect', 'scope', 'contain', 'eradicate', 'recover', 'report', 'learn'] as const;
-export const huntPhases = ['hypothesis', 'collect', 'analyse', 'conclude'] as const;
+export const huntPhases = ['hypothesis', 'scope', 'analyse', 'report', 'learn'] as const;
 export type Phase = (typeof phases)[number] | (typeof huntPhases)[number];
 
 export type RecordKind = 'incident' | 'hunt';

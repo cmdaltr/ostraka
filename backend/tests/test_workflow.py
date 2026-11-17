@@ -125,7 +125,7 @@ async def test_a_step_with_a_phase_opens_when_the_record_gets_there(db, seed_pla
     assert "Choose data sources and time range" not in await tasks(client, p["cth"], hunt)
     r = await client.patch(
         f"/api/incidents/{hunt['id']}",
-        json={"version": hunt["version"], "phase": "collect"},
+        json={"version": hunt["version"], "phase": "scope"},
         headers=p["cth"].headers,
     )
     assert r.status_code == 200
@@ -145,7 +145,7 @@ async def run_hunt_to_conclusion(client, p, db):
     current = (await client.get(f"/api/incidents/{hunt['id']}", headers=p["cth"].headers)).json()
     await client.patch(
         f"/api/incidents/{hunt['id']}",
-        json={"version": current["version"], "phase": "collect"},
+        json={"version": current["version"], "phase": "scope"},
         headers=p["cth"].headers,
     )
     for title in ("Choose data sources and time range", "Run the searches (Shikari)"):
@@ -303,7 +303,7 @@ async def test_playbooks_are_checked_as_workflows(db, client, people):
         json={
             **base,
             "steps": [
-                {"title": "Look", "phase": "collect"},
+                {"title": "Look", "phase": "scope"},
                 {
                     "title": "Decide",
                     "after": [0],

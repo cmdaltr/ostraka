@@ -19,7 +19,7 @@ TOKEN_PREFIX = "ost_"  # noqa: S105 (a prefix that marks Ostraka API tokens, not
 DEFAULT_THEME = "cobalt"
 THEMES = ("cobalt", "ostrakon", "ledger")
 PHASES = ("detect", "scope", "contain", "eradicate", "recover", "report", "learn")
-HUNT_PHASES = ("hypothesis", "collect", "analyse", "conclude")
+HUNT_PHASES = ("hypothesis", "scope", "analyse", "report", "learn")
 
 
 def as_dict() -> dict[str, object]:

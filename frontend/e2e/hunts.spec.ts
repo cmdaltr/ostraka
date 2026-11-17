@@ -7,7 +7,7 @@ const hunt = incident({
   ref: 'HNT-26-003',
   title: 'Scheduled tasks pointing at user-writable paths',
   severity: 'low',
-  phase: 'collect',
+  phase: 'scope',
   tags: ['persistence'],
 });
 
@@ -71,7 +71,7 @@ test('hunts sit beside incidents: filtered, started with their own wording, and 
   await page.goto('/');
   const card = page.getByRole('link', { name: /HNT-26-003/ });
   await expect(card.getByText('Hunt', { exact: true })).toBeVisible();
-  await expect(card.getByRole('list', { name: 'Phase: collect' })).toContainText('hypothesis');
+  await expect(card.getByRole('list', { name: 'Phase: scope' })).toContainText('hypothesis');
 
   await page.getByRole('group', { name: 'Kind' }).getByRole('button', { name: 'Hunts' }).click();
   await expect.poll(() => api.requests.some((r) => r.path === '/api/incidents' && r.method === 'GET')).toBe(true);
@@ -88,7 +88,7 @@ test('hunts sit beside incidents: filtered, started with their own wording, and 
   await expect(page).toHaveURL(/\/incidents\/HNT-26-003$/);
   const sent = api.requests.find((r) => r.method === 'POST' && r.path === '/api/incidents')!.body;
   expect(sent).toMatchObject({ kind: 'hunt', playbook_ids: ['pb-h'] });
-  await expect(page.getByRole('list', { name: 'Phase: collect' })).toContainText('conclude');
+  await expect(page.getByRole('list', { name: 'Phase: scope' })).toContainText('learn');
 });
 
 test('a hunt is promoted to a linked incident', async ({ page }) => {

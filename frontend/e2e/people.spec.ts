@@ -71,7 +71,8 @@ test('signing in takes a password and then an authenticator code', async ({ page
   await page.locator('#code').fill('123456');
   await page.getByRole('button', { name: 'Sign in' }).click();
 
-  await expect(page.getByText('Hello, Sam.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Incidents', level: 1 })).toBeVisible();
+  await expect(page.getByRole('banner')).toContainText('Sam');
   expect(codeSent).toBe('123456');
   await expect(page.locator('html')).toHaveAttribute('data-palette', 'ledger'); // the saved theme follows the account
 });
@@ -162,7 +163,8 @@ test('accepting an invitation: password, authenticator, then backup codes that m
   await expect(continueButton).toBeDisabled();
   await page.getByText('I’ve saved these codes').click();
   await continueButton.click();
-  await expect(page.getByText('Hello, New.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Incidents', level: 1 })).toBeVisible();
+  await expect(page.getByRole('banner')).toContainText('New');
 });
 
 test('a team lead invites only responders and observers, into their own team', async ({ page }) => {

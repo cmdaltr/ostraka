@@ -61,7 +61,7 @@ async def test_the_sample_loads_with_every_feature_it_shows(
     assert [m["state"] for m in insurer["milestones"]] == ["met", "running"]
 
     hunt = by_title["Kerberoasting against service accounts"]
-    assert hunt["kind"] == "hunt" and hunt["status"] == "closed" and hunt["phase"] == "conclude"
+    assert hunt["kind"] == "hunt" and hunt["status"] == "closed" and hunt["phase"] == "learn"
     leak = by_title["Driver onboarding folder shared with anyone who has the link"]
     assert leak["status"] == "closed" and leak["phase"] == "learn"
 

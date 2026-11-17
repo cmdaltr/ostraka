@@ -8,7 +8,7 @@ import { brand } from '../brand';
 import { startLive } from '../live/live';
 import { Bell } from './Bell';
 import { CogIcon } from './CogIcon';
-import { PersonIcon } from './PersonIcon';
+import { SignOutIcon } from './SignOutIcon';
 import { SiteLinks } from './SiteLinks';
 import { SherdField } from './sherd/SherdField';
 import { Wordmark } from './Wordmark';
@@ -27,6 +27,16 @@ function LicenceRunningOut() {
       <Link to="/config?tab=licence">Install the renewal</Link>
     </p>
   );
+}
+
+// Two letters for the profile chip: first and last name, or the start of an address used as a name
+export function initials(name: string): string {
+  const words = name
+    .split('@')[0]
+    .split(/[\s._-]+/)
+    .filter(Boolean);
+  const letters = words.length > 1 ? words[0][0] + words[words.length - 1][0] : (words[0] ?? '?').slice(0, 2);
+  return letters.toUpperCase();
 }
 
 export function AppShell({ me }: { me: Me }) {
@@ -61,17 +71,21 @@ export function AppShell({ me }: { me: Me }) {
               </button>
             </span>
           )}
+          {me.role !== 'observer' && <span className="shell-divider" aria-hidden="true" />}
           <Bell />
-          <span className="shell-name">{me.name}</span>
-          <NavLink to="/profile" className="shell-icon" aria-label="Profile" title="Profile">
-            <PersonIcon />
+          {/* you, as one chip: your initials and name, the way to your profile */}
+          <NavLink to="/profile" className="shell-me" aria-label="Profile" title={`${me.name}: your profile`}>
+            <span className="shell-avatar" aria-hidden="true">
+              {initials(me.name)}
+            </span>
+            <span className="shell-name">{me.name}</span>
           </NavLink>
           {/* People (or the directory) for everyone, and the installation for admins */}
           <NavLink to="/config" className="shell-icon" aria-label="Config" title="Config">
             <CogIcon />
           </NavLink>
-          <button className="btn btn-quiet" type="button" onClick={() => signOut()}>
-            Sign out
+          <button className="shell-icon" type="button" aria-label="Sign out" title="Sign out" onClick={() => signOut()}>
+            <SignOutIcon />
           </button>
         </div>
       </header>

@@ -66,7 +66,7 @@ def phase_fills() -> dict[Phase, tuple[int, int, int]]:
 
 
 def hunt_fills() -> list[tuple[int, int, int]]:
-    return [pal().ink, pal().muted, pal().clay, STATUS["lead"]]
+    return [pal().ink, pal().muted, STATUS["lead"], charts.OK, pal().rule]
 
 
 STATUS_WORDS = {

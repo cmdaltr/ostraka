@@ -30,7 +30,16 @@ const SHOWN = 2;
 /** A filter that drops down a list of pills, any number of them chosen; none chosen is "any". A native
  * select can't colour its options on macOS, and these are worth seeing in the colours the records use.
  * A multi-select listbox, worked with the arrow keys: Enter or Space ticks, and it stays open. */
-export function PillSelect<T extends string>({ id, label, any, value, options, onChange, single = false, disabled = false }: Props<T>) {
+export function PillSelect<T extends string>({
+  id,
+  label,
+  any,
+  value,
+  options,
+  onChange,
+  single = false,
+  disabled = false,
+}: Props<T>) {
   const [open, setOpen] = useState(false);
   const [at, setAt] = useState(0);
   const box = useRef<HTMLDivElement>(null);
@@ -38,7 +47,9 @@ export function PillSelect<T extends string>({ id, label, any, value, options, o
   const button = useRef<HTMLButtonElement>(null);
   const listId = useId();
   const choices: { value: T | ''; look: ReactNode; name: string; group?: string }[] = [
-    ...(any === undefined ? [] : [{ value: '' as const, look: <span className="pill-select-any">{any}</span>, name: any }]),
+    ...(any === undefined
+      ? []
+      : [{ value: '' as const, look: <span className="pill-select-any">{any}</span>, name: any }]),
     ...options,
   ];
   const chosen = options.filter((o) => value.includes(o.value));
@@ -55,7 +66,14 @@ export function PillSelect<T extends string>({ id, label, any, value, options, o
   }, [open]);
 
   const show = () => {
-    setAt(single ? Math.max(0, choices.findIndex((c) => isOn(c.value))) : 0);
+    setAt(
+      single
+        ? Math.max(
+            0,
+            choices.findIndex((c) => isOn(c.value)),
+          )
+        : 0,
+    );
     setOpen(true);
   };
   // "Any" clears the choice; anything else is ticked or unticked, kept in the options' order
@@ -66,12 +84,19 @@ export function PillSelect<T extends string>({ id, label, any, value, options, o
       if (v !== '' && !value.includes(v)) onChange([v]);
       return;
     }
-    onChange(v === '' ? [] : options.map((o) => o.value).filter((o) => (o === v ? !value.includes(v) : value.includes(o))));
+    onChange(
+      v === '' ? [] : options.map((o) => o.value).filter((o) => (o === v ? !value.includes(v) : value.includes(o))),
+    );
   };
 
   function keys(e: KeyboardEvent<HTMLUListElement>) {
     const last = choices.length - 1;
-    const moves: Record<string, number> = { ArrowDown: Math.min(last, at + 1), ArrowUp: Math.max(0, at - 1), Home: 0, End: last };
+    const moves: Record<string, number> = {
+      ArrowDown: Math.min(last, at + 1),
+      ArrowUp: Math.max(0, at - 1),
+      Home: 0,
+      End: last,
+    };
     if (e.key in moves) {
       e.preventDefault();
       setAt(moves[e.key]);

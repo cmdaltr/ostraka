@@ -204,7 +204,7 @@ test('the list filters by any of several severities, TLPs and phases, and edges 
           json: [
             incident(),
             incident({ id: 'i-2', ref: 'OST-26-002', title: 'Ransomware on the file server', severity: 'critical', tlp: 'red', phase: 'contain' }),
-            incident({ id: 'i-3', ref: 'HNT-26-001', kind: 'hunt', title: 'Kerberoasting', severity: 'low', tlp: 'green', phase: 'collect' }),
+            incident({ id: 'i-3', ref: 'HNT-26-001', kind: 'hunt', title: 'Kerberoasting', severity: 'low', tlp: 'green', phase: 'analyse' }),
           ],
         }
       : undefined,
@@ -230,7 +230,7 @@ test('the list filters by any of several severities, TLPs and phases, and edges 
   await choose('tlp', 'TLP:AMBER');
   await expect(page.getByRole('heading', { name: 'No open incidents or hunts match' })).toBeVisible();
   await page.getByRole('button', { name: 'Clear filters' }).click();
-  await choose('phase', 'Collect');
+  await choose('phase', 'Analyse');
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Kerberoasting');
   // an incident's phases go when only hunts are shown, and a hunt's phase filter clears for incidents

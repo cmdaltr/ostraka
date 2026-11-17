@@ -279,14 +279,16 @@ def _revision(name: str):
 @pytest.fixture
 async def seed_playbooks(db):
     """The seed playbooks as a migrated database has them: 0005's steps, on 0006's teams, rewritten as
-    0007's workflows. (The `db` fixture empties the playbooks the migrations made.)"""
+    0007's workflows, with 0020's hunt phases. (The `db` fixture empties the playbooks the migrations
+    made.)"""
     from alembic.operations import Operations
     from alembic.runtime.migration import MigrationContext
 
-    seeds, teams, workflows = (
+    seeds, teams, workflows, hunt_phases = (
         _revision("0005_hunts_and_links.py"),
         _revision("0006_team_codes.py"),
         _revision("0007_workflows.py"),
+        _revision("0020_hunt_phases.py"),
     )
     moved = {**teams.RENAMED, **teams.MERGED}
     seeds.SEEDS = [
@@ -312,6 +314,7 @@ async def seed_playbooks(db):
         with Operations.context(MigrationContext.configure(connection)):
             seeds._seed()
             workflows._rewrite()
+            hunt_phases.upgrade()
 
     await (await db.connection()).run_sync(seed)
     await db.commit()
