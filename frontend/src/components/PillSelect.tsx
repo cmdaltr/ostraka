@@ -15,13 +15,17 @@ interface Props<T extends string> {
   id: string;
   label: string;
   any: string;
-  value: T | '';
+  value: T[];
   options: PillOption<T>[];
-  onChange: (value: T | '') => void;
+  onChange: (value: T[]) => void;
 }
 
-/** A filter that drops down a list of pills. A native select can't colour its options on macOS, and
- * these are worth seeing in the colours the records use. A listbox, worked with the arrow keys. */
+// How many chosen pills the closed button shows before it counts the rest
+const SHOWN = 2;
+
+/** A filter that drops down a list of pills, any number of them chosen; none chosen is "any". A native
+ * select can't colour its options on macOS, and these are worth seeing in the colours the records use.
+ * A multi-select listbox, worked with the arrow keys: Enter or Space ticks, and it stays open. */
 export function PillSelect<T extends string>({ id, label, any, value, options, onChange }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [at, setAt] = useState(0);
@@ -33,7 +37,8 @@ export function PillSelect<T extends string>({ id, label, any, value, options, o
     { value: '', look: <span className="pill-select-any">{any}</span>, name: any },
     ...options,
   ];
-  const chosen = choices.find((c) => c.value === value) ?? choices[0];
+  const chosen = options.filter((o) => value.includes(o.value));
+  const isOn = (v: T | '') => (v === '' ? value.length === 0 : value.includes(v));
 
   useEffect(() => {
     if (!open) return;
@@ -46,14 +51,12 @@ export function PillSelect<T extends string>({ id, label, any, value, options, o
   }, [open]);
 
   const show = () => {
-    setAt(Math.max(0, choices.findIndex((c) => c.value === value)));
+    setAt(0);
     setOpen(true);
   };
-  const pick = (v: T | '') => {
-    onChange(v);
-    setOpen(false);
-    button.current?.focus();
-  };
+  // "Any" clears the choice; anything else is ticked or unticked, kept in the options' order
+  const pick = (v: T | '') =>
+    onChange(v === '' ? [] : options.map((o) => o.value).filter((o) => (o === v ? !value.includes(v) : value.includes(o))));
 
   function keys(e: KeyboardEvent<HTMLUListElement>) {
     const last = choices.length - 1;
@@ -77,11 +80,11 @@ export function PillSelect<T extends string>({ id, label, any, value, options, o
         id={id}
         ref={button}
         type="button"
-        className={`pill-select-button${value ? ' is-set' : ''}`}
+        className={`pill-select-button${value.length ? ' is-set' : ''}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
-        aria-label={`${label}: ${chosen.name}`}
+        aria-label={`${label}: ${chosen.length ? chosen.map((c) => c.name).join(', ') : any}`}
         onClick={() => (open ? setOpen(false) : show())}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -90,8 +93,14 @@ export function PillSelect<T extends string>({ id, label, any, value, options, o
           }
         }}
       >
-        {!value && <span className="pill-select-label">{label}</span>}
-        {chosen.look}
+        <span className="pill-select-label">{label}</span>
+        {chosen.length === 0 && <span className="pill-select-any">{any}</span>}
+        {chosen.slice(0, SHOWN).map((c) => (
+          <span key={c.value} className="pill-select-chosen">
+            {c.look}
+          </span>
+        ))}
+        {chosen.length > SHOWN && <span className="pill-select-more">+{chosen.length - SHOWN}</span>}
       </button>
       {open && (
         <ul
@@ -99,6 +108,7 @@ export function PillSelect<T extends string>({ id, label, any, value, options, o
           ref={list}
           className="pill-select-list"
           role="listbox"
+          aria-multiselectable="true"
           aria-label={label}
           tabIndex={-1}
           aria-activedescendant={`${listId}-${at}`}
@@ -110,12 +120,17 @@ export function PillSelect<T extends string>({ id, label, any, value, options, o
               <span
                 id={`${listId}-${i}`}
                 role="option"
-                aria-selected={c.value === value}
+                aria-selected={isOn(c.value)}
                 aria-label={c.name}
                 className={`pill-select-option${i === at ? ' is-at' : ''}`}
                 onPointerEnter={() => setAt(i)}
                 onClick={() => pick(c.value)}
               >
+                <span className="pill-select-tick" aria-hidden="true">
+                  <svg viewBox="0 0 12 12">
+                    <path d="M2.5 6.2 5 8.6l4.5-5" />
+                  </svg>
+                </span>
                 {c.look}
               </span>
             </li>

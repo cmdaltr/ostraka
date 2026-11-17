@@ -72,6 +72,35 @@
 .pill-select-option.is-at {
   background: var(--accent-soft);
 }
-.pill-select-option[aria-selected='true'] {
-  box-shadow: inset 3px 0 0 var(--accent);
+/* a tick box before each option */
+.pill-select-tick {
+  flex: none;
+  display: grid;
+  width: 15px;
+  height: 15px;
+  margin-right: var(--space-2);
+  border: 1.5px solid var(--muted);
+  border-radius: 3px;
+}
+.pill-select-tick svg {
+  visibility: hidden;
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pill-select-option[aria-selected='true'] .pill-select-tick {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.pill-select-option[aria-selected='true'] .pill-select-tick svg {
+  visibility: visible;
+}
+.pill-select-chosen {
+  display: inline-flex;
+}
+.pill-select-more {
+  font: 600 var(--text-xs) / 1 var(--font-ui);
+  color: var(--accent);
 }

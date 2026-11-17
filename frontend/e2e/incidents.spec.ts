@@ -195,7 +195,7 @@ test('observers get the briefing view: no editing, and indicator values withheld
   await expect(page.getByRole('textbox', { name: 'Comment' })).toHaveCount(0);
 });
 
-test('the list filters by severity, TLP and phase, and edges each card in its severity', async ({ page }) => {
+test('the list filters by any of several severities, TLPs and phases, and edges each card in its severity', async ({ page }) => {
   await stubLive(page);
   await stubApi(page, me(), (method, path) =>
     method === 'GET' && path === '/api/incidents'
@@ -220,7 +220,12 @@ test('the list filters by severity, TLP and phase, and edges each card in its se
   await choose('severity', 'Critical');
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Ransomware on the file server');
-  await expect(page.locator('#filter-severity')).toHaveAccessibleName('Severity: Critical');
+  // several at once: the list stays open, and a card shows if it is any of them
+  await page.getByRole('option', { name: 'Low', exact: true }).click();
+  await expect(cards).toHaveCount(2);
+  await expect(page.locator('#filter-severity')).toHaveAccessibleName('Severity: Critical, Low');
+  await page.getByRole('option', { name: 'Low', exact: true }).click();
+  await expect(cards).toHaveCount(1);
   await choose('tlp', 'TLP:AMBER');
   await expect(page.getByRole('heading', { name: 'No open incidents or hunts match' })).toBeVisible();
   await page.getByRole('button', { name: 'Clear filters' }).click();
@@ -232,7 +237,7 @@ test('the list filters by severity, TLP and phase, and edges each card in its se
   await expect(page.locator('#filter-phase')).toHaveAccessibleName('Phase: Any phase');
 });
 
-test('the filters drop down in the records’ colours, all on one line, and work from the keyboard', async ({ page }) => {
+test('the filters drop down in the records’ colours, all on one line, take several choices and work from the keyboard', async ({ page }) => {
   await stubLive(page);
   await stubApi(page);
   await page.goto('/');
@@ -249,9 +254,14 @@ test('the filters drop down in the records’ colours, all on one line, and work
   await expect(critical.locator('.pill')).toHaveClass(/sev-critical/);
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
-  await expect(page.locator('#filter-severity')).toHaveAccessibleName('Severity: Critical');
-  await expect(page.getByRole('listbox')).toHaveCount(0);
-  await page.locator('#filter-severity').click();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press(' ');
+  await expect(page.locator('#filter-severity')).toHaveAccessibleName('Severity: Critical, High');
+  await expect(critical).toHaveAttribute('aria-selected', 'true');
+  // "Any" clears what's ticked
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#filter-severity')).toHaveAccessibleName('Severity: Any severity');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('listbox')).toHaveCount(0);
   await expect(page.locator('#filter-severity')).toBeFocused();

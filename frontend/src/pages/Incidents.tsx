@@ -176,13 +176,13 @@ export function Incidents({ me }: { me: Me }) {
   const declaring: RecordKind | null = asked === 'incident' || asked === 'hunt' ? asked : null;
   const stopDeclaring = () => setParams((p) => (p.delete('declare'), p), { replace: true });
   const list = useQuery(listQuery(status, kind));
-  const [severity, setSeverity] = useState<Severity | ''>('');
-  const [tlp, setTlp] = useState<Tlp | ''>('');
-  const [phase, setPhase] = useState<Phase | ''>('');
-  const shown = list.data?.filter(
-    (i) => (!severity || i.severity === severity) && (!tlp || i.tlp === tlp) && (!phase || i.phase === phase),
-  );
-  const filtered = Boolean(severity || tlp || phase);
+  // Each filter is any of what's ticked; nothing ticked is anything
+  const [severity, setSeverity] = useState<Severity[]>([]);
+  const [tlp, setTlp] = useState<Tlp[]>([]);
+  const [phase, setPhase] = useState<Phase[]>([]);
+  const among = <T,>(chosen: T[], v: T) => chosen.length === 0 || chosen.includes(v);
+  const shown = list.data?.filter((i) => among(severity, i.severity) && among(tlp, i.tlp) && among(phase, i.phase));
+  const filtered = severity.length + tlp.length + phase.length > 0;
   const cap = (word: string) => word[0].toUpperCase() + word.slice(1);
   const noun = kind === 'hunt' ? 'hunts' : kind === 'incident' ? 'incidents' : 'incidents or hunts';
 
@@ -211,7 +211,7 @@ export function Incidents({ me }: { me: Me }) {
               onClick={() => {
                 setKind(k);
                 // a hunt's phases aren't an incident's
-                if (k !== 'all' && phase && !(phasesOf(k) as readonly string[]).includes(phase)) setPhase('');
+                if (k !== 'all') setPhase(phase.filter((p) => (phasesOf(k) as readonly string[]).includes(p)));
               }}
             >
               {name}
@@ -257,9 +257,9 @@ export function Incidents({ me }: { me: Me }) {
             className="btn btn-quiet"
             type="button"
             onClick={() => {
-              setSeverity('');
-              setTlp('');
-              setPhase('');
+              setSeverity([]);
+              setTlp([]);
+              setPhase([]);
             }}
           >
             Clear filters
