@@ -50,7 +50,7 @@ The name as an inscription, with the tagline under it, over the whole sherd (bel
 
 The whole limestone sherd lies behind every page, sign-in included, in every palette and mode: large, centred and faint (`--sherd-whole-opacity`, 0.2 in light mode and 0.054 in dark). In the app, loose fragments of the mark drift round the edges above it. The first ciphr's blue gradient and drifting cipher glyphs are gone: sign-in sits on the palette's own ground like every other page.
 
-A line of the same black chalk (`--chalk`, at `--chalk-line-opacity`) is dragged under each page's heading and an incident's head, and above the foot of the page: rough-edged and broken, as chalk is on stone. It marks the page's main divisions only; cards and panels keep their plain borders, so the chalk stays a separator and never a frame. Added 16 November 2026.
+A line of the same black chalk (`--chalk`, at `--chalk-line-opacity`) is dragged under each page's heading and an incident's head, and above the foot of the page: rough-edged and broken, as chalk is on stone. The line above the foot runs the width of the page's content, not the window. It marks the page's main divisions only; cards and panels keep their plain borders, so the chalk stays a separator and never a frame. Added 16 November 2026.
 
 ## The Ostrakon palette
 
@@ -70,7 +70,8 @@ Severity and TLP colours never change with the palette; TLP chips keep the stand
 - Records stay records and findings stay findings: the imagery is in the brand, not in the product's words. Nobody should have to know what a sherd is to declare an incident.
 - Never use "ostracise" or "ostracism" in copy. It's the one meaning that works against a collaboration tool.
 - No Greek-key borders, columns, amphora clip art or laurel wreaths. The mended sherd carries the whole reference.
-- Red ochre marks one thing per screen: what needs someone.
+- Red ochre (`--ochre`, `#a33a24` by day and `#e07a5f` by night) is the brand's colour, used throughout for structure: the name, the active tab, your avatar, a short stroke where each page's heading line begins, and the lane for whoever runs a playbook. It is never a label, a state or a warning, so it can't be read as severity (17 November 2026, replacing "one thing per screen").
+- Severity reads by shape as well as colour: each label carries a level meter, four bars for Critical down to one for Low. High is a magenta-pink (`#c11574`, `#f670c7` by night), kept clear of both Critical's red and the ochre.
 - Inter and JetBrains Mono are the product's fonts, in every palette.
 - In writing the name is **Ostraka**, capitalised like any product name (11 November 2026); `ostraka` only in paths, commands and identifiers. The wordmark (the app's header and the status page) and the sign-in inscription set it in capitals, in the same lettering: the wordmark is the inscription's name, still.
 - The Greek capitals read as "OΣTPAKA" to anyone who doesn't read Greek (Ρ is an R), so the Latin *ostraka* is the wordmark and the Greek is the second voice: on the mark and on the about page.

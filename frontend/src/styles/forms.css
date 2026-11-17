@@ -315,9 +315,9 @@ select.input,
   color: var(--ink);
 }
 .tabs button[aria-current='page'] {
-  color: var(--accent);
+  color: var(--ink);
   font-weight: 600;
-  border-bottom-color: var(--accent);
+  border-bottom-color: var(--ochre);
 }
 
 /* A line of black chalk, dragged rather than ruled, between the parts of a page: under a page's heading,
@@ -342,9 +342,27 @@ select.input,
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 8' preserveAspectRatio='none'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9 0.4' numOctaves='2' seed='3'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='3'/%3E%3C/filter%3E%3Cg filter='url(%23c)' fill='none' stroke='black' stroke-linecap='round'%3E%3Cpath d='M2 4.5 C120 3 240 5.5 360 4 S540 3.5 598 4.6' stroke-width='3.4' stroke-dasharray='90 3 140 2 60 4 200 3'/%3E%3Cpath d='M8 3.6 C160 5 300 3 450 4.6 S570 4 592 3.4' stroke-width='1.8' opacity='0.6' stroke-dasharray='40 6 120 4 80 9'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
   pointer-events: none;
 }
+/* the chalk above the foot runs the width of the page's content, not the window */
 .shell-footer::before {
   top: -4px;
   bottom: auto;
+  left: 50%;
+  right: auto;
+  width: min(1120px - 2 * var(--space-5), 100% - 2 * var(--space-4));
+  transform: translateX(-50%);
+}
+/* and a short stroke of red ochre where each page's heading line begins */
+.page-head::before,
+.incident-head::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 1px;
+  width: 56px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ochre);
+  pointer-events: none;
 }
 
 /* A button that is only an icon, such as the pencil that edits a panel: named by aria-label */

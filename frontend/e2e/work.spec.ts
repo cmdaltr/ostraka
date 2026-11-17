@@ -236,7 +236,7 @@ test('a playbook draws each team’s lane and steps in its own colour', async ({
   const lanes = await page.locator('.workflow-lane').evaluateAll((els) => els.map((e) => (e as HTMLElement).style.getPropertyValue('--team')));
   expect(lanes).toHaveLength(3);
   expect(new Set(lanes).size).toBe(3);
-  expect(lanes[2]).toBe('var(--muted)');
+  expect(lanes[2]).toBe('var(--ochre)');
   // a step wears its lane's colour
   const step = await page.getByRole('listitem', { name: /^Step 2: Revoke sessions/ }).evaluate(colour);
   expect(step).toBe(lanes[1]);

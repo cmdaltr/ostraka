@@ -19,8 +19,8 @@ describe('team colours', () => {
     expect(teamSlots(ids).size).toBe(TEAM_COLOURS + 2);
   });
 
-  it('draws no team in the muted colour', () => {
-    expect(teamColour(undefined)).toBe('var(--muted)');
+  it('draws no team in red ochre', () => {
+    expect(teamColour(undefined)).toBe('var(--ochre)');
     expect(teamColour(3)).toBe('var(--team-3)');
   });
 });

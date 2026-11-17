@@ -55,7 +55,7 @@
 
   /* Severity follows Shikari's four-step scale */
   --sev-critical: #b42318;
-  --sev-high: #c4320a;
+  --sev-high: #c11574;
   --sev-medium: #a15c07;
   --sev-low: #475467;
   --sev-ink: #ffffff;
@@ -83,6 +83,8 @@
   --team-6: #b42371;
   --team-7: #1d6fb8;
   --team-8: #7c5a3a;
+  /* a hunt's card in the list: a faint tint, where an incident's is plain */
+  --hunt-ground: color-mix(in srgb, var(--accent-soft) 60%, var(--surface));
 
   color-scheme: light;
 }
@@ -91,7 +93,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-mode='light']) {
     --sev-critical: #f97066;
-    --sev-high: #fd853a;
+    --sev-high: #f670c7;
     --sev-medium: #fdb022;
     --sev-low: #98a2b3;
     --sev-ink: #101217;
@@ -117,7 +119,7 @@
     --sherd-opacity: 0.1;
     --sherd-whole-opacity: 0.054;
     --inscription-ink: #e6e1d8;
-    --inscription-name: #e07a5f;
+    --ochre: #e07a5f;
     --inscription-name-ink: #1e1612;
     --chalk: #8b8f97;
     --chalk-line-opacity: 0.45;
@@ -126,7 +128,7 @@
 }
 :root[data-mode='dark'] {
   --sev-critical: #f97066;
-  --sev-high: #fd853a;
+  --sev-high: #f670c7;
   --sev-medium: #fdb022;
   --sev-low: #98a2b3;
   --ok: #47cd89;
@@ -151,7 +153,7 @@
   --sherd-opacity: 0.1;
   --sherd-whole-opacity: 0.054;
   --inscription-ink: #e6e1d8;
-  --inscription-name: #e07a5f;
+  --ochre: #e07a5f;
   --inscription-name-ink: #1e1612;
   --chalk: #8b8f97;
   --chalk-line-opacity: 0.45;
@@ -172,7 +174,10 @@
   /* the sign-in inscription (components/Inscription.tsx): words in iron-gall ink, the name in red
      ochre, scratched out in black chalk (a soot grey by night, where black wouldn't show) */
   --inscription-ink: #2b211b;
-  --inscription-name: #a33a24;
+  /* red ochre, the brand's colour: the name, and the marks of structure (the active tab, your avatar,
+     the stroke under a page's heading); never a label, a state or a warning */
+  --ochre: #a33a24;
+  --inscription-name: var(--ochre);
   --inscription-name-ink: #ffffff;
   --chalk: #161514;
   --chalk-line-opacity: 0.55;

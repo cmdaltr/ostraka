@@ -24,5 +24,5 @@ export function teamSlots(ids: string[]): Map<string, number> {
   return slots;
 }
 
-/** The CSS colour for a slot; no team (whoever runs the playbook) is muted */
-export const teamColour = (slot: number | undefined) => (slot ? `var(--team-${slot})` : 'var(--muted)');
+/** The CSS colour for a slot; no team (whoever runs the playbook) is in the brand's red ochre */
+export const teamColour = (slot: number | undefined) => (slot ? `var(--team-${slot})` : 'var(--ochre)');

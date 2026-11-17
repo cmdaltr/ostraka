@@ -118,8 +118,9 @@ textarea.input {
   text-decoration: none;
 }
 /* every other card in a wash of the accent, and each edged in its severity, so the list reads card by card */
-.incident-list > li:nth-child(even) .incident-card {
-  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+/* the ground says what kind of record it is: hunts are tinted, incidents plain */
+.incident-card.kind-hunt {
+  background: var(--hunt-ground);
 }
 .incident-card.sev-edge-critical {
   --card-mark: var(--sev-critical);

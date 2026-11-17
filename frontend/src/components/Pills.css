@@ -78,3 +78,37 @@
   color: var(--accent);
   background: var(--accent-soft);
 }
+
+/* a severity's level as bars, like a signal meter: four for critical down to one for low */
+.pill:has(.sev-bars) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.sev-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1.5px;
+  height: 9px;
+}
+.sev-bars i {
+  width: 2.5px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.35;
+}
+.sev-bars i:nth-child(1) {
+  height: 3px;
+}
+.sev-bars i:nth-child(2) {
+  height: 5px;
+}
+.sev-bars i:nth-child(3) {
+  height: 7px;
+}
+.sev-bars i:nth-child(4) {
+  height: 9px;
+}
+.sev-bars i.on {
+  opacity: 1;
+}

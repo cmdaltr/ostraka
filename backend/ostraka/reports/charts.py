@@ -30,7 +30,7 @@ WHITE: RGB = (255, 255, 255)
 
 SEVERITY: dict[str, RGB] = {
     "critical": (180, 35, 24),  # --sev-critical #b42318
-    "high": (196, 50, 10),  # --sev-high #c4320a
+    "high": (193, 21, 116),  # --sev-high #c11574
     "medium": (161, 92, 7),  # --sev-medium #a15c07
     "low": (71, 84, 103),  # --sev-low #475467
 }
