@@ -7,7 +7,7 @@ import type { Brand } from '../../api/installation';
 import { roleLabels } from '../../api/incidents';
 import type { Incident, IncidentRole } from '../../api/incidents';
 import type { Me, Person, Team } from '../../api/types';
-import { kindName, phasesOf, severities, tlpLevels } from '../../brand';
+import { kindName, phasesOf, severities, titleMax, tlpLevels } from '../../brand';
 import { announce } from '../../live/live';
 import { PencilIcon } from '../../components/PencilIcon';
 import { PillSelect } from '../../components/PillSelect';
@@ -110,7 +110,7 @@ function Details({ incident }: { incident: Incident }) {
         <form className="stack" onSubmit={submit}>
           <label className="field">
             <span>Title</span>
-            <input name="title" defaultValue={incident.title} required minLength={3} maxLength={200} />
+            <input name="title" defaultValue={incident.title} required minLength={3} maxLength={titleMax} />
           </label>
           <label className="field">
             <span>Summary</span>

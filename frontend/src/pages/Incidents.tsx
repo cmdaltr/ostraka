@@ -8,7 +8,7 @@ import { suggested } from '../api/work';
 import type { Playbook } from '../api/work';
 import type { Incident, IncidentSummary } from '../api/incidents';
 import type { Me, Team } from '../api/types';
-import { huntPhases, phases, phasesOf, severities, tlpLevels } from '../brand';
+import { huntPhases, phases, phasesOf, severities, titleMax, tlpLevels } from '../brand';
 import type { Phase, RecordKind, Severity, Tlp } from '../brand';
 import { PhasePill, PhaseStrip, SeverityPill, TlpPill } from '../components/Pills';
 import { PillSelect } from '../components/PillSelect';
@@ -65,13 +65,25 @@ function DeclareForm({ me, kind, onClose }: { me: Me; kind: RecordKind; onClose:
         <h2>{hunt ? 'Start a hunt' : 'Declare an incident'}</h2>
         <p>
           {hunt
-            ? 'You lead the hunt. It moves from hypothesis to conclusion, and can be promoted to an incident if it finds something.'
+            ? 'You lead the hunt. It moves from hypothesis to report, and can be promoted to an incident if it finds something.'
             : 'You become its incident commander. Hand the role over from the incident once someone takes it.'}
         </p>
       </header>
       <label className="field">
         <span>Title</span>
-        <input id="declare-title" name="title" required minLength={3} maxLength={200} autoFocus />
+        <input
+          id="declare-title"
+          name="title"
+          required
+          minLength={3}
+          maxLength={titleMax}
+          placeholder={hunt ? 'Scheduled-task persistence' : 'Finance ransomware'}
+          aria-describedby="declare-title-hint"
+          autoFocus
+        />
+        <small id="declare-title-hint" className="hint">
+          A few words, as people will say it. The detail goes in the {hunt ? 'hypothesis' : 'summary'}.
+        </small>
       </label>
       <div className="form-row">
         <label className="field">

@@ -89,7 +89,7 @@ async def clock_out(
                 starts_at=due.starts,
                 provisional=due.provisional,
                 counted=due.counted,
-                state=regimes.state(due, met_at, now),
+                state=regimes.state(due, met_at, now, clock.closed_at),
                 met_at=met_at,
                 met_by=views.person(lookup, mark.met_by) if mark else None,
                 reference=for_viewer(user, mark.reference) if mark else "",

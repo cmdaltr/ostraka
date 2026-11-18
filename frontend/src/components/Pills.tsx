@@ -27,14 +27,19 @@ export function PhasePill({ phase }: { phase: Phase }) {
   return <span className="pill phase-pill">{phase.toUpperCase()}</span>;
 }
 
-// The incident's phase as a row of tiles; done phases read in ink, the current one in the accent
+// The record's phase as a row of tiles in the period's pigments: what's done in malachite, where it is in
+// the accent, and the phase that comes next outlined in yellow ochre
 export function PhaseStrip({ current, kind = 'incident' }: { current: Phase; kind?: RecordKind }) {
   const phases = phasesOf(kind);
   const at = phases.indexOf(current);
   return (
     <ol className="phase-strip" aria-label={`Phase: ${current}`}>
       {phases.map((p, i) => (
-        <li key={p} className={i < at ? 'done' : i === at ? 'on' : undefined} aria-current={i === at ? 'step' : undefined}>
+        <li
+          key={p}
+          className={i < at ? 'done' : i === at ? 'on' : i === at + 1 ? 'next' : undefined}
+          aria-current={i === at ? 'step' : undefined}
+        >
           {p}
         </li>
       ))}

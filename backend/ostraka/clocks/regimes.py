@@ -46,6 +46,7 @@ class State(StrEnum):
     BREACHED = "breached"
     MET = "met"
     MET_LATE = "met_late"
+    STOPPED = "stopped"  # the clock was closed before this deadline passed
 
 
 # The share of a milestone's time at which its owner hears, then (from 90%) the commander too
@@ -286,9 +287,14 @@ def level(starts: datetime, due: datetime, now: datetime) -> int:
     return sum(1 for share in NUDGE_AT if gone >= share)
 
 
-def state(due: Due, met_at: datetime | None, now: datetime) -> State:
+def state(due: Due, met_at: datetime | None, now: datetime, closed_at: datetime | None = None) -> State:
+    """Where a milestone stands at `now`. A closed clock is judged at the moment it closed: a deadline
+    that had already passed stays breached, and any other is stopped, never breached later."""
     if met_at is not None:
         return State.MET if due.due is None or met_at <= due.due else State.MET_LATE
+    if closed_at is not None:
+        breached = due.due is not None and due.starts is not None and due.due <= closed_at
+        return State.BREACHED if breached else State.STOPPED
     if due.due is None or due.starts is None:
         return State.WAITING
     reached = level(due.starts, due.due, now)

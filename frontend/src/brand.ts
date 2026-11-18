@@ -21,5 +21,8 @@ export const kindName = (kind: RecordKind) => (kind === 'hunt' ? 'hunt' : 'incid
 export const severities = ['critical', 'high', 'medium', 'low'] as const;
 export type Severity = (typeof severities)[number];
 
+/** A record's title is what people call it: a few words. The detail belongs in the summary. */
+export const titleMax = 60;
+
 export const tlpLevels = ['red', 'amber+strict', 'amber', 'green', 'clear'] as const;
 export type Tlp = (typeof tlpLevels)[number];

@@ -79,7 +79,9 @@
   --clock-tone: var(--clock-near);
 }
 .clock-waiting,
-.clock-state-waiting {
+.clock-state-waiting,
+.clock-stopped,
+.clock-state-stopped {
   --clock-tone: var(--clock-waiting);
 }
 .clock-breached {

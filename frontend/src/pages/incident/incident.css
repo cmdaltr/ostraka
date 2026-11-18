@@ -118,6 +118,15 @@ textarea.input {
   text-decoration: none;
 }
 /* every other card in a wash of the accent, and each edged in its severity, so the list reads card by card */
+/* A hunt is Tyrian purple wherever it's shown: its page and its card take Tyrian as their accent, so the
+   current phase, its buttons and its links read as a hunt's */
+.incident.kind-hunt,
+.incident-card.kind-hunt {
+  --accent: var(--tyrian);
+  --accent-ink: var(--tyrian-ink);
+  --accent-soft: color-mix(in srgb, var(--tyrian) 14%, var(--surface));
+  --focus: var(--tyrian);
+}
 /* the ground says what kind of record it is: hunts are tinted, incidents plain */
 .incident-card.kind-hunt {
   background: var(--hunt-ground);
@@ -787,8 +796,30 @@ textarea.input {
   flex: 1;
   min-width: 12ch;
 }
+/* Linked records: the heading on the left, the form that links another on the right, one row */
+.links-head,
+.panel > .links-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+}
 .link-form {
-  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.link-form .input {
+  min-height: 2.5rem;
+  width: auto;
+}
+.link-form input.input {
+  width: 9.5rem;
+}
+.link-form .btn {
+  height: 2.5rem;
 }
 
 /* ---- Subtasks and waiting ---------------------------------------------------------------------- */

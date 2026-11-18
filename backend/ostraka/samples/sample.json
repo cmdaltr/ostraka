@@ -158,7 +158,7 @@
       "at": "-12d 10:05",
       "record": {
         "kind": "incident",
-        "title": "Driver onboarding folder shared with anyone who has the link",
+        "title": "Onboarding folder exposed",
         "severity": "medium",
         "tlp": "green",
         "teams": [
@@ -168,7 +168,7 @@
           "data-exposure"
         ],
         "aware": "-12d 09:48",
-        "summary": "A driver reported that a search engine result led to our 'Driver onboarding' SharePoint folder. The folder holds right-to-work scans and licence photos for 212 agency drivers. Its sharing was set to 'Anyone with the link'."
+        "summary": "At 09:41 a driver rang the depot: a search engine result for their own name led to our 'Driver onboarding' folder on the Fleet SharePoint site. The folder holds right-to-work scans, passport and licence photos and proof-of-address letters for 212 agency drivers (1,906 files). Its sharing was set to 'Anyone with the link'. First questions: who created the link and when, who used it without signing in, whether anything was downloaded, and what the search engine cached. Personal data, so the UK GDPR clock is running until we've assessed the risk."
       },
       "steps": [
         {
@@ -218,7 +218,25 @@
           }
         },
         {
-          "at": "+20m",
+          "at": "-12d 10:33",
+          "by": "oliver",
+          "do": "comment",
+          "body": "Anonymous link removed at 10:13 and the folder's permissions put back to inherit from Fleet Members. I haven't moved or renamed anything, so the audit trail and version history stay as they were. @{jun} it's yours for preservation; @{amara} containment held on a re-test from an unauthenticated browser at 10:22 (403)."
+        },
+        {
+          "at": "+4m",
+          "by": "oliver",
+          "do": "observable",
+          "key": "o_link",
+          "with": {
+            "value": "https://sample-my.sharepoint.example/:f:/s/Fleet/EvR7kq2LmXpBn4tWcH9a0sQBx2?e=Xk29Lp",
+            "kind": "url",
+            "verdict": "suspicious",
+            "note": "The anonymous sharing link on the folder, as the driver's search result showed it. Removed 10:13."
+          }
+        },
+        {
+          "at": "-12d 10:50",
           "by": "jun",
           "do": "claim",
           "task": "kd2"
@@ -249,7 +267,52 @@
           }
         },
         {
-          "at": "+20m",
+          "at": "-12d 11:22",
+          "by": "jun",
+          "do": "observable",
+          "key": "o_creator",
+          "with": {
+            "value": "k.brennan",
+            "kind": "user_account",
+            "verdict": "benign",
+            "note": "Fleet coordinator. Created the link to get the folder to the driver agency in a hurry; the agency's guest accounts hadn't been set up. MFA-backed sign-ins from the depot and home only: no sign of compromise.",
+            "sighting": {
+              "source": "Microsoft Purview audit",
+              "seen": "-53d 15:22",
+              "host": "Fleet site"
+            }
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "jun",
+          "do": "observable",
+          "key": "o_agency",
+          "with": {
+            "value": "onboarding@driver-agency.example",
+            "kind": "email",
+            "verdict": "benign",
+            "note": "The agency mailbox the link was sent to. Intended recipient; the agency confirms only two of its staff opened it, both signed in to their own tenant first."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "jun",
+          "do": "asset",
+          "key": "a_lt0087",
+          "with": {
+            "hostname": "FLT-LT-0087",
+            "ip": "10.20.31.87",
+            "os": "Windows 11 23H2",
+            "primary_user": "k.brennan",
+            "purpose": "Fleet coordinator's laptop",
+            "criticality": "low",
+            "status": "investigating",
+            "notes": "Checked for other anonymous links made from this account and for sync clients holding copies of the folder."
+          }
+        },
+        {
+          "at": "-12d 11:40",
           "by": "jun",
           "do": "finding",
           "key": "f_leak",
@@ -292,7 +355,49 @@
           "task": "kd0"
         },
         {
-          "at": "+30m",
+          "at": "-12d 13:18",
+          "by": "jun",
+          "do": "observable",
+          "key": "o_crawler",
+          "with": {
+            "value": "203.0.113.80",
+            "kind": "ip_address",
+            "verdict": "benign",
+            "note": "In the search engine's published crawler range; reverse and forward DNS agree. The only anonymous visitor in 41 days.",
+            "sighting": {
+              "asset": "a_sp",
+              "source": "Microsoft Purview audit",
+              "seen": "-19d 03:12",
+              "user_account": "urn:spo:anon"
+            }
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "jun",
+          "do": "observable",
+          "key": "o_crawler_dns",
+          "with": {
+            "value": "crawl-203-0-113-80.searchbot.example",
+            "kind": "domain",
+            "verdict": "benign",
+            "note": "PTR for 203.0.113.80; resolves back to the same address."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "jun",
+          "do": "observable",
+          "key": "o_crawler_ua",
+          "with": {
+            "value": "Mozilla/5.0 (compatible; Searchbot/2.1; +https://searchbot.example/bot.html)",
+            "kind": "user_agent",
+            "verdict": "benign",
+            "note": "Crawler user agent on the AnonymousLinkUsed event."
+          }
+        },
+        {
+          "at": "-12d 13:40",
           "by": "jun",
           "do": "finding",
           "key": "f_access",
@@ -300,7 +405,16 @@
             "kind": "evidence",
             "title": "Only one anonymous access, from the search engine's crawler",
             "statement": "The link was used once without signing in: by a crawler from a search engine's published range. No downloads followed.",
-            "asset": "a_sp"
+            "asset": "a_sp",
+            "observables": [
+              "o_crawler",
+              "o_crawler_dns",
+              "o_crawler_ua"
+            ],
+            "occurred": "-19d 03:12",
+            "techniques": [
+              "T1593.002"
+            ]
           }
         },
         {
@@ -345,11 +459,196 @@
           }
         },
         {
-          "at": "+10m",
+          "at": "-12d 13:53",
+          "by": "oliver",
+          "do": "observable",
+          "key": "o_hotel",
+          "with": {
+            "value": "198.51.100.77",
+            "kind": "ip_address",
+            "verdict": "suspicious",
+            "note": "Source of a FileDownloaded event on a licence scan, 23 days ago. Not one of our egress addresses.",
+            "sighting": {
+              "asset": "a_sp",
+              "source": "Microsoft Purview audit",
+              "seen": "-35d 21:40",
+              "user_account": "k.brennan"
+            }
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "oliver",
+          "do": "finding",
+          "key": "f_hotel",
+          "with": {
+            "kind": "potential",
+            "title": "A licence scan was downloaded from an address we don't recognise",
+            "statement": "One FileDownloaded event from 198.51.100.77 on a driving licence scan, 23 days ago. Raised so we rule it in or out before deciding on reporting.",
+            "occurred": "-35d 21:40",
+            "asset": "a_sp",
+            "observables": [
+              "o_hotel"
+            ]
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "amara",
+          "do": "clock",
+          "key": "clk_leak",
+          "with": {
+            "regime": "uk_gdpr",
+            "owner": "hannah",
+            "title": "Driver onboarding folder: identity documents for 212 agency drivers",
+            "starts": "-12d 09:48"
+          }
+        },
+        {
+          "at": "-12d 14:01",
           "by": "amara",
           "do": "update",
           "with": {
             "phase": "contain"
+          }
+        },
+        {
+          "at": "-11d 08:50",
+          "by": "jun",
+          "do": "verify",
+          "finding": "f_hotel",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Entra ID sign-in logs",
+            "query": "SigninLogs\n| where IPAddress == \"198.51.100.77\"\n| project TimeGenerated, UserPrincipalName, AppDisplayName, DeviceDetail, AuthenticationRequirement",
+            "scope": "All users",
+            "from": "-36d 00:00",
+            "to": "-35d 23:59",
+            "result_count": 3,
+            "note": "Three interactive sign-ins by k.brennan with MFA from the hotel the fleet team stayed at for the depot opening. The download was authenticated, not through the link."
+          }
+        },
+        {
+          "at": "+6m",
+          "by": "tom",
+          "do": "refute",
+          "finding": "f_hotel",
+          "note": "Authenticated download by k.brennan from hotel Wi-Fi during the depot opening, with MFA; it didn't use the anonymous link."
+        },
+        {
+          "at": "+1m",
+          "by": "jun",
+          "do": "asset_update",
+          "asset": "a_lt0087",
+          "with": {
+            "status": "clean"
+          }
+        },
+        {
+          "at": "+4m",
+          "by": "jun",
+          "do": "finding",
+          "key": "f_who",
+          "with": {
+            "kind": "evidence",
+            "title": "The link was made by the fleet coordinator to send the folder to the agency",
+            "statement": "k.brennan created the anonymous link 53 days ago and emailed it to onboarding@driver-agency.example the same minute. No other anonymous links exist on the Fleet site.",
+            "occurred": "-53d 15:22",
+            "asset": "a_sp",
+            "observables": [
+              "o_creator",
+              "o_agency",
+              "o_link"
+            ]
+          }
+        },
+        {
+          "at": "+4m",
+          "by": "jun",
+          "do": "verify",
+          "finding": "f_who",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Purview audit",
+            "query": "Search-UnifiedAuditLog -StartDate (Get-Date).AddDays(-90) -EndDate (Get-Date) -Operations AnonymousLinkCreated,SharingInvitationCreated,Send -UserIds k.brennan@sample.example.org",
+            "scope": "Fleet site collection and k.brennan's mailbox",
+            "from": "-60d 00:00",
+            "to": "-11d 08:00",
+            "result_count": 2
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "tom",
+          "do": "confirm",
+          "finding": "f_who",
+          "note": "Link creation and the email to the agency are 40 seconds apart."
+        },
+        {
+          "at": "+10m",
+          "by": "jun",
+          "do": "assess",
+          "key": "asm_leak",
+          "with": {
+            "judgement": "nobody other than the search engine's crawler opened the drivers' documents through the anonymous link",
+            "probability": "highly_likely",
+            "findings": [
+              "f_access",
+              "f_leak",
+              "f_who"
+            ],
+            "absences": [
+              {
+                "absent": "anonymous downloads or previews of files in the folder",
+                "platform": "Microsoft Purview audit",
+                "query": "Search-UnifiedAuditLog -Operations FileAccessed,FileDownloaded,FilePreviewed -ObjectIds '*Driver onboarding*' | Where-Object UserIds -like '*urn:spo:anon*'",
+                "scope": "Fleet site collection",
+                "from": "-54d 00:00",
+                "to": "-12d 10:40"
+              }
+            ],
+            "so_what": "The risk to the drivers' rights and freedoms is low: the crawler indexed file names, not contents. This supports recording the breach internally rather than reporting it to the ICO.",
+            "what_next": "Legal to decide on reporting today; ask the search engine to drop its cached copy of the folder listing, which shows drivers' names in file names."
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "jun",
+          "do": "exhibit",
+          "key": "x_audit",
+          "with": {
+            "label": "Purview audit export: Fleet site, 60 days (CSV)",
+            "description": "Every audit record for the Fleet site collection from 60 days before the report to 10:40 on the day, exported with Search-UnifiedAuditLog and hashed on export. Basis for #{f_leak}, #{f_access} and #{f_who}.",
+            "sha256": "3ebefd203e86f7b13ce051334e1b9e57c41098fe7a10155d7ed2b54aab07d130",
+            "md5": "2d8a72806c52cd9acbabef153f6bc065",
+            "size_bytes": 48211904,
+            "location": "Evidence share, OST case folder (read-only)",
+            "acquired": "-12d 10:41"
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "jun",
+          "do": "cite_exhibit",
+          "finding": "f_leak",
+          "exhibit": "x_audit"
+        },
+        {
+          "at": "+1m",
+          "by": "jun",
+          "do": "cite_exhibit",
+          "finding": "f_access",
+          "exhibit": "x_audit"
+        },
+        {
+          "at": "+3m",
+          "by": "jun",
+          "do": "custody_offer",
+          "exhibit": "x_audit",
+          "to": "hannah",
+          "with": {
+            "purpose": "Kept with the breach record for the DPO's file",
+            "location": "DPO case file, Legal share"
           }
         },
         {
@@ -359,7 +658,17 @@
           "task": "kd3"
         },
         {
-          "at": "+40m",
+          "at": "-11d 10:20",
+          "by": "hannah",
+          "do": "custody_accept",
+          "exhibit": "x_audit",
+          "with": {
+            "acknowledgement": "Received as a read-only copy; SHA-256 recomputed and matches the acquisition hash.",
+            "sha256": "3ebefd203e86f7b13ce051334e1b9e57c41098fe7a10155d7ed2b54aab07d130"
+          }
+        },
+        {
+          "at": "-11d 10:40",
           "by": "hannah",
           "do": "comment",
           "key": "c_ico",
@@ -374,7 +683,29 @@
           "body": "Agreed. Please still ask the search engine to drop the cached page."
         },
         {
-          "at": "+5m",
+          "at": "-11d 10:57",
+          "by": "amara",
+          "do": "task",
+          "key": "t_cache",
+          "with": {
+            "title": "Ask the search engine to drop its cached copy of the folder listing",
+            "team": "SOC",
+            "due": "+1d",
+            "checklist": [
+              "Submit the outdated-content removal request",
+              "Confirm the result no longer appears for a driver's name"
+            ],
+            "description": "The cached listing shows file names, which include drivers' full names."
+          }
+        },
+        {
+          "at": "+1m",
+          "by": "lucia",
+          "do": "claim",
+          "task": "t_cache"
+        },
+        {
+          "at": "-11d 11:00",
           "by": "hannah",
           "do": "tick",
           "task": "kd3",
@@ -407,7 +738,14 @@
           "note": "Only a search engine's crawler opened the link and nothing was downloaded: no risk to the drivers' rights and freedoms."
         },
         {
-          "at": "+1m",
+          "at": "-11d 11:05",
+          "by": "amara",
+          "do": "clock_close",
+          "clock": "clk_leak",
+          "reason": "Assessed as not reportable (#{asm_leak}): only a search engine's crawler opened the link and nothing was downloaded. Recorded internally under Article 33(5)."
+        },
+        {
+          "at": "-11d 11:05",
           "by": "amara",
           "do": "update",
           "with": {
@@ -423,12 +761,198 @@
           }
         },
         {
+          "at": "-11d 11:20",
+          "by": "amara",
+          "do": "comment",
+          "key": "c_close_leak",
+          "body": "Decision recorded on #{kd4}: not reportable, with the reasoning on #{f_access} and #{asm_leak}. @{hannah} please close the ICO clock with the same wording so the record matches."
+        },
+        {
+          "at": "-11d 17:30",
+          "by": "lucia",
+          "do": "release",
+          "task": "t_cache"
+        },
+        {
+          "at": "+1m",
+          "by": "lucia",
+          "do": "comment",
+          "on": "t_cache",
+          "body": "Released back to the queue: request submitted at 15:10 (reference RR-55120-K), but I'm off until Monday and someone needs to check the result tomorrow."
+        },
+        {
+          "at": "-10d 09:05",
+          "by": "ellis",
+          "do": "claim",
+          "task": "t_cache"
+        },
+        {
+          "at": "-10d 15:00",
+          "by": "ellis",
+          "do": "tick",
+          "task": "t_cache",
+          "items": [
+            0,
+            1
+          ]
+        },
+        {
+          "at": "+5m",
+          "by": "ellis",
+          "do": "finding",
+          "key": "f_cache",
+          "with": {
+            "kind": "evidence",
+            "title": "The search engine dropped the cached listing within 24 hours",
+            "statement": "Searches for three drivers' names no longer return the folder. The cached page showed file names only; previews of the scans weren't indexed.",
+            "asset": "a_sp",
+            "observables": [
+              "o_link"
+            ]
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "ellis",
+          "do": "verify",
+          "finding": "f_cache",
+          "with": {
+            "method": "other",
+            "scope": "Public search results for three drivers' names and the link's host",
+            "note": "Checked from an unauthenticated browser outside the corporate network; screenshots in the case folder."
+          }
+        },
+        {
+          "at": "+10m",
+          "by": "amara",
+          "do": "confirm",
+          "finding": "f_cache"
+        },
+        {
+          "at": "+1m",
+          "by": "ellis",
+          "do": "task_update",
+          "task": "t_cache",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "oliver",
+          "do": "asset_update",
+          "asset": "a_sp",
+          "with": {
+            "status": "recovered"
+          }
+        },
+        {
+          "at": "-9d 10:00",
+          "by": "amara",
+          "do": "update",
+          "with": {
+            "phase": "report"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "amara",
+          "do": "task",
+          "key": "t_leak_report",
+          "with": {
+            "title": "Close-out report for the DPO",
+            "assignee": "hannah",
+            "due": "+1d",
+            "checklist": [
+              "Timeline and scope",
+              "Why it isn't reportable",
+              "What changes on the Fleet site"
+            ]
+          }
+        },
+        {
+          "at": "+4h",
+          "by": "hannah",
+          "do": "tick",
+          "task": "t_leak_report",
+          "items": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "at": "+1m",
+          "by": "hannah",
+          "do": "task_update",
+          "task": "t_leak_report",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "hannah",
+          "do": "comment",
+          "body": "@{amara} close-out report filed with the DPO as DPO-2026-031, with the audit export (#{x_audit}) attached. The agency has been told as a courtesy; they don't want to inform the drivers."
+        },
+        {
           "at": "-8d 11:00",
           "by": "amara",
           "do": "update",
           "with": {
             "phase": "learn",
-            "summary": "A sharing link on the 'Driver onboarding' folder let anyone with the link open right-to-work scans and licence photos for 212 agency drivers, for 41 days. Only a search engine's crawler used it, and nothing was downloaded. Not reportable to the ICO. Lessons: anonymous links are now off for the Fleet site, and sites holding identity documents are on the quarterly sharing review."
+            "summary": "A sharing link on the 'Driver onboarding' folder let anyone with the link open right-to-work scans, passport and licence photos for 212 agency drivers, for 41 days (#{f_leak}). The fleet coordinator made it to send the folder to the driver agency (#{f_who}). Only a search engine's crawler used it, and nothing was downloaded anonymously (#{f_access}); the one unfamiliar download was the coordinator on hotel Wi-Fi (#{f_hotel}, refuted). The search engine dropped its cached listing within a day (#{f_cache}). Assessed as not reportable to the ICO (#{asm_leak}) and recorded with the DPO. Lessons: anonymous links off for sites holding identity documents, an alert on anonymous links for labelled sites, and a proper route for sharing with agencies."
+          }
+        },
+        {
+          "at": "-8d 11:30",
+          "by": "amara",
+          "do": "lesson",
+          "task": {
+            "team": "Incident Response"
+          },
+          "with": {
+            "kind": "improve",
+            "area": "technology",
+            "observation": "Anonymous 'Anyone with the link' sharing was allowed on every site, including one holding identity documents, and the Fleet site carried no sensitivity label.",
+            "recommendation": "Turn anonymous links off for sites holding identity or HR data and label them 'Confidential – Personal'; allow guest sharing to named external users only."
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "amara",
+          "do": "lesson",
+          "task": {
+            "team": "SOC"
+          },
+          "with": {
+            "kind": "improve",
+            "area": "detection",
+            "observation": "Nothing alerted when an anonymous link was made on a site holding identity documents; a driver found it after 41 days.",
+            "recommendation": "Alert on AnonymousLinkCreated for labelled sites, routed to the SOC queue."
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "amara",
+          "do": "lesson",
+          "with": {
+            "kind": "improve",
+            "area": "people",
+            "observation": "The coordinator made the link because the agency's guest accounts weren't ready and drivers were due to start the next day.",
+            "recommendation": "Give the fleet team a documented, quick route for sharing with agencies, and set guest access up before the agency contract starts."
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "amara",
+          "do": "lesson",
+          "with": {
+            "kind": "went_well",
+            "area": "process",
+            "observation": "Purview's 180-day audit retention covered the whole 41 days, so 'who used the link' had an answer within four hours.",
+            "recommendation": "Keep the audit retention at 180 days or more on the E5 licences."
           }
         },
         {
@@ -447,7 +971,7 @@
       "at": "-9d 09:10",
       "record": {
         "kind": "hunt",
-        "title": "Kerberoasting against service accounts",
+        "title": "Kerberoasting",
         "severity": "medium",
         "tlp": "amber",
         "teams": [
@@ -459,7 +983,7 @@
           "kerberos",
           "credential-access"
         ],
-        "summary": "Hypothesis: an intruder with a foothold is requesting RC4 service tickets for accounts with SPNs (T1558.003). Look for 4769 events with ticket encryption 0x17 from workstations, outside the backup window, against more than five SPNs in a few minutes."
+        "summary": "Hypothesis: an intruder with a foothold is requesting RC4 service tickets for accounts with SPNs, to crack their passwords offline (T1558.003). Why now: Intelligence reports the Helix affiliate roasting service accounts within a day of initial access, and 14 of our SPN accounts still accept RC4. Look for 4769 events with ticket encryption 0x17 from workstations, outside the backup window, against more than five SPNs in a few minutes. Disproved by: no such bursts in 30 days of 4769 from all four DCs, beyond the vulnerability scanner's known pattern."
       },
       "steps": [
         {
@@ -527,7 +1051,14 @@
           }
         },
         {
-          "at": "+2m",
+          "at": "-9d 10:01",
+          "by": "ana",
+          "do": "comment",
+          "key": "c_kerb_scope",
+          "body": "Data sources: 4769 from all four DCs is in Sentinel for 90 days. One gap: DC03 stopped forwarding for six hours on the 2nd, so anything in that window would be invisible. Defender for Identity isn't licensed for the servers, so no honeytoken alerts to lean on. @{dev} happy with 30 days?"
+        },
+        {
+          "at": "-9d 10:02",
           "by": "ana",
           "do": "claim",
           "task": "kh2"
@@ -587,7 +1118,43 @@
           }
         },
         {
-          "at": "+10m",
+          "at": "-8d 10:03",
+          "by": "ana",
+          "do": "observable",
+          "key": "o_svc2",
+          "with": {
+            "value": "svc_iis_freight",
+            "kind": "user_account",
+            "verdict": "suspicious",
+            "note": "In the same burst. RC4 still allowed; password last set 2021."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ana",
+          "do": "observable",
+          "key": "o_svc3",
+          "with": {
+            "value": "svc_sharepoint",
+            "kind": "user_account",
+            "verdict": "suspicious",
+            "note": "In the burst, but AES-only: the DC returned an AES ticket despite the RC4 request, so it's much harder to crack."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ana",
+          "do": "observable",
+          "key": "o_spn",
+          "with": {
+            "value": "MSSQLSvc/SQL01.corp.sample.example:1433",
+            "kind": "other",
+            "verdict": "suspicious",
+            "note": "svc_sqlbackup's SPN: the first ticket requested in the burst."
+          }
+        },
+        {
+          "at": "-8d 10:11",
           "by": "ana",
           "do": "finding",
           "key": "f_kerb",
@@ -598,7 +1165,10 @@
             "occurred": "-9d 02:14",
             "asset": "a_ws0142",
             "observables": [
-              "o_svc"
+              "o_svc",
+              "o_svc2",
+              "o_svc3",
+              "o_spn"
             ],
             "techniques": [
               "T1558.003"
@@ -643,6 +1213,237 @@
           "note": "One source, one burst, matching the hypothesis."
         },
         {
+          "at": "-8d 10:40",
+          "by": "dev",
+          "do": "comment",
+          "on": "f_kerb",
+          "body": "@{ana} before we hand anything over: find the process on #{a_ws0142} that made the requests. A burst like this from a user session should leave a binary."
+        },
+        {
+          "at": "-8d 11:35",
+          "by": "ana",
+          "do": "observable",
+          "key": "o_rb",
+          "with": {
+            "value": "C:\\Users\\Public\\Music\\rb.exe kerberoast /rc4opsec /nowrap /outfile:C:\\Users\\Public\\Music\\h.txt",
+            "kind": "process_command",
+            "verdict": "malicious",
+            "note": "Rubeus syntax. Ran under r.ashworth's token from an interactive session at 02:11.",
+            "sighting": {
+              "asset": "a_ws0142",
+              "source": "Microsoft Defender XDR",
+              "seen": "-9d 02:11",
+              "user_account": "r.ashworth"
+            }
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "ana",
+          "do": "observable",
+          "key": "o_rbhash",
+          "with": {
+            "value": "1bfc6c78deef7b1166439ae7c01520312447dc9ef9d06e90021cd20a1a2786bb",
+            "kind": "file_hash_sha256",
+            "verdict": "malicious",
+            "note": "rb.exe: an unsigned Rubeus 2.x build, renamed. No other device has it.",
+            "sighting": {
+              "asset": "a_ws0142",
+              "source": "Microsoft Defender XDR",
+              "seen": "-9d 02:10"
+            }
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ana",
+          "do": "observable",
+          "key": "o_hashout",
+          "with": {
+            "value": "C:\\Users\\Public\\Music\\h.txt",
+            "kind": "file_path",
+            "verdict": "malicious",
+            "note": "Hash output file; deleted at 02:19, but Defender logged its creation and size (31 KB)."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ana",
+          "do": "observable",
+          "key": "o_rash",
+          "with": {
+            "value": "r.ashworth",
+            "kind": "user_account",
+            "verdict": "suspicious",
+            "note": "FIN-WS-0142's primary user, on annual leave since the 3rd. Their session ran rb.exe; nobody should have been at the machine."
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "ana",
+          "do": "finding",
+          "key": "f_tool",
+          "with": {
+            "kind": "evidence",
+            "title": "A renamed Rubeus build on FIN-WS-0142 made the ticket requests",
+            "statement": "rb.exe ran from C:\\Users\\Public\\Music at 02:11 under r.ashworth's session with Rubeus's kerberoast arguments, wrote h.txt, and deleted it eight minutes later. Its start matches the first 4769 in the burst to the second.",
+            "occurred": "-9d 02:11",
+            "asset": "a_ws0142",
+            "observables": [
+              "o_rb",
+              "o_rbhash",
+              "o_hashout",
+              "o_rash"
+            ],
+            "techniques": [
+              "T1558.003",
+              "T1036.005",
+              "T1070.004"
+            ]
+          }
+        },
+        {
+          "at": "+4m",
+          "by": "ana",
+          "do": "verify",
+          "finding": "f_tool",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Defender XDR",
+            "query": "DeviceProcessEvents\n| where DeviceName =~ \"FIN-WS-0142\"\n| where ProcessCommandLine has_any (\"kerberoast\", \"/rc4opsec\")\n| project Timestamp, AccountName, FolderPath, ProcessCommandLine, SHA256",
+            "scope": "FIN-WS-0142",
+            "from": "-30d 00:00",
+            "to": "-8d 11:00",
+            "result_count": 1
+          }
+        },
+        {
+          "at": "+6m",
+          "by": "dev",
+          "do": "confirm",
+          "finding": "f_tool",
+          "note": "Process and burst line up to the second."
+        },
+        {
+          "at": "+20m",
+          "by": "bilal",
+          "do": "asset",
+          "key": "a_scn01",
+          "with": {
+            "hostname": "SCN01",
+            "ip": "10.20.1.5",
+            "os": "Ubuntu 22.04 LTS",
+            "purpose": "Vulnerability scanner (authenticated scans on Sundays)",
+            "criticality": "medium",
+            "status": "investigating"
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "bilal",
+          "do": "finding",
+          "key": "f_scanner",
+          "with": {
+            "kind": "potential",
+            "title": "The vulnerability scanner also requests RC4 tickets",
+            "statement": "SCN01 shows up in 4769 with encryption type 0x17. If it bursts too, our threshold would hide an intruder behind it.",
+            "asset": "a_scn01",
+            "techniques": [
+              "T1558.003"
+            ]
+          }
+        },
+        {
+          "at": "+12m",
+          "by": "bilal",
+          "do": "verify",
+          "finding": "f_scanner",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Sentinel",
+            "query": "SecurityEvent\n| where EventID == 4769 and IpAddress == \"::ffff:10.20.1.5\"\n| summarize count() by TicketEncryptionType, ServiceName",
+            "scope": "All domain controllers",
+            "from": "-39d 00:00",
+            "to": "-8d 12:00",
+            "result_count": 1,
+            "note": "One RC4 ticket in 30 days, for the legacy NAS SPN that only supports RC4; everything else is AES (0x12)."
+          }
+        },
+        {
+          "at": "+4m",
+          "by": "ana",
+          "do": "refute",
+          "finding": "f_scanner",
+          "note": "The scanner's one RC4 ticket is for the legacy NAS, every Sunday; it never asks for more than one."
+        },
+        {
+          "at": "+1m",
+          "by": "bilal",
+          "do": "asset_update",
+          "asset": "a_scn01",
+          "with": {
+            "status": "clean"
+          }
+        },
+        {
+          "at": "+15m",
+          "by": "ana",
+          "do": "finding",
+          "key": "f_crack",
+          "with": {
+            "kind": "potential",
+            "title": "svc_sqlbackup's password was cracked offline within minutes",
+            "statement": "Its password was last set in 2019, is ten characters and has never been rotated. Any use of svc_sqlbackup from somewhere other than SQL01 after 02:14 would mean it was cracked; Incident Response are checking.",
+            "observables": [
+              "o_svc"
+            ],
+            "techniques": [
+              "T1110.002"
+            ]
+          }
+        },
+        {
+          "at": "-7d 10:30",
+          "by": "dev",
+          "do": "assess",
+          "key": "asm_kerb",
+          "with": {
+            "judgement": "an intruder on FIN-WS-0142 requested the tickets to crack service account passwords offline",
+            "probability": "highly_likely",
+            "findings": [
+              "f_kerb",
+              "f_tool",
+              "f_crack"
+            ],
+            "absences": [
+              {
+                "absent": "RC4 ticket bursts from any other workstation or server",
+                "platform": "Microsoft Sentinel",
+                "query": "SecurityEvent\n| where EventID == 4769 and TicketEncryptionType == \"0x17\"\n| where IpAddress !in (\"::ffff:10.20.14.142\", \"::ffff:10.20.1.5\")\n| summarize SPNs = dcount(ServiceName) by IpAddress, bin(TimeGenerated, 5m)\n| where SPNs > 2",
+                "scope": "All domain controllers",
+                "from": "-39d 00:00",
+                "to": "-7d 10:00"
+              }
+            ],
+            "so_what": "All 14 accounts should be treated as exposed until their passwords are rotated, svc_sqlbackup first: its password is the oldest and weakest.",
+            "what_next": "Check whether svc_sqlbackup has been used since 02:14; if so, promote to an incident and hand the 14 accounts to @{team:Incident Response} for rotation."
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "kofi",
+          "do": "comment",
+          "key": "c_kerb_ir",
+          "body": "@{dev} svc_sqlbackup did an RDP logon to DC02 at 02:31, from FIN-WS-0142. That's not something it ever does. I think this needs to be an incident now, not a hunt."
+        },
+        {
+          "at": "+10m",
+          "by": "dev",
+          "do": "comment",
+          "reply_to": "c_kerb_ir",
+          "body": "Agreed. I'll close the analysis this afternoon and promote it; @{tom} will want the DC."
+        },
+        {
           "at": "-7d 14:05",
           "do": "tick",
           "task": "kh3",
@@ -663,7 +1464,7 @@
           "at": "+20m",
           "do": "update",
           "with": {
-            "phase": "learn"
+            "phase": "report"
           }
         },
         {
@@ -674,7 +1475,7 @@
           "note": "One workstation, one burst, and a DC logon to follow. Handing to IR.",
           "key": "acct",
           "with": {
-            "title": "Service account svc_sqlbackup used from a compromised workstation",
+            "title": "svc_sqlbackup misuse",
             "severity": "high",
             "summary": "Found by #{kerb}: FIN-WS-0142 roasted 14 service accounts. svc_sqlbackup has since logged on to DC02 interactively, which it never does."
           }
@@ -731,11 +1532,55 @@
           }
         },
         {
-          "at": "+10m",
+          "at": "-7d 17:36",
+          "by": "dev",
+          "do": "update",
+          "with": {
+            "phase": "learn"
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "dev",
+          "do": "lesson",
+          "task": {
+            "team": "Incident Response"
+          },
+          "with": {
+            "kind": "improve",
+            "area": "technology",
+            "observation": "Fourteen SPN accounts still accepted RC4, and svc_sqlbackup's password was six years old.",
+            "recommendation": "Set msDS-SupportedEncryptionTypes to AES only on every SPN account and move service accounts to gMSAs where the software allows."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "dev",
+          "do": "lesson",
+          "with": {
+            "kind": "improve",
+            "area": "detection",
+            "observation": "Nothing alerted on the burst: it was found by hunting 30 hours later, after the account had been used on a DC.",
+            "recommendation": "Run the RC4-burst rule from #{kh5} as a scheduled detection, every five minutes."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "dev",
+          "do": "lesson",
+          "with": {
+            "kind": "went_well",
+            "area": "process",
+            "observation": "The promote decision gave Incident Response a record with the evidence, the source host and the account already attached, inside an hour of confirmation.",
+            "recommendation": "Keep promoting from the hunt rather than opening a fresh incident by hand."
+          }
+        },
+        {
+          "at": "-7d 18:00",
           "do": "update",
           "with": {
             "status": "closed",
-            "summary": "Hypothesis confirmed: FIN-WS-0142 roasted 14 service accounts on one night (#{f_kerb}). Promoted to an incident. Detection added to Shikari's library for RC4 ticket bursts from workstations."
+            "summary": "Hypothesis confirmed. FIN-WS-0142 requested RC4 tickets for 14 SPN accounts in three minutes (#{f_kerb}), using a renamed Rubeus build under the session of a user on leave (#{f_tool}). The vulnerability scanner was ruled out (#{f_scanner}, refuted). svc_sqlbackup was then used on DC02, so the hunt was promoted to #{acct}. The RC4-burst detection is in Shikari's library, and the indicators went to Intelligence."
           }
         }
       ]
@@ -810,7 +1655,53 @@
           }
         },
         {
-          "at": "+25m",
+          "at": "-7d 15:45",
+          "by": "tom",
+          "do": "observable",
+          "key": "o_svc_a",
+          "with": {
+            "value": "svc_sqlbackup",
+            "kind": "user_account",
+            "verdict": "malicious",
+            "note": "Roasted in #{kerb}; now used interactively on DC02. Password reset 15:19, sessions purged.",
+            "sighting": {
+              "asset": "a_dc02",
+              "source": "DC02 Security.evtx (4624, type 10)",
+              "seen": "-9d 02:31"
+            }
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "tom",
+          "do": "asset",
+          "key": "a_ws_a",
+          "with": {
+            "hostname": "FIN-WS-0142",
+            "ip": "10.20.14.142",
+            "os": "Windows 11 23H2",
+            "primary_user": "r.ashworth (on leave)",
+            "purpose": "Finance workstation: source of the roast and the RDP",
+            "criticality": "medium",
+            "status": "contained",
+            "notes": "Isolated in Defender at 15:30."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "tom",
+          "do": "asset_link",
+          "with": {
+            "source": "a_ws_a",
+            "target": "a_dc02",
+            "kind": "lateral_movement",
+            "technique": "T1021.001",
+            "seen": "-9d 02:31",
+            "note": "RDP as svc_sqlbackup, 17 minutes after the roast."
+          }
+        },
+        {
+          "at": "-7d 16:07",
           "by": "tom",
           "do": "finding",
           "key": "f_dclogon",
@@ -823,6 +1714,9 @@
             "techniques": [
               "T1078.002",
               "T1021.001"
+            ],
+            "observables": [
+              "o_svc_a"
             ]
           }
         },
@@ -883,6 +1777,202 @@
           }
         },
         {
+          "at": "-7d 17:30",
+          "by": "tom",
+          "do": "observable",
+          "key": "o_ntds",
+          "with": {
+            "value": "ntdsutil.exe \"ac i ntds\" \"ifm\" \"create full C:\\ProgramData\\ifm\" q q",
+            "kind": "process_command",
+            "verdict": "malicious",
+            "note": "Install-from-media copy of the AD database, made in the RDP session.",
+            "sighting": {
+              "asset": "a_dc02",
+              "source": "DC02 Security.evtx (4688)",
+              "seen": "-9d 02:44",
+              "user_account": "svc_sqlbackup"
+            }
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "tom",
+          "do": "observable",
+          "key": "o_ifm",
+          "with": {
+            "value": "C:\\ProgramData\\ifm\\Active Directory\\ntds.dit",
+            "kind": "file_path",
+            "verdict": "malicious",
+            "note": "The IFM copy. Folder deleted at 03:02; $MFT still has the entries."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "tom",
+          "do": "observable",
+          "key": "o_7z",
+          "with": {
+            "value": "C:\\ProgramData\\7za.exe a -mx9 -p C:\\ProgramData\\i.7z C:\\ProgramData\\ifm",
+            "kind": "process_command",
+            "verdict": "malicious",
+            "note": "Password-protected archive of the IFM folder, 7 minutes after ntdsutil.",
+            "sighting": {
+              "asset": "a_dc02",
+              "source": "DC02 Security.evtx (4688)",
+              "seen": "-9d 02:51",
+              "user_account": "svc_sqlbackup"
+            }
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "tom",
+          "do": "finding",
+          "key": "f_ntds",
+          "with": {
+            "kind": "evidence",
+            "title": "The actor made an IFM copy of NTDS.dit on DC02 and archived it",
+            "statement": "In the RDP session, svc_sqlbackup ran ntdsutil's IFM create at 02:44, archived the folder with 7-Zip at 02:51 and deleted it at 03:02. i.7z left DC02 over SMB to FIN-WS-0142 at 02:58.",
+            "occurred": "-9d 02:44",
+            "asset": "a_dc02",
+            "observables": [
+              "o_ntds",
+              "o_ifm",
+              "o_7z",
+              "o_svc_a"
+            ],
+            "techniques": [
+              "T1003.003",
+              "T1560.001",
+              "T1070.004"
+            ]
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "tom",
+          "do": "verify",
+          "finding": "f_ntds",
+          "with": {
+            "method": "rowanholt",
+            "scope": "DC02",
+            "reference": "Rowanholt job 2026-117 · DC02 · Security.evtx · rows 18871–18904 (4688: ntdsutil.exe, 7za.exe) · $MFT entries 88213–88240",
+            "note": "Both the process creation and the file system agree on the times."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "tom",
+          "do": "confirm",
+          "finding": "f_ntds"
+        },
+        {
+          "at": "+3m",
+          "by": "tom",
+          "do": "comment",
+          "key": "c_ntds",
+          "on": "f_ntds",
+          "body": "@{kofi} this changes the plan: they have NTDS.dit, so every domain hash, krbtgt included. I want a double krbtgt reset and all tier-0 passwords rotated, after DC02 is rebuilt."
+        },
+        {
+          "at": "+12m",
+          "by": "kofi",
+          "do": "comment",
+          "reply_to": "c_ntds",
+          "body": "Agreed. I'll hold the krbtgt reset until DC02 is off the network, or we'd be resetting into a DC they may still control. @{priya} please start the tier-0 password list."
+        },
+        {
+          "at": "+10m",
+          "by": "tom",
+          "do": "assess",
+          "key": "asm_a1",
+          "with": {
+            "judgement": "the actor holds a copy of every domain password hash, krbtgt included",
+            "probability": "highly_likely",
+            "findings": [
+              "f_ntds",
+              "f_dclogon"
+            ],
+            "so_what": "Every domain credential is exposed, and golden tickets are within the actor's reach until krbtgt has been reset twice.",
+            "what_next": "Rebuild DC02, reset krbtgt twice ten hours apart, and rotate all tier-0 and service account passwords."
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "tom",
+          "do": "exhibit",
+          "key": "x_dc02",
+          "with": {
+            "label": "DC02 triage package (Gandalf)",
+            "description": "Security, System and Directory Service event logs, $MFT, $UsnJrnl and registry hives from DC02, collected live with Gandalf before the DC was touched.",
+            "sha256": "10d4d2169ddcd53b00f2507db0bd24d3f6d23b139b1fb26a5665e3188c4d7e9a",
+            "md5": "7bcecd9daf35e6af26357a0661aa07b5",
+            "size_bytes": 6442450944,
+            "location": "Forensics lab NAS, case folder (WORM volume)",
+            "acquired": "-7d 15:55"
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "tom",
+          "do": "cite_exhibit",
+          "finding": "f_dclogon",
+          "exhibit": "x_dc02"
+        },
+        {
+          "at": "+1m",
+          "by": "tom",
+          "do": "cite_exhibit",
+          "finding": "f_ntds",
+          "exhibit": "x_dc02"
+        },
+        {
+          "at": "+3m",
+          "by": "tom",
+          "do": "team",
+          "team": "Forensics"
+        },
+        {
+          "at": "+3m",
+          "by": "tom",
+          "do": "custody_offer",
+          "exhibit": "x_dc02",
+          "to": "sana",
+          "with": {
+            "purpose": "Second examiner on the DC02 timeline"
+          }
+        },
+        {
+          "at": "+15m",
+          "by": "tom",
+          "do": "custody_withdraw",
+          "exhibit": "x_dc02",
+          "with": {
+            "note": "Sana's rostered off until Thursday; offering to Jun instead."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "tom",
+          "do": "custody_offer",
+          "exhibit": "x_dc02",
+          "to": "jun",
+          "with": {
+            "purpose": "Second examiner on the DC02 timeline",
+            "location": "Jun's analysis workstation, Forensics lab"
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "jun",
+          "do": "custody_accept",
+          "exhibit": "x_dc02",
+          "with": {
+            "acknowledgement": "Copied from the WORM volume; SHA-256 recomputed and matches.",
+            "sha256": "10d4d2169ddcd53b00f2507db0bd24d3f6d23b139b1fb26a5665e3188c4d7e9a"
+          }
+        },
+        {
           "at": "-6d 10:00",
           "by": "tom",
           "do": "link",
@@ -910,7 +2000,155 @@
           "task": "ka2"
         },
         {
-          "at": "+3h",
+          "at": "-5d 09:40",
+          "by": "priya",
+          "do": "observable",
+          "key": "o_backup2",
+          "with": {
+            "value": "svc_backup2",
+            "kind": "user_account",
+            "verdict": "malicious",
+            "note": "Created by svc_sqlbackup on DC02 at 02:47 and added to Domain Admins at 02:48. Never signed in.",
+            "sighting": {
+              "asset": "a_dc02",
+              "source": "DC02 Security.evtx (4720, 4728)",
+              "seen": "-9d 02:47"
+            }
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "priya",
+          "do": "finding",
+          "key": "f_newacct",
+          "with": {
+            "kind": "evidence",
+            "title": "A new Domain Admin, svc_backup2, was created in the RDP session",
+            "statement": "svc_sqlbackup created svc_backup2 at 02:47 and added it to Domain Admins a minute later. It has never authenticated: a spare key, kept for later.",
+            "occurred": "-9d 02:47",
+            "asset": "a_dc02",
+            "observables": [
+              "o_backup2",
+              "o_svc_a"
+            ],
+            "techniques": [
+              "T1136.002",
+              "T1098.007"
+            ]
+          }
+        },
+        {
+          "at": "+4m",
+          "by": "priya",
+          "do": "verify",
+          "finding": "f_newacct",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Sentinel",
+            "query": "SecurityEvent\n| where EventID in (4720, 4728, 4732, 4756)\n| where SubjectUserName =~ \"svc_sqlbackup\"\n| project TimeGenerated, Computer, EventID, TargetUserName, MemberName",
+            "scope": "All domain controllers",
+            "from": "-30d 00:00",
+            "to": "-5d 09:30",
+            "result_count": 2
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "priya",
+          "do": "confirm",
+          "finding": "f_newacct",
+          "note": "Disabled at 09:52 and removed from Domain Admins."
+        },
+        {
+          "at": "+1m",
+          "by": "priya",
+          "do": "task",
+          "key": "t_backup2",
+          "with": {
+            "title": "Disable svc_backup2 and remove it from Domain Admins",
+            "assignee": "priya",
+            "due": "+1h"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "priya",
+          "do": "task_update",
+          "task": "t_backup2",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "oliver",
+          "do": "asset",
+          "key": "a_sql01",
+          "with": {
+            "hostname": "SQL01",
+            "ip": "10.20.0.41",
+            "os": "Windows Server 2019",
+            "purpose": "Finance SQL server; svc_sqlbackup's own host",
+            "data_types": [
+              "payroll",
+              "supplier records"
+            ],
+            "criticality": "high",
+            "status": "investigating"
+          }
+        },
+        {
+          "at": "+4m",
+          "by": "oliver",
+          "do": "finding",
+          "key": "f_sql",
+          "with": {
+            "kind": "potential",
+            "title": "svc_sqlbackup's 03:00 logons to SQL01 are the attacker",
+            "statement": "Logons by svc_sqlbackup on SQL01 every night at 03:00, including the night of the roast.",
+            "asset": "a_sql01",
+            "observables": [
+              "o_svc_a"
+            ],
+            "techniques": [
+              "T1078.002"
+            ]
+          }
+        },
+        {
+          "at": "+15m",
+          "by": "priya",
+          "do": "verify",
+          "finding": "f_sql",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Sentinel",
+            "query": "SecurityEvent\n| where Computer startswith \"SQL01\" and EventID == 4624\n| where TargetUserName =~ \"svc_sqlbackup\"\n| summarize count() by LogonType, ProcessName, bin(TimeGenerated, 1d)",
+            "scope": "SQL01",
+            "from": "-95d 00:00",
+            "to": "-5d 10:00",
+            "result_count": 92,
+            "note": "Type 4 (batch) logons by sqlagent.exe every night for 90 days; the pattern is unchanged."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "priya",
+          "do": "refute",
+          "finding": "f_sql",
+          "note": "SQL Agent's own backup job, unchanged for 90 days; no other logon types."
+        },
+        {
+          "at": "+1m",
+          "by": "oliver",
+          "do": "asset_update",
+          "asset": "a_sql01",
+          "with": {
+            "status": "clean"
+          }
+        },
+        {
+          "at": "-5d 12:00",
           "by": "priya",
           "do": "tick",
           "task": "ka2",
@@ -936,11 +2174,149 @@
           }
         },
         {
-          "at": "+10m",
+          "at": "-4d 11:35",
+          "by": "lucia",
+          "do": "tick",
+          "task": "ka3",
+          "items": [
+            0
+          ]
+        },
+        {
+          "at": "-4d 11:40",
           "by": "tom",
           "do": "update",
           "with": {
             "phase": "eradicate"
+          }
+        },
+        {
+          "at": "-4d 18:00",
+          "by": "priya",
+          "do": "handover",
+          "add": "Still open: #{ka3} (@{lucia}) and the tier-0 password list. The krbtgt reset is tracked in #{rw} and waits on the DC02 rebuild. svc_backup2 is disabled, not deleted, so we keep its SID for the timeline."
+        },
+        {
+          "at": "-3d 10:10",
+          "by": "lucia",
+          "do": "comment",
+          "on": "ka3",
+          "body": "What svc_sqlbackup touched: no mailbox, so no mail. Files: it read \\\\FS01\\payroll on the morning of the encryption, which #{rw} already covers. Admin actions: only the two on #{f_newacct}."
+        },
+        {
+          "at": "+10m",
+          "by": "lucia",
+          "do": "tick",
+          "task": "ka3",
+          "items": [
+            1,
+            2
+          ]
+        },
+        {
+          "at": "+1m",
+          "by": "lucia",
+          "do": "task_update",
+          "task": "ka3",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "+40m",
+          "by": "ellis",
+          "do": "claim",
+          "task": "ka4"
+        },
+        {
+          "at": "+1h",
+          "by": "ellis",
+          "do": "finding",
+          "key": "f_reuse",
+          "with": {
+            "kind": "potential",
+            "title": "svc_sqlreport shares svc_sqlbackup's password",
+            "statement": "Both passwords were set within a minute of each other in 2019 by the same DBA account. If they match, svc_sqlreport was exposed by the crack too.",
+            "observables": [
+              "o_svc_a"
+            ],
+            "techniques": [
+              "T1078.002"
+            ]
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "ellis",
+          "do": "comment",
+          "on": "f_reuse",
+          "body": "@{tom} can Forensics compare the two NT hashes from the IFM copy we recovered on #{a_ws_a}? I'd rather not guess."
+        },
+        {
+          "at": "-2d 11:00",
+          "by": "priya",
+          "do": "assess",
+          "key": "asm_a2",
+          "with": {
+            "judgement": "svc_sqlbackup was used from anywhere other than FIN-WS-0142 and DC02",
+            "probability": "unlikely",
+            "findings": [
+              "f_dclogon",
+              "f_newacct"
+            ],
+            "absences": [
+              {
+                "absent": "svc_sqlbackup logons from any other source",
+                "platform": "Microsoft Sentinel",
+                "query": "SecurityEvent\n| where EventID in (4624, 4625, 4648)\n| where TargetUserName =~ \"svc_sqlbackup\"\n| where IpAddress !in (\"10.20.14.142\", \"10.20.0.41\", \"-\")",
+                "scope": "All domain controllers and member servers forwarding Security logs",
+                "from": "-30d 00:00",
+                "to": "-2d 10:00"
+              },
+              {
+                "absent": "VPN sessions as svc_sqlbackup",
+                "platform": "FortiAnalyzer",
+                "query": "type=event subtype=vpn user=svc_sqlbackup",
+                "scope": "VPN gateways",
+                "from": "-30d 00:00",
+                "to": "-2d 10:00"
+              }
+            ],
+            "so_what": "The account's misuse is bounded to the roast, the RDP and what followed on DC02.",
+            "what_next": "Close the identity side once svc_sqlreport is checked (#{f_reuse})."
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "kofi",
+          "do": "task",
+          "key": "t_gmsa",
+          "with": {
+            "title": "Move the SQL backup job to a group managed service account",
+            "team": "Incident Response",
+            "assignee": "oliver",
+            "due": "+1d",
+            "checklist": [
+              "Create gMSA and grant SQL01 retrieval",
+              "Change the SQL Agent job",
+              "Disable svc_sqlbackup"
+            ]
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "kofi",
+          "do": "comment",
+          "on": "t_gmsa",
+          "body": "@{oliver} this is how we stop svc_sqlbackup ever being worth roasting again. The DBA is free tomorrow morning."
+        },
+        {
+          "at": "-2d 15:00",
+          "by": "oliver",
+          "do": "asset_update",
+          "asset": "a_dc02",
+          "with": {
+            "status": "eradicated"
           }
         }
       ]
@@ -951,7 +2327,7 @@
       "at": "-6d 07:52",
       "record": {
         "kind": "incident",
-        "title": "Ransomware on the finance file servers",
+        "title": "Finance ransomware",
         "severity": "critical",
         "tlp": "amber+strict",
         "teams": [
@@ -963,7 +2339,7 @@
           "extortion"
         ],
         "aware": "-6d 07:40",
-        "summary": "Defender XDR alerted at 07:31 on mass renames to .hlx on FS01 and FS02. A ransom note (HOW_TO_RESTORE.txt) names a leak site. The payroll and freight-planning shares are encrypted. TLP:AMBER+STRICT: nothing about this leaves the response team without the commander's say-so."
+        "summary": "Defender XDR alerted at 07:31 on mass renames to .hlx on FS01 and FS02. A ransom note (HOW_TO_RESTORE.txt) in every folder names a leak site and gives ten days. The payroll and freight-planning shares are encrypted; FS03 (HR) shows an attempted launch. FIN-WS-0142, the source in the Kerberoasting hunt, connected to both servers just before encryption. Priorities: contain, keep payroll running for Friday, establish whether data left before encryption, and start the ICO and insurer clocks. TLP:AMBER+STRICT: nothing about this leaves the response team without the commander's say-so."
       },
       "steps": [
         {
@@ -1153,7 +2529,31 @@
           }
         },
         {
-          "at": "+5m",
+          "at": "-6d 08:30",
+          "by": "ellis",
+          "do": "observable",
+          "key": "o_c2dom",
+          "with": {
+            "value": "cdn-update-check.test",
+            "kind": "domain",
+            "verdict": "malicious",
+            "note": "Resolves to 203.0.113.45. Certificate issued nine days before the beaconing started."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ellis",
+          "do": "observable",
+          "key": "o_ua_rw",
+          "with": {
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.46",
+            "kind": "user_agent",
+            "verdict": "suspicious",
+            "note": "The beacon's user agent: a browser version 14 months older than anything else on the estate."
+          }
+        },
+        {
+          "at": "-6d 08:34",
           "do": "update",
           "with": {
             "phase": "scope"
@@ -1225,7 +2625,54 @@
           }
         },
         {
-          "at": "+5m",
+          "at": "-6d 10:43",
+          "by": "jun",
+          "do": "observable",
+          "key": "o_psexec",
+          "with": {
+            "value": "PSEXESVC",
+            "kind": "service_name",
+            "verdict": "malicious",
+            "note": "Installed on FS01 at 06:58 and FS02 at 07:03 by svc_sqlbackup, then removed.",
+            "sighting": {
+              "asset": "a_fs01",
+              "source": "FS01 System.evtx (7045)",
+              "seen": "-6d 06:58",
+              "user_account": "svc_sqlbackup"
+            }
+          }
+        },
+        {
+          "at": "+1m",
+          "by": "jun",
+          "do": "sighting",
+          "observable": "o_psexec",
+          "with": {
+            "asset": "a_fs02",
+            "source": "FS02 System.evtx (7045)",
+            "seen": "-6d 07:03",
+            "user_account": "svc_sqlbackup"
+          }
+        },
+        {
+          "at": "+1m",
+          "by": "jun",
+          "do": "observable",
+          "key": "o_svc_rw",
+          "with": {
+            "value": "svc_sqlbackup",
+            "kind": "user_account",
+            "verdict": "malicious",
+            "note": "The account the encryptor was pushed with: see #{acct}.",
+            "sighting": {
+              "asset": "a_fs02",
+              "source": "FS02 Security.evtx (4624, type 3)",
+              "seen": "-6d 07:03"
+            }
+          }
+        },
+        {
+          "at": "-6d 10:47",
           "by": "jun",
           "do": "finding",
           "key": "f_p0",
@@ -1237,7 +2684,10 @@
             "asset": "a_ws0142rw",
             "observables": [
               "o_c2",
-              "o_hash"
+              "o_hash",
+              "o_c2dom",
+              "o_psexec",
+              "o_svc_rw"
             ],
             "techniques": [
               "T1486",
@@ -1474,6 +2924,526 @@
           }
         },
         {
+          "at": "-6d 14:55",
+          "by": "amara",
+          "do": "task",
+          "key": "t_block",
+          "with": {
+            "title": "Block the C2 and exfiltration infrastructure at the edge and in Defender",
+            "team": "SOC",
+            "due": "+1h",
+            "checklist": [
+              "203.0.113.45 and cdn-update-check.test",
+              "198.51.100.140",
+              "hlx.exe and rclone.exe hashes as Defender indicators (block and remediate)"
+            ]
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ellis",
+          "do": "claim",
+          "task": "t_block"
+        },
+        {
+          "at": "+3m",
+          "by": "ellis",
+          "do": "observable",
+          "key": "o_vss",
+          "with": {
+            "value": "vssadmin.exe delete shadows /all /quiet",
+            "kind": "process_command",
+            "verdict": "malicious",
+            "note": "On both file servers, two minutes before hlx.exe started.",
+            "sighting": {
+              "asset": "a_fs01",
+              "source": "Microsoft Defender XDR",
+              "seen": "-6d 07:26",
+              "user_account": "svc_sqlbackup"
+            }
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "ellis",
+          "do": "finding",
+          "key": "f_vss",
+          "with": {
+            "kind": "evidence",
+            "title": "Shadow copies were deleted on FS01 and FS02 before encryption",
+            "statement": "vssadmin deleted every shadow copy on FS01 at 07:26 and FS02 at 07:28, run through PSEXESVC as svc_sqlbackup. Previous Versions can't be used for recovery.",
+            "occurred": "-6d 07:26",
+            "asset": "a_fs01",
+            "observables": [
+              "o_vss",
+              "o_psexec"
+            ],
+            "techniques": [
+              "T1490",
+              "T1569.002"
+            ]
+          }
+        },
+        {
+          "at": "+4m",
+          "by": "ellis",
+          "do": "verify",
+          "finding": "f_vss",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Defender XDR",
+            "query": "DeviceProcessEvents\n| where FileName =~ \"vssadmin.exe\" and ProcessCommandLine has \"delete shadows\"\n| project Timestamp, DeviceName, AccountName, InitiatingProcessFileName",
+            "scope": "All onboarded servers",
+            "from": "-14d 00:00",
+            "to": "-6d 15:00",
+            "result_count": 2
+          }
+        },
+        {
+          "at": "+6m",
+          "by": "jun",
+          "do": "confirm",
+          "finding": "f_vss"
+        },
+        {
+          "at": "+4m",
+          "by": "ellis",
+          "do": "tick",
+          "task": "t_block",
+          "items": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "at": "+1m",
+          "by": "ellis",
+          "do": "task_update",
+          "task": "t_block",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "sana",
+          "do": "asset",
+          "key": "a_fs03",
+          "with": {
+            "hostname": "FS03",
+            "ip": "10.20.0.33",
+            "os": "Windows Server 2019",
+            "purpose": "HR file shares",
+            "data_types": [
+              "HR records",
+              "special category data"
+            ],
+            "criticality": "critical",
+            "status": "investigating"
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "sana",
+          "do": "finding",
+          "key": "f_fs03",
+          "with": {
+            "kind": "potential",
+            "title": "FS03 (HR) was encrypted too",
+            "statement": "PSEXESVC was installed on FS03 at 07:09. If hlx.exe ran there, HR records and special category data are in scope.",
+            "asset": "a_fs03",
+            "observables": [
+              "o_psexec",
+              "o_hash"
+            ],
+            "techniques": [
+              "T1486"
+            ]
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "sana",
+          "do": "verify",
+          "finding": "f_fs03",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Defender XDR",
+            "query": "DeviceFileEvents\n| where DeviceName =~ \"FS03\" and FileName endswith \".hlx\"\n| summarize count()\n| union (DeviceEvents | where DeviceName =~ \"FS03\" and ActionType startswith \"Asr\")",
+            "scope": "FS03",
+            "from": "-7d 00:00",
+            "to": "-6d 15:30",
+            "result_count": 1,
+            "note": "No .hlx files. One ASR block on hlx.exe at 07:09 (block executable files unless they meet prevalence criteria)."
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "jun",
+          "do": "refute",
+          "finding": "f_fs03",
+          "note": "hlx.exe was blocked by ASR on FS03 and no file was renamed; FS03 wasn't encrypted."
+        },
+        {
+          "at": "+1m",
+          "by": "sana",
+          "do": "asset_update",
+          "asset": "a_fs03",
+          "with": {
+            "status": "clean"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "oliver",
+          "do": "asset",
+          "key": "a_bkp01",
+          "with": {
+            "hostname": "BKP01",
+            "ip": "10.20.0.60",
+            "os": "Hardened Linux backup appliance",
+            "purpose": "Backup server with an immutable copy (not domain-joined)",
+            "criticality": "critical",
+            "status": "investigating"
+          }
+        },
+        {
+          "at": "+30m",
+          "by": "oliver",
+          "do": "asset_update",
+          "asset": "a_bkp01",
+          "with": {
+            "status": "clean"
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "oliver",
+          "do": "comment",
+          "on": "a_bkp01",
+          "body": "BKP01 isn't domain-joined and its console needs a hardware key: no sign-ins in 30 days except ours. FS01's immutable copy is from 02:00 on the day, which is good. FS02's newest immutable copy is nine days old; see #{kr3}."
+        },
+        {
+          "at": "+10m",
+          "by": "jun",
+          "do": "observable",
+          "key": "o_odsync",
+          "with": {
+            "value": "C:\\Users\\Public\\Libraries\\odsync.exe",
+            "kind": "file_path",
+            "verdict": "malicious",
+            "note": "The beacon. Unsigned, 412 KB, masquerading as a OneDrive helper.",
+            "sighting": {
+              "asset": "a_ws0142rw",
+              "source": "Rowanholt (MFT)",
+              "seen": "-9d 01:56"
+            }
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "jun",
+          "do": "observable",
+          "key": "o_odsync_hash",
+          "with": {
+            "value": "44e4b8e160cd91097de11eff5e7b31e672365eeb5a2319708aee876f0b926328",
+            "kind": "file_hash_sha256",
+            "verdict": "malicious",
+            "note": "odsync.exe.",
+            "sighting": {
+              "asset": "a_ws0142rw",
+              "source": "Microsoft Defender XDR"
+            }
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "jun",
+          "do": "observable",
+          "key": "o_task",
+          "with": {
+            "value": "\\Microsoft\\Windows\\OneDrive\\OneDriveUpdateCheck",
+            "kind": "other",
+            "verdict": "malicious",
+            "note": "Scheduled task running odsync.exe at logon and every 30 minutes, as SYSTEM.",
+            "sighting": {
+              "asset": "a_ws0142rw",
+              "source": "TaskScheduler/Operational (106)",
+              "seen": "-9d 01:58"
+            }
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "jun",
+          "do": "finding",
+          "key": "f_persist",
+          "with": {
+            "kind": "evidence",
+            "title": "A scheduled task on FIN-WS-0142 runs the beacon from a user-writable path",
+            "statement": "OneDriveUpdateCheck was registered at 01:58, two minutes after odsync.exe landed in C:\\Users\\Public\\Libraries, and runs it at every logon and every 30 minutes as SYSTEM. This is what kept 203.0.113.45 reachable between the roast and the encryption.",
+            "occurred": "-9d 01:58",
+            "asset": "a_ws0142rw",
+            "observables": [
+              "o_odsync",
+              "o_odsync_hash",
+              "o_task",
+              "o_c2"
+            ],
+            "techniques": [
+              "T1053.005",
+              "T1036.005",
+              "T1071.001"
+            ]
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "jun",
+          "do": "verify",
+          "finding": "f_persist",
+          "with": {
+            "method": "rowanholt",
+            "scope": "FIN-WS-0142",
+            "reference": "Rowanholt job 2026-121 · FIN-WS-0142 · Microsoft-Windows-TaskScheduler/Operational · row 2207 (106, task registered) · $MFT entry 301877"
+          }
+        },
+        {
+          "at": "+10m",
+          "by": "tom",
+          "do": "confirm",
+          "finding": "f_persist"
+        },
+        {
+          "at": "+3m",
+          "by": "rhea",
+          "do": "comment",
+          "on": "f_persist",
+          "body": "Matches the partner's reporting on Helix affiliates: scheduled tasks pointing into C:\\Users\\Public. Worth a hunt across the finance estate for the same pattern; I'll raise it with Threat Hunting."
+        },
+        {
+          "at": "+5m",
+          "by": "jun",
+          "do": "finding",
+          "key": "f_initial",
+          "with": {
+            "kind": "potential",
+            "title": "Initial access was an ISO attachment opened by r.ashworth",
+            "statement": "r.ashworth opened 'Remittance_0311.iso' from a supplier-themed email the day before their leave began; odsync.exe first appears 31 hours later. We haven't yet tied the ISO's contents to odsync.exe.",
+            "asset": "a_ws0142rw",
+            "techniques": [
+              "T1566.001",
+              "T1553.005",
+              "T1204.002"
+            ]
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "ellis",
+          "do": "exhibit",
+          "key": "x_note",
+          "with": {
+            "label": "Ransom note and five encrypted samples from FS01",
+            "description": "HOW_TO_RESTORE.txt and five .hlx files with their originals' names, copied from FS01's snapshot before restore work began.",
+            "sha256": "2b5db7a4130274ad3417e84565f8872af1ee1b42b82b9a22cdb528fca8409786",
+            "md5": "650253d73b42f41c63d6d3e75725daab",
+            "size_bytes": 18350080,
+            "location": "Evidence share, OST case folder (read-only)",
+            "acquired": "-6d 08:10"
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ellis",
+          "do": "custody_offer",
+          "exhibit": "x_note",
+          "to": "rhea",
+          "with": {
+            "purpose": "Strain and affiliate matching with the partner's samples"
+          }
+        },
+        {
+          "at": "+15m",
+          "by": "rhea",
+          "do": "custody_accept",
+          "exhibit": "x_note",
+          "with": {
+            "acknowledgement": "Received; re-hashed before opening in the intel VM.",
+            "sha256": "2b5db7a4130274ad3417e84565f8872af1ee1b42b82b9a22cdb528fca8409786"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "callum",
+          "do": "observable",
+          "key": "o_leak",
+          "with": {
+            "value": "helixnews-leak.test",
+            "kind": "domain",
+            "verdict": "malicious",
+            "note": "Clear-web mirror of the Helix leak site named in the note. Watched hourly from the intel VM."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "callum",
+          "do": "observable",
+          "key": "o_mail",
+          "with": {
+            "value": "restore-hlx@mailbox.test",
+            "kind": "email",
+            "verdict": "malicious",
+            "note": "Contact address in the ransom note. Nobody is to write to it without the commander."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "callum",
+          "do": "observable",
+          "key": "o_btc",
+          "with": {
+            "value": "bc1qx7m3k9w2t5r8y4u6p0a2s4d6f8g0h2j4k6l8z0",
+            "kind": "bitcoin_address",
+            "verdict": "malicious",
+            "note": "Payment address in the note. No transactions yet."
+          }
+        },
+        {
+          "at": "+10m",
+          "by": "ellis",
+          "do": "asset",
+          "key": "a_vault",
+          "with": {
+            "hostname": "s3.storage-vault.test (rclone remote)",
+            "public_ip": "198.51.100.140",
+            "purpose": "External object storage the rclone remote 'remote:' points at",
+            "criticality": "low",
+            "status": "identified"
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ellis",
+          "do": "observable",
+          "key": "o_exfil",
+          "with": {
+            "value": "198.51.100.140",
+            "kind": "ip_address",
+            "verdict": "malicious",
+            "note": "FS01 opened 16 TLS sessions to it between 06:12 and 06:51. The firewall classed them as 'ssl', not 'rclone', which is why the App-ID search found nothing.",
+            "sighting": {
+              "asset": "a_fs01",
+              "source": "Palo Alto firewall (traffic log)",
+              "seen": "-6d 06:12"
+            }
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ellis",
+          "do": "observable",
+          "key": "o_rclone_hash",
+          "with": {
+            "value": "73e7d3bb2aeb1bf00aff3920b8d2738a094ca480ab9267c30be73d1f4b87a927",
+            "kind": "file_hash_sha256",
+            "verdict": "malicious",
+            "note": "rclone.exe 1.64, dropped as C:\\ProgramData\\rc.exe on FS01.",
+            "sighting": {
+              "asset": "a_fs01",
+              "source": "Microsoft Defender XDR",
+              "seen": "-6d 06:10"
+            }
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "ellis",
+          "do": "asset_link",
+          "with": {
+            "source": "a_fs01",
+            "target": "a_vault",
+            "kind": "exfiltration",
+            "technique": "T1567.002",
+            "seen": "-6d 06:12",
+            "note": "16 TLS sessions, 06:12–06:51; volume not yet known."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "ellis",
+          "do": "asset",
+          "key": "a_c2",
+          "with": {
+            "hostname": "cdn-update-check.test",
+            "public_ip": "203.0.113.45",
+            "purpose": "C2 server",
+            "criticality": "low",
+            "status": "identified"
+          }
+        },
+        {
+          "at": "+1m",
+          "by": "ellis",
+          "do": "asset_link",
+          "with": {
+            "source": "a_ws0142rw",
+            "target": "a_c2",
+            "kind": "c2",
+            "technique": "T1071.001",
+            "seen": "-7d 23:58",
+            "note": "60 s beacon, 20% jitter."
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "jun",
+          "do": "exhibit",
+          "key": "x_mem",
+          "with": {
+            "label": "FIN-WS-0142 memory image (raw)",
+            "description": "32 GB RAM captured with WinPMem through Defender Live Response before isolation was tightened. Holds the beacon's process and its config.",
+            "sha256": "ef2f275f179ad1ceca4d960bb30670aafebceced60f8c18e7ce753be53146730",
+            "md5": "dd3b7d538c3579c12e631bdc87a48e39",
+            "size_bytes": 34359738368,
+            "location": "Forensics lab NAS, case folder (WORM volume)",
+            "acquired": "-6d 08:40"
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "jun",
+          "do": "cite_exhibit",
+          "finding": "f_persist",
+          "exhibit": "x_mem"
+        },
+        {
+          "at": "+3m",
+          "by": "jun",
+          "do": "custody_offer",
+          "exhibit": "x_mem",
+          "to": "sana",
+          "with": {
+            "purpose": "Extract the beacon's configuration with Volatility"
+          }
+        },
+        {
+          "at": "+25m",
+          "by": "sana",
+          "do": "custody_decline",
+          "exhibit": "x_mem",
+          "with": {
+            "note": "I'm on the FS01 timeline tonight; offer it to Tom in the morning."
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "amara",
+          "do": "handover",
+          "add": "Night: @{ellis} holds the SOC side and watches for new beacons; @{callum} checks the leak site hourly. Nobody contacts the actor. Leadership update again at 09:00."
+        },
+        {
           "at": "-5d 07:45",
           "by": "jun",
           "do": "exhibit",
@@ -1611,6 +3581,68 @@
           "note": "Breach line called. The insurer's panel forensics firm is on standby; we keep running the response ourselves."
         },
         {
+          "at": "-5d 14:00",
+          "by": "oliver",
+          "do": "asset",
+          "key": "a_dc02rw",
+          "with": {
+            "hostname": "DC02",
+            "ip": "10.20.0.12",
+            "os": "Windows Server 2022",
+            "purpose": "Domain controller, head office: NTDS.dit copied (#{acct})",
+            "criticality": "critical",
+            "status": "contained",
+            "notes": "Off the network since 11:15; FSMO roles on DC01."
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "kofi",
+          "do": "comment",
+          "on": "t_dc",
+          "body": "@{oliver} FSMO seized and DC02 off. Don't let anyone RDP to DC01 from a finance workstation until the krbtgt resets are done, and log every tier-0 logon in here."
+        },
+        {
+          "at": "+2h",
+          "by": "callum",
+          "do": "comment",
+          "on": "f_intel",
+          "body": "Leak site checked at 16:00: nothing about us. Two other victims were posted on day 9 and 11 after encryption, which fits the partner's ten-day habit."
+        },
+        {
+          "at": "-5d 17:00",
+          "by": "nina",
+          "do": "task",
+          "key": "t_payroll",
+          "with": {
+            "title": "Brief the payroll bureau on Friday's run",
+            "team": "Incident Management",
+            "due": "+1d",
+            "checklist": [
+              "Agree a manual fallback if FS01 isn't back",
+              "Name one contact each side"
+            ]
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "hannah",
+          "do": "claim",
+          "task": "t_payroll"
+        },
+        {
+          "at": "+30m",
+          "by": "hannah",
+          "do": "release",
+          "task": "t_payroll"
+        },
+        {
+          "at": "+5m",
+          "by": "nina",
+          "do": "claim",
+          "task": "t_payroll"
+        },
+        {
           "at": "-4d 08:30",
           "by": "jun",
           "do": "claim",
@@ -1642,6 +3674,63 @@
           "milestone": "report",
           "reference": "ICO case IC-412873-K9Q2",
           "note": "Submitted through the ICO's online form after the DPO signed it off: 1,140 staff records were on the payroll share. Further information to follow as the scope settles."
+        },
+        {
+          "at": "-4d 17:30",
+          "by": "nina",
+          "do": "tick",
+          "task": "t_payroll",
+          "items": [
+            0,
+            1
+          ]
+        },
+        {
+          "at": "+1m",
+          "by": "nina",
+          "do": "task_update",
+          "task": "t_payroll",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "-4d 19:00",
+          "by": "jun",
+          "do": "handover",
+          "add": "#{kr4} is half done: encryption scope is settled (FS01, FS02, FIN-WS-0142; FS03 blocked by ASR). Exfiltration volume is the open question; the proxy logs are with the network team."
+        },
+        {
+          "at": "-3d 10:00",
+          "by": "jun",
+          "do": "tick",
+          "task": "kr4",
+          "items": [
+            1
+          ]
+        },
+        {
+          "at": "-3d 12:00",
+          "by": "oliver",
+          "do": "task_update",
+          "task": "t_dc_b",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "+10m",
+          "by": "oliver",
+          "do": "comment",
+          "on": "t_dc",
+          "body": "DC04 promoted from clean media and replicating. DC02 stays off until Forensics release it; @{priya} the krbtgt resets can start once I close #{t_dc}."
+        },
+        {
+          "at": "-3d 17:00",
+          "by": "callum",
+          "do": "comment",
+          "on": "f_intel",
+          "body": "Day 3 on the leak site: still nothing about us. @{amara} the partner says this affiliate sometimes posts a 'teaser' file listing first, so I'm watching for file names as well."
         },
         {
           "at": "-2d 09:00",
@@ -1964,6 +4053,37 @@
             "observation": "Leadership updates went out at 09:00 and 17:00 every day without being asked for.",
             "recommendation": "Keep the twice-daily rhythm as the default for critical incidents."
           }
+        },
+        {
+          "at": "+15m",
+          "by": "ellis",
+          "do": "verify",
+          "finding": "f_exfil",
+          "with": {
+            "method": "search",
+            "platform": "Web proxy",
+            "query": "src_ip=10.20.0.31 dest_ip=198.51.100.140 | stats sum(bytes_out) as out, count by dest_host",
+            "scope": "Proxy logs for FS01",
+            "from": "-6d 06:00",
+            "to": "-6d 07:30",
+            "result_count": 16,
+            "note": "38.2 GB out in 16 sessions to s3.storage-vault.test between 06:12 and 06:51."
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "ellis",
+          "do": "comment",
+          "key": "c_proxy",
+          "on": "f_exfil",
+          "body": "@{tom} proxy: 38.2 GB from FS01 to the rclone remote in 39 minutes. That's about the size of the payroll share. Verification attached to #{f_exfil}."
+        },
+        {
+          "at": "+10m",
+          "by": "tom",
+          "do": "comment",
+          "reply_to": "c_proxy",
+          "body": "Thanks. I'll confirm it once the network team's packet capture agrees on the volume, then supersede #{asm2}. @{nina} the ICO will want the figure in the follow-up."
         }
       ]
     },
@@ -1973,7 +4093,7 @@
       "at": "-4d 11:20",
       "record": {
         "kind": "incident",
-        "title": "Supplier invoice fraud: bank details changed by email",
+        "title": "Supplier invoice fraud",
         "severity": "high",
         "tlp": "amber",
         "teams": [
@@ -1984,7 +4104,7 @@
           "bec"
         ],
         "aware": "-4d 11:05",
-        "summary": "Accounts payable reported an email from a known haulage supplier asking to change bank details for invoice INV-88412 (£48,210). The supplier's mailbox looks compromised, and an inbox rule in our AP clerk's mailbox was hiding the supplier's replies."
+        "summary": "Accounts payable reported an email from a known haulage supplier asking to change bank details for invoice INV-88412 (£48,210), due in Friday's payment run. The request came from the supplier's real mailbox, which looks compromised, and an inbox rule in our AP clerk's mailbox was hiding the supplier's replies. Payment is on hold. Scope: how the clerk's account was taken over, what was sent from it, whether other suppliers or users were targeted, and whether any money moved."
       },
       "steps": [
         {
@@ -2034,7 +4154,19 @@
           }
         },
         {
-          "at": "+2m",
+          "at": "-4d 11:30",
+          "by": "lucia",
+          "do": "observable",
+          "key": "o_subject2",
+          "with": {
+            "value": "INV-88412 - urgent: payment run today",
+            "kind": "email_subject",
+            "verdict": "malicious",
+            "note": "Chaser sent 40 minutes after the first request."
+          }
+        },
+        {
+          "at": "-4d 11:31",
           "do": "claim",
           "task": "kb0"
         },
@@ -2127,7 +4259,24 @@
           }
         },
         {
-          "at": "+5m",
+          "at": "-4d 12:43",
+          "by": "priya",
+          "do": "observable",
+          "key": "o_ua_bec",
+          "with": {
+            "value": "axios/1.6.8",
+            "kind": "user_agent",
+            "verdict": "malicious",
+            "note": "The sign-in's user agent: a scripted client, not a browser.",
+            "sighting": {
+              "user_account": "ap.clerk",
+              "source": "Entra ID sign-in logs",
+              "seen": "-5d 21:47"
+            }
+          }
+        },
+        {
+          "at": "-4d 12:46",
           "by": "priya",
           "do": "finding",
           "key": "f_signin",
@@ -2137,7 +4286,8 @@
             "statement": "At 21:47 the night before, the clerk approved a push they didn't start. They remember 'a few' prompts in a row.",
             "occurred": "-5d 21:47",
             "observables": [
-              "o_ip"
+              "o_ip",
+              "o_ua_bec"
             ],
             "techniques": [
               "T1621",
@@ -2352,10 +4502,341 @@
           }
         },
         {
+          "at": "-4d 16:13",
+          "by": "lucia",
+          "do": "member",
+          "person": "hannah",
+          "role": "comms"
+        },
+        {
+          "at": "-4d 16:15",
+          "by": "lucia",
+          "do": "clock",
+          "key": "clk_bank",
+          "with": {
+            "regime": "custom",
+            "owner": "hannah",
+            "title": "Bank fraud team and Action Fraud",
+            "milestones": [
+              {
+                "name": "Ask our bank to flag the new payee",
+                "amount": 24,
+                "unit": "hours",
+                "basis": "aware"
+              },
+              {
+                "name": "Report to Action Fraud",
+                "amount": 7,
+                "unit": "days",
+                "basis": "aware"
+              }
+            ]
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "priya",
+          "do": "asset",
+          "key": "a_mbx",
+          "with": {
+            "hostname": "Exchange Online mailbox: ap.clerk@sample.example.org",
+            "purpose": "AP clerk's mailbox",
+            "data_types": [
+              "supplier bank details",
+              "invoices"
+            ],
+            "criticality": "high",
+            "status": "contained",
+            "notes": "Rule removed and sessions revoked at 12:31; number matching enforced."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "priya",
+          "do": "asset",
+          "key": "a_lt311",
+          "with": {
+            "hostname": "FIN-LT-0311",
+            "ip": "10.20.14.211",
+            "os": "Windows 11 23H2",
+            "primary_user": "ap.clerk",
+            "purpose": "AP clerk's laptop",
+            "criticality": "medium",
+            "status": "investigating"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "priya",
+          "do": "observable",
+          "key": "o_phishurl",
+          "with": {
+            "value": "https://sharepoint-docs-view.test/s/remittance/INV-88412",
+            "kind": "url",
+            "verdict": "malicious",
+            "note": "Link in the two messages the attacker sent from the clerk's mailbox. Credential-harvesting page dressed as a SharePoint share."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "priya",
+          "do": "observable",
+          "key": "o_phishdom",
+          "with": {
+            "value": "sharepoint-docs-view.test",
+            "kind": "domain",
+            "verdict": "malicious",
+            "note": "Registered six days ago; same registrar and name servers as haulage-partner-invoices.example."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "priya",
+          "do": "finding",
+          "key": "f_sent",
+          "with": {
+            "kind": "evidence",
+            "title": "The attacker sent phishing from the clerk's mailbox to two more suppliers",
+            "statement": "At 22:03 and 22:05 the night of the takeover, the clerk's mailbox sent 'Remittance advice' messages with a link to sharepoint-docs-view.test to two other suppliers. Both were then deleted from Sent Items.",
+            "occurred": "-5d 22:03",
+            "asset": "a_mbx",
+            "observables": [
+              "o_phishurl",
+              "o_phishdom",
+              "o_ip"
+            ],
+            "techniques": [
+              "T1534",
+              "T1070.008"
+            ]
+          }
+        },
+        {
+          "at": "+4m",
+          "by": "priya",
+          "do": "verify",
+          "finding": "f_sent",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Defender XDR",
+            "query": "EmailEvents\n| where SenderFromAddress =~ \"ap.clerk@sample.example.org\"\n| where Timestamp between (datetime(2026-11-11 21:40) .. datetime(2026-11-12 12:31))\n| join EmailUrlInfo on NetworkMessageId\n| project Timestamp, RecipientEmailAddress, Subject, Url",
+            "scope": "All outbound mail from ap.clerk",
+            "from": "-5d 21:40",
+            "to": "-4d 12:31",
+            "result_count": 2
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "lucia",
+          "do": "confirm",
+          "finding": "f_sent"
+        },
+        {
+          "at": "+2m",
+          "by": "lucia",
+          "do": "task",
+          "key": "t_warn",
+          "with": {
+            "title": "Warn the two suppliers who received the onward phish",
+            "team": "SOC",
+            "due": "+4h",
+            "checklist": [
+              "Call each on a number from the supplier file",
+              "Follow up in writing",
+              "Ask whether anyone entered credentials"
+            ]
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "ellis",
+          "do": "claim",
+          "task": "t_warn"
+        },
+        {
+          "at": "+20m",
+          "by": "hannah",
+          "do": "clock_met",
+          "clock": "clk_bank",
+          "milestone": "m1",
+          "reference": "Bank fraud ref FR-20817-441",
+          "note": "The bank has flagged the new payee account and will refuse payments to it from us."
+        },
+        {
+          "at": "+15m",
+          "by": "ellis",
+          "do": "release",
+          "task": "t_warn"
+        },
+        {
+          "at": "+1m",
+          "by": "ellis",
+          "do": "comment",
+          "on": "t_warn",
+          "body": "End of shift, back to the queue. Supplier numbers are on the task; nobody has been called yet. @{lucia} first thing tomorrow?"
+        },
+        {
+          "at": "+10m",
+          "by": "priya",
+          "do": "asset_update",
+          "asset": "a_lt311",
+          "with": {
+            "status": "clean"
+          }
+        },
+        {
+          "at": "+1m",
+          "by": "priya",
+          "do": "comment",
+          "on": "a_lt311",
+          "body": "Full Defender scan clean, no infostealer artefacts, and the browser's stored passwords don't include the clerk's work account. This was phishing plus push fatigue, not token theft from the laptop."
+        },
+        {
+          "at": "+5m",
+          "by": "priya",
+          "do": "finding",
+          "key": "f_phish",
+          "with": {
+            "kind": "potential",
+            "title": "The clerk's password was captured on a phishing page days earlier",
+            "statement": "The clerk's browser history shows a visit to sharepoint-docs-view.test three days before the takeover. The proxy keeps seven days, so we can see the visit but not whether credentials were posted.",
+            "asset": "a_lt311",
+            "observables": [
+              "o_phishurl",
+              "o_phishdom"
+            ],
+            "techniques": [
+              "T1566.002"
+            ]
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "lucia",
+          "do": "finding",
+          "key": "f_pay",
+          "with": {
+            "kind": "evidence",
+            "title": "No payment was made to the new account",
+            "statement": "INV-88412 is on hold and no payment has gone to the requested account. The two other suppliers' invoices were paid to their usual accounts.",
+            "techniques": []
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "lucia",
+          "do": "verify",
+          "finding": "f_pay",
+          "with": {
+            "method": "other",
+            "platform": "Finance system (payments ledger)",
+            "scope": "Payments to the three affected suppliers since the 1st",
+            "note": "Checked with the AP team lead against the bank's payment file."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "lucia",
+          "do": "confirm",
+          "finding": "f_pay"
+        },
+        {
+          "at": "-3d 08:45",
+          "by": "lucia",
+          "do": "claim",
+          "task": "t_warn"
+        },
+        {
+          "at": "-3d 09:05",
+          "by": "lucia",
+          "do": "assess",
+          "key": "asm_b1",
+          "with": {
+            "judgement": "the actor's access to the clerk's mailbox ended when the sessions were revoked at 12:31",
+            "probability": "highly_likely",
+            "findings": [
+              "f_signin",
+              "f_rule",
+              "f_sent"
+            ],
+            "absences": [
+              {
+                "absent": "sign-ins to ap.clerk from 198.51.100.0/24, unfamiliar devices or scripted clients after 12:31",
+                "platform": "Microsoft Entra ID sign-in logs",
+                "query": "SigninLogs\n| where UserPrincipalName startswith \"ap.clerk\"\n| where TimeGenerated > datetime(2026-11-13 12:31)\n| where IPAddress startswith \"198.51.100.\" or UserAgent has \"axios\" or isempty(DeviceDetail.deviceId)",
+                "scope": "ap.clerk",
+                "from": "-4d 12:31",
+                "to": "-3d 09:00"
+              }
+            ],
+            "so_what": "Nothing more should leave from this mailbox; the risk now sits with the suppliers it wrote to.",
+            "what_next": "Finish warning the two suppliers (#{t_warn}); keep INV-88412 on hold until the supplier confirms its details by phone."
+          }
+        },
+        {
+          "at": "+10m",
+          "by": "priya",
+          "do": "assess",
+          "key": "asm_b2",
+          "with": {
+            "judgement": "the same actor targeted other finance users with MFA fatigue on the same evening",
+            "probability": "realistic_possibility",
+            "findings": [
+              "f_signin"
+            ],
+            "so_what": "If so, other finance mailboxes could be hiding replies the way the clerk's was.",
+            "what_next": "@{dev} is opening a hunt for push bursts and new app consents across finance."
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "lucia",
+          "do": "tick",
+          "task": "t_warn",
+          "items": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "at": "+1m",
+          "by": "lucia",
+          "do": "task_update",
+          "task": "t_warn",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
           "at": "-3d 10:00",
           "do": "link",
           "to": "consent",
           "relation": "related_to"
+        },
+        {
+          "at": "-3d 14:00",
+          "by": "hannah",
+          "do": "comment",
+          "key": "c_supplier",
+          "body": "@{lucia} the supplier's IT has confirmed their mailbox was taken over the same way: repeated push prompts until someone approved one. They've reset it and turned on number matching. They'll send a letter confirming their bank details haven't changed."
+        },
+        {
+          "at": "+25m",
+          "by": "lucia",
+          "do": "comment",
+          "reply_to": "c_supplier",
+          "body": "Thanks. INV-88412 stays on hold until AP has that letter and a call-back on the number in the supplier file, not the letter's."
+        },
+        {
+          "at": "-3d 16:00",
+          "by": "hannah",
+          "do": "clock_met",
+          "clock": "clk_bank",
+          "milestone": "m2",
+          "reference": "Action Fraud NFRC-26-1187334",
+          "note": "Reported online with the lookalike domains and the payee account."
         },
         {
           "at": "-2d 10:00",
@@ -2365,17 +4846,104 @@
           }
         },
         {
+          "at": "-2d 11:00",
+          "by": "priya",
+          "do": "asset_update",
+          "asset": "a_mbx",
+          "with": {
+            "status": "eradicated"
+          }
+        },
+        {
           "at": "-1d 16:00",
           "do": "update",
           "with": {
             "phase": "recover",
-            "summary": "A haulage supplier's compromised mailbox asked us to change bank details for INV-88412 (£48,210). Our AP clerk's account had been taken over the night before by MFA fatigue (#{f_signin}), and an inbox rule hid the supplier's replies (#{f_rule}). No payment was made. The rule is gone, sessions revoked, and number matching is now on for every account."
+            "summary": "A haulage supplier's compromised mailbox asked us to change bank details for INV-88412 (£48,210). Our AP clerk's account had been taken over the night before by MFA fatigue from a scripted client (#{f_signin}); an inbox rule hid the supplier's replies (#{f_rule}), and the attacker sent phishing to two more suppliers from the clerk's mailbox (#{f_sent}). The VPN was not used (#{f_vpn}, refuted). No payment was made (#{f_pay}). The rule is gone, sessions are revoked, number matching is on for every account, and the bank has flagged the payee. Whether other finance users were targeted is with #{consent}."
+          }
+        },
+        {
+          "at": "-1d 16:05",
+          "by": "priya",
+          "do": "asset_update",
+          "asset": "a_mbx",
+          "with": {
+            "status": "recovered"
           }
         },
         {
           "at": "+1h",
           "by": "lucia",
           "do": "handover"
+        },
+        {
+          "at": "-1d 17:30",
+          "by": "lucia",
+          "do": "update",
+          "with": {
+            "phase": "report"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "lucia",
+          "do": "task",
+          "key": "t_bec_report",
+          "with": {
+            "title": "Write the incident report for Finance and the insurer",
+            "assignee": "lucia",
+            "due": "+2d",
+            "checklist": [
+              "Timeline from the push burst to containment",
+              "Money at risk and money moved",
+              "Controls changed"
+            ]
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "lucia",
+          "do": "tick",
+          "task": "t_bec_report",
+          "items": [
+            0
+          ]
+        },
+        {
+          "at": "+5m",
+          "by": "lucia",
+          "do": "lesson",
+          "with": {
+            "kind": "improve",
+            "area": "technology",
+            "observation": "Push approval without number matching let a scripted client through after a handful of prompts.",
+            "recommendation": "Keep number matching enforced, and block legacy and scripted user agents with Conditional Access."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "lucia",
+          "do": "lesson",
+          "with": {
+            "kind": "went_well",
+            "area": "process",
+            "observation": "AP rang the supplier on the number in the supplier file before changing anything, which stopped the payment.",
+            "recommendation": "Keep the call-back rule for every bank detail change, whatever the amount."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "lucia",
+          "do": "lesson",
+          "task": {
+            "team": "SOC"
+          },
+          "with": {
+            "kind": "improve",
+            "area": "detection",
+            "observation": "No alert fired on an inbox rule that matched a supplier's domain and moved mail to RSS Subscriptions.",
+            "recommendation": "Alert on new inbox rules that move mail to rarely used folders or mark it read."
+          }
         }
       ]
     },
@@ -2385,7 +4953,7 @@
       "at": "-3d 09:30",
       "record": {
         "kind": "hunt",
-        "title": "MFA fatigue and OAuth consent grants since the invoice fraud",
+        "title": "MFA fatigue and consent grants",
         "severity": "low",
         "tlp": "green",
         "teams": [
@@ -2397,7 +4965,7 @@
           "identity",
           "mfa-fatigue"
         ],
-        "summary": "Hypothesis: the actor behind the invoice fraud tried the same MFA fatigue against other finance users, or got an app consented to read mail (T1621, T1528). Look for bursts of denied pushes followed by an approval, and new consents to apps with Mail.Read in the last 30 days."
+        "summary": "Hypothesis: the actor behind the invoice fraud (#{bec}) tried the same MFA fatigue against other finance users, or got an app consented to read mail (T1621, T1528). Look for bursts of three or more denied pushes followed by an approval, from addresses near 198.51.100.23, and new user consents to multi-tenant apps with Mail.Read or offline_access in the last 30 days. Disproved by: no such bursts outside the AP clerk, and no new consents to unverified publishers."
       },
       "steps": [
         {
@@ -2463,7 +5031,13 @@
           "by": "bilal"
         },
         {
-          "at": "+2m",
+          "at": "-3d 10:28",
+          "by": "bilal",
+          "do": "comment",
+          "body": "Data sources: SigninLogs and AuditLogs in Sentinel for 90 days, MailItemsAccessed in Purview for finance mailboxes (E5). Gap: MFA denials from the Authenticator app only show as ResultType 500121, so we can't tell 'denied' from 'ignored'. @{dev} I'll count both."
+        },
+        {
+          "at": "-3d 10:29",
           "do": "claim",
           "task": "kc2",
           "by": "bilal"
@@ -2548,6 +5122,464 @@
           "by": "priya",
           "do": "comment",
           "body": "Yes: it's only on one user, and nothing in the business uses it. I'll revoke it once you've confirmed it's malicious."
+        },
+        {
+          "at": "-2d 15:40",
+          "by": "bilal",
+          "do": "observable",
+          "key": "o_ip_c",
+          "with": {
+            "value": "198.51.100.23",
+            "kind": "ip_address",
+            "verdict": "malicious",
+            "note": "The invoice fraud's sign-in address; used here as the pivot."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "bilal",
+          "do": "observable",
+          "key": "o_sup",
+          "with": {
+            "value": "ap.supervisor",
+            "kind": "user_account",
+            "verdict": "suspicious",
+            "note": "Seven prompts in four minutes, then an approval.",
+            "sighting": {
+              "source": "Entra ID sign-in logs",
+              "seen": "-5d 22:10",
+              "user_account": "ap.supervisor"
+            }
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "bilal",
+          "do": "observable",
+          "key": "o_ar2",
+          "with": {
+            "value": "ar.clerk2",
+            "kind": "user_account",
+            "verdict": "suspicious",
+            "note": "Five prompts, then an approval; this user also consented to Invoice Viewer Pro the next day.",
+            "sighting": {
+              "source": "Entra ID sign-in logs",
+              "seen": "-5d 22:16",
+              "user_account": "ar.clerk2"
+            }
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "bilal",
+          "do": "observable",
+          "key": "o_appid",
+          "with": {
+            "value": "appId 7c1e4b2a-93d5-4f6e-8a1b-2c3d4e5f6a7b",
+            "kind": "other",
+            "verdict": "suspicious",
+            "note": "Invoice Viewer Pro's application ID."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "bilal",
+          "do": "observable",
+          "key": "o_pub",
+          "with": {
+            "value": "invoiceviewer-pro.test",
+            "kind": "domain",
+            "verdict": "malicious",
+            "note": "The app's publisher domain and reply URL host. Registered 12 days ago."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "bilal",
+          "do": "observable",
+          "key": "o_reply",
+          "with": {
+            "value": "https://invoiceviewer-pro.test/oauth/callback",
+            "kind": "url",
+            "verdict": "malicious",
+            "note": "The app's only reply URL."
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "bilal",
+          "do": "tick",
+          "task": "kc2",
+          "items": [
+            0,
+            1
+          ]
+        },
+        {
+          "at": "+1m",
+          "by": "bilal",
+          "do": "task_update",
+          "task": "kc2",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "bilal",
+          "do": "asset",
+          "key": "a_sup",
+          "with": {
+            "hostname": "Entra ID account: ap.supervisor",
+            "purpose": "AP supervisor; approves payment runs",
+            "criticality": "high",
+            "status": "investigating"
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "bilal",
+          "do": "asset",
+          "key": "a_ar2",
+          "with": {
+            "hostname": "Entra ID account: ar.clerk2",
+            "purpose": "Accounts receivable clerk",
+            "criticality": "medium",
+            "status": "investigating"
+          }
+        },
+        {
+          "at": "+10m",
+          "by": "bilal",
+          "do": "verify",
+          "finding": "f_push",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Sentinel",
+            "query": "SigninLogs\n| where TimeGenerated between (datetime(2026-11-11 21:00) .. datetime(2026-11-12 01:00))\n| where IPAddress startswith \"198.51.100.\"\n| summarize prompts = countif(ResultType == 500121), approved = countif(ResultType == 0) by UserPrincipalName\n| where prompts >= 3 and approved > 0",
+            "scope": "All users",
+            "from": "-36d 00:00",
+            "to": "-2d 16:00",
+            "result_count": 3,
+            "note": "Three users: the AP clerk from #{bec}, ap.supervisor and ar.clerk2."
+          }
+        },
+        {
+          "at": "+10m",
+          "by": "dev",
+          "do": "confirm",
+          "finding": "f_push",
+          "note": "Same evening, same /24, same scripted user agent as the clerk."
+        },
+        {
+          "at": "+5m",
+          "by": "priya",
+          "do": "asset_update",
+          "asset": "a_sup",
+          "with": {
+            "status": "contained"
+          }
+        },
+        {
+          "at": "+1m",
+          "by": "priya",
+          "do": "asset_update",
+          "asset": "a_ar2",
+          "with": {
+            "status": "contained"
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "priya",
+          "do": "comment",
+          "on": "a_sup",
+          "body": "Both accounts: password reset, sessions and refresh tokens revoked, number matching checked. Neither has an inbox rule or forwarding. @{bilal} nothing was sent from either."
+        },
+        {
+          "at": "-1d 09:30",
+          "by": "bilal",
+          "do": "verify",
+          "finding": "f_consent",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Sentinel",
+            "query": "AuditLogs\n| where OperationName == \"Consent to application\"\n| extend app = tostring(TargetResources[0].displayName)\n| where app == \"Invoice Viewer Pro\"\n| project TimeGenerated, InitiatedBy, app, AdditionalDetails",
+            "scope": "Entra ID audit log",
+            "from": "-33d 00:00",
+            "to": "-1d 09:00",
+            "result_count": 1
+          }
+        },
+        {
+          "at": "+10m",
+          "by": "dev",
+          "do": "confirm",
+          "finding": "f_consent"
+        },
+        {
+          "at": "+5m",
+          "by": "bilal",
+          "do": "finding",
+          "key": "f_mailread",
+          "with": {
+            "kind": "potential",
+            "title": "Invoice Viewer Pro has read ar.clerk2's mail",
+            "statement": "The consent includes Mail.Read and offline_access, so the app could have been reading the mailbox since the consent.",
+            "asset": "a_ar2",
+            "observables": [
+              "o_appid"
+            ],
+            "techniques": [
+              "T1114.002"
+            ]
+          }
+        },
+        {
+          "at": "+15m",
+          "by": "bilal",
+          "do": "verify",
+          "finding": "f_mailread",
+          "with": {
+            "method": "search",
+            "platform": "Microsoft Purview audit",
+            "query": "Search-UnifiedAuditLog -Operations MailItemsAccessed -UserIds ar.clerk2@sample.example.org -StartDate (Get-Date).AddDays(-5) | Where-Object { $_.AuditData -match '7c1e4b2a-93d5' }",
+            "scope": "ar.clerk2's mailbox",
+            "from": "-4d 00:00",
+            "to": "-1d 09:45",
+            "result_count": 0
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "dev",
+          "do": "refute",
+          "finding": "f_mailread",
+          "note": "No MailItemsAccessed by the app's ID, and no token issued to it after the consent: it never used it."
+        },
+        {
+          "at": "+5m",
+          "by": "priya",
+          "do": "task",
+          "key": "t_revoke",
+          "with": {
+            "title": "Revoke Invoice Viewer Pro's consent and block the app tenant-wide",
+            "assignee": "priya",
+            "due": "+2h",
+            "checklist": [
+              "Remove the service principal's grants",
+              "Disable user sign-in to the app",
+              "Turn on admin consent workflow for unverified publishers"
+            ]
+          }
+        },
+        {
+          "at": "+20m",
+          "by": "priya",
+          "do": "tick",
+          "task": "t_revoke",
+          "items": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "at": "+1m",
+          "by": "priya",
+          "do": "task_update",
+          "task": "t_revoke",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "dev",
+          "do": "hypothesis",
+          "key": "h_same",
+          "with": {
+            "statement": "The invoice-fraud actor ran both the push bursts and the consent phishing"
+          }
+        },
+        {
+          "by": "dev",
+          "do": "hypothesis",
+          "key": "h_commodity",
+          "with": {
+            "statement": "The consent grant is unrelated, commodity consent phishing",
+            "milestone": "Partner feed reports Invoice Viewer Pro in other tenants"
+          }
+        },
+        {
+          "by": "dev",
+          "do": "evidence",
+          "key": "e_push",
+          "with": {
+            "kind": "finding",
+            "finding": "f_push",
+            "credibility": "h",
+            "relevance": "h"
+          }
+        },
+        {
+          "by": "dev",
+          "do": "evidence",
+          "key": "e_consent",
+          "with": {
+            "kind": "finding",
+            "finding": "f_consent",
+            "credibility": "h",
+            "relevance": "m"
+          }
+        },
+        {
+          "by": "dev",
+          "do": "evidence",
+          "key": "e_ip",
+          "with": {
+            "kind": "observable",
+            "observable": "o_ip2",
+            "credibility": "h",
+            "relevance": "h"
+          }
+        },
+        {
+          "by": "dev",
+          "do": "evidence",
+          "key": "e_feed",
+          "with": {
+            "kind": "absence",
+            "text": "No reports of Invoice Viewer Pro in other tenants in the partner feed",
+            "credibility": "m",
+            "relevance": "m"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "dev",
+          "do": "rate",
+          "ratings": {
+            "e_push": {
+              "h_same": "c",
+              "h_commodity": "na"
+            },
+            "e_consent": {
+              "h_same": "c",
+              "h_commodity": "c"
+            },
+            "e_ip": {
+              "h_same": "c",
+              "h_commodity": "i"
+            },
+            "e_feed": {
+              "h_same": "c",
+              "h_commodity": "i"
+            }
+          }
+        },
+        {
+          "at": "+10m",
+          "by": "bilal",
+          "do": "rate",
+          "ratings": {
+            "e_push": {
+              "h_same": "c",
+              "h_commodity": "na"
+            },
+            "e_consent": {
+              "h_same": "c",
+              "h_commodity": "c"
+            },
+            "e_ip": {
+              "h_same": "c",
+              "h_commodity": "c"
+            },
+            "e_feed": {
+              "h_same": "c",
+              "h_commodity": "i"
+            }
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "bilal",
+          "do": "comment",
+          "body": "I rated #{o_ip2} consistent with commodity phishing too: a /24 at a hosting provider is shared by plenty of people. @{dev} we disagree on that cell, which is fine; it doesn't change who leads."
+        },
+        {
+          "at": "+15m",
+          "by": "dev",
+          "do": "assess",
+          "key": "asm_c1",
+          "with": {
+            "judgement": "the actor behind the invoice fraud tried MFA fatigue against two more finance users on the same evening",
+            "probability": "highly_likely",
+            "findings": [
+              "f_push"
+            ],
+            "absences": [
+              {
+                "absent": "push bursts followed by an approval for any other user in the last 30 days",
+                "platform": "Microsoft Sentinel",
+                "query": "SigninLogs\n| summarize prompts = countif(ResultType == 500121), approved = countif(ResultType == 0) by UserPrincipalName, bin(TimeGenerated, 10m)\n| where prompts >= 3 and approved > 0",
+                "scope": "All users",
+                "from": "-33d 00:00",
+                "to": "-1d 09:00"
+              }
+            ],
+            "so_what": "Three finance accounts were in the actor's hands for part of one evening; two of them approve or raise payments.",
+            "what_next": "Keep INV-88412's lesson in mind: check every bank detail change requested since the 11th."
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "dev",
+          "do": "assess",
+          "key": "asm_c2",
+          "with": {
+            "judgement": "the Invoice Viewer Pro consent was part of the same campaign",
+            "probability": "realistic_possibility",
+            "findings": [
+              "f_consent",
+              "f_push"
+            ],
+            "so_what": "Either way the app is blocked; attribution matters for what we tell the insurer.",
+            "what_next": "Ask Intelligence to watch the partner feed for the app ID."
+          }
+        },
+        {
+          "at": "+10m",
+          "by": "dev",
+          "do": "tick",
+          "task": "kc3",
+          "items": [
+            0,
+            1
+          ]
+        },
+        {
+          "at": "+1m",
+          "by": "dev",
+          "do": "task_update",
+          "task": "kc3",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "dev",
+          "do": "update",
+          "with": {
+            "phase": "report"
+          }
+        },
+        {
+          "at": "+5m",
+          "by": "dev",
+          "do": "comment",
+          "body": "Moving to Report. Two leads confirmed (#{f_push}, #{f_consent}), one refuted (#{f_mailread}). I'm drafting the conclusion on #{kc4}; @{lucia} it will go into the #{bec} report too."
         }
       ]
     },
@@ -2557,7 +5589,7 @@
       "at": "-1d 14:00",
       "record": {
         "kind": "hunt",
-        "title": "Scheduled tasks pointing at user-writable paths",
+        "title": "Scheduled-task persistence",
         "severity": "low",
         "tlp": "green",
         "teams": [
@@ -2566,12 +5598,142 @@
         "tags": [
           "persistence"
         ],
-        "summary": "Hypothesis: persistence on finance workstations through scheduled tasks that run from user-writable paths (T1053.005), as @{team:Intelligence} reports the Helix affiliate uses.",
-        "playbooks": [
-          "Threat hunt"
-        ]
+        "summary": "Hypothesis: the Helix affiliate keeps persistence on finance workstations through scheduled tasks that run binaries from user-writable paths (T1053.005), as it did on FIN-WS-0142 in #{rw}. @{team:Intelligence} reports the same pattern from the partner's cases. Look for tasks registered in the last 30 days whose action runs from C:\\Users\\*, C:\\ProgramData or C:\\Users\\Public, named to look like Microsoft or OneDrive maintenance, and running as SYSTEM. Disproved by: no such task beyond the software inventory's known list."
       },
-      "steps": []
+      "steps": [
+        {
+          "at": "+1m",
+          "by": "ana",
+          "do": "playbook",
+          "name": "Threat hunt",
+          "keys": [
+            "kt0",
+            "kt1",
+            "kt2",
+            "kt3",
+            "kt4",
+            "kt5",
+            "kt6"
+          ]
+        },
+        {
+          "at": "+2m",
+          "by": "ana",
+          "do": "team",
+          "team": "Intelligence"
+        },
+        {
+          "at": "+5m",
+          "by": "ana",
+          "do": "observable",
+          "key": "o_odsync_t",
+          "with": {
+            "value": "C:\\Users\\Public\\Libraries\\odsync.exe",
+            "kind": "file_path",
+            "verdict": "malicious",
+            "note": "The beacon from #{rw}: the shape we're hunting for."
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ana",
+          "do": "observable",
+          "key": "o_task_t",
+          "with": {
+            "value": "\\Microsoft\\Windows\\OneDrive\\OneDriveUpdateCheck",
+            "kind": "other",
+            "verdict": "malicious",
+            "note": "The task name used on FIN-WS-0142."
+          }
+        },
+        {
+          "at": "+3m",
+          "by": "rhea",
+          "do": "link",
+          "to": "rw",
+          "relation": "related_to"
+        },
+        {
+          "at": "+1m",
+          "by": "ana",
+          "do": "link",
+          "to": "kerb",
+          "relation": "related_to"
+        },
+        {
+          "at": "+5m",
+          "by": "ana",
+          "do": "comment",
+          "key": "c_tasks_intel",
+          "body": "@{team:Intelligence} do the partner's reports give other task names or folders for this affiliate? I'd rather search for the pattern than one name."
+        },
+        {
+          "at": "+25m",
+          "by": "callum",
+          "do": "comment",
+          "reply_to": "c_tasks_intel",
+          "body": "Two more names in the partner's reporting: 'EdgeUpdateTaskMachineUA2' and 'OneDriveStandaloneUpdate Task-S-1-5-18', both pointing into C:\\Users\\Public or C:\\ProgramData. Graded B2, as before."
+        },
+        {
+          "at": "+10m",
+          "by": "ana",
+          "do": "tick",
+          "task": "kt0",
+          "items": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "at": "+1m",
+          "by": "ana",
+          "do": "task_update",
+          "task": "kt0",
+          "with": {
+            "status": "done"
+          }
+        },
+        {
+          "at": "+2m",
+          "by": "ana",
+          "do": "update",
+          "with": {
+            "phase": "scope"
+          }
+        },
+        {
+          "at": "+15m",
+          "by": "bilal",
+          "do": "claim",
+          "task": "kt1"
+        },
+        {
+          "at": "+30m",
+          "by": "bilal",
+          "do": "comment",
+          "on": "kt1",
+          "body": "Sources: Defender's DeviceEvents ScheduledTaskCreated (30 days) covers every workstation. Security 4698 isn't collected from workstations, so nothing older than 30 days. @{ana} I'll note that as a visibility gap for Shikari."
+        },
+        {
+          "at": "+5m",
+          "by": "bilal",
+          "do": "tick",
+          "task": "kt1",
+          "items": [
+            0
+          ]
+        },
+        {
+          "at": "+1m",
+          "by": "bilal",
+          "do": "task_update",
+          "task": "kt1",
+          "with": {
+            "status": "in_progress"
+          }
+        }
+      ]
     }
   ]
 }

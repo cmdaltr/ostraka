@@ -60,10 +60,13 @@ Beside red ochre, the colours come from the palette of the scribes and potters w
 |---|---|---|---|---|
 | Red ochre | `--ochre` | `#a33a24` | `#e07a5f` | The brand: the name, active tabs, your avatar, the stroke under a heading |
 | Egyptian blue, the first made pigment | Cobalt's `--accent` | `#2456a6` | `#7ea6e8` | Buttons, links and the current phase in the default palette: ochre's complement |
-| Malachite, ground copper ore | `--ok` | `#2e7d5b` | `#5cc497` | Done, confirmed, benign |
-| Yellow ochre | `--yellow-ochre` | `#b07f1c` | `#e0b458` | What's open now in a playbook drawing |
-| Tyrian purple, from the murex shell | `--tyrian` | `#6b2a4f` | `#c27ba4` | Hunts: their chip and the faint ground of their cards |
+| Limestone, parchment and iron-gall ink | Cobalt's `--bg`, `--surface`, `--ink` | `#eeeae2`, `#fbf9f5`, `#221e1a` | `#17140f`, `#1f1b16`, `#ece6dc` | The ground of every page in the default palette: warm, as the period wrote on |
+| Malachite, ground copper ore | `--ok` | `#2e7d5b` | `#5cc497` | Done, confirmed, benign, and the phases a record has finished |
+| Yellow ochre | `--yellow-ochre` | `#b07f1c` | `#e0b458` | What's open now in a playbook drawing, and the phase a record comes to next (outlined) |
+| Tyrian purple, from the murex shell | `--tyrian` | `#6b2a4f` | `#c27ba4` | Hunts: a hunt's page and card take it as their accent (current phase, buttons, links), with its chip and the faint ground of its card |
 | Carbon black and limestone | `--chalk`, the sherd | | | The chalk lines and the stone behind every page |
+
+A playbook's team lanes are drawn from the same pigments: Egyptian blue, malachite, yellow ochre, Tyrian purple, verdigris, raw umber, charcoal and madder; whoever runs it is red ochre.
 
 Cinnabar, the period's other famous red, isn't used: it would be read as Critical. Yellow ochre and Tyrian purple stay small, never on a label that means a state.
 

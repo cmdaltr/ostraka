@@ -69,11 +69,45 @@ export function Links({ incident }: { incident: Incident }) {
 
   return (
     <section className="panel" aria-label="Linked records">
-      <header>
-        <h2>Linked records</h2>
-        <p>Incidents and hunts connected to this {own}.</p>
+      {/* one row: what this is (or that nothing's linked yet), then the form that links another */}
+      <header className="links-head">
+        <div>
+          <h2>Linked records</h2>
+          <p>
+            {l && shown.length === 0 && !l.hidden
+              ? `Nothing linked to this ${own} yet.`
+              : `Incidents and hunts connected to this ${own}.`}
+          </p>
+        </div>
+        {incident.can_manage && (
+          <form className="link-form" onSubmit={add} aria-label="Link a record">
+            <span className="hint">This {own}</span>
+            <select
+              className="input"
+              aria-label="Relation"
+              value={relation}
+              onChange={(e) => setRelation(e.target.value as LinkRelation)}
+            >
+              {relations.map(([value, words]) => (
+                <option key={value} value={value}>
+                  {words}
+                </option>
+              ))}
+            </select>
+            <input
+              className="input"
+              name="ref"
+              aria-label="Reference"
+              required
+              placeholder="OST-26-014"
+              pattern="#?[A-Za-z]{3}-\d{2}(\d{2})?-\d{3,}"
+            />
+            <button className="btn" type="submit">
+              Link
+            </button>
+          </form>
+        )}
       </header>
-      {l && shown.length === 0 && !l.hidden && <p className="hint">Nothing linked yet.</p>}
       {shown.map(([title, records]) => (
         <div key={title} className="stack">
           <span className="label">
@@ -101,27 +135,6 @@ export function Links({ incident }: { incident: Incident }) {
         <p className="hint">
           {l.hidden === 1 ? 'One more linked record' : `${l.hidden} more linked records`} you can’t open.
         </p>
-      )}
-      {incident.can_manage && (
-        <form className="form-row link-form" onSubmit={add} aria-label="Link a record">
-          <label className="field">
-            <span>This {own}</span>
-            <select className="input" value={relation} onChange={(e) => setRelation(e.target.value as LinkRelation)}>
-              {relations.map(([value, words]) => (
-                <option key={value} value={value}>
-                  {words}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>Reference</span>
-            <input name="ref" required placeholder="OST-26-014" pattern="#?[A-Za-z]{3}-\d{2}(\d{2})?-\d{3,}" />
-          </label>
-          <button className="btn" type="submit">
-            Link
-          </button>
-        </form>
       )}
       {incident.can_manage && relation === 'duplicate_of' && (
         <p className="hint">Marking this a duplicate closes it; the other record carries on.</p>

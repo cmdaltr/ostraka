@@ -63,9 +63,14 @@
 }
 /* done phases in a wash of the accent, the current one solid, those to come plain */
 .phase-strip li.done {
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--ok) 35%, var(--line));
+}
+.phase-strip li.next {
+  color: var(--yellow-ochre);
+  border-color: var(--yellow-ochre);
+  border-style: dashed;
 }
 .phase-strip li.on {
   background: var(--accent);

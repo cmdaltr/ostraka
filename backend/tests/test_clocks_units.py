@@ -246,6 +246,16 @@ def test_states_follow_the_time_gone_and_whether_it_was_met_in_time():
     assert regimes.state(due, at(75), at(80)) is State.MET_LATE
 
 
+def test_a_closed_clock_is_judged_when_it_closed():
+    (due,) = schedule(regimes.REGIMES["uk_gdpr"].milestones, aware=AWARE)
+    at = lambda hours: AWARE + timedelta(hours=hours)  # noqa: E731
+    # closed as not reportable on day two: a week later it hasn't breached
+    assert regimes.state(due, None, at(200), closed_at=at(25)) is State.STOPPED
+    # closed after the deadline had gone: it stays breached
+    assert regimes.state(due, None, at(200), closed_at=at(80)) is State.BREACHED
+    assert regimes.state(due, at(30), at(200), closed_at=at(40)) is State.MET
+
+
 def test_remaining_words():
     assert regimes.remaining_words(timedelta(minutes=45)) == "45 min"
     assert regimes.remaining_words(timedelta(seconds=20)) == "1 min"

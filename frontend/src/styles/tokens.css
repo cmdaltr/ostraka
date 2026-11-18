@@ -40,19 +40,20 @@
   --tlp-green: #33ff00;
   --tlp-clear: #ffffff;
 
-  /* Cobalt, light: the default */
-  --bg: #eef0f3;
-  --surface: #ffffff;
-  --raised: #f6f7f9;
-  --ink: #171a1f;
-  --muted: #5b6370;
-  --line: #d9dde3;
+  /* Cobalt, light: the default. A limestone ground, parchment cards and iron-gall ink, as the period
+     wrote on; Egyptian blue and red ochre on top */
+  --bg: #eeeae2;
+  --surface: #fbf9f5;
+  --raised: #f4f0e9;
+  --ink: #221e1a;
+  --muted: #6b645a;
+  --line: #ddd6ca;
   /* Cobalt's accent is Egyptian blue, the first made pigment: red ochre's complement on the same walls */
   --accent: #2456a6;
   --accent-ink: #ffffff;
   --accent-soft: #e3ebf6;
   --focus: #2456a6;
-  --shadow: 0 1px 2px rgb(16 18 23 / 0.06), 0 4px 12px rgb(16 18 23 / 0.05);
+  --shadow: 0 1px 2px rgb(34 30 26 / 0.07), 0 4px 12px rgb(34 30 26 / 0.06);
 
   /* Severity follows Shikari's four-step scale */
   --sev-critical: #b42318;
@@ -76,19 +77,21 @@
   --graph-evidence: #4d7c0f;
   --graph-finding: #3d4fd6;
   --graph-technique: #7a2e8f;
-  /* Teams in a playbook's swimlanes, by a hash of the team (teamColour), the same in every palette */
-  --team-1: #0e7490;
-  --team-2: #7a2e8f;
-  --team-3: #a15c07;
-  --team-4: #4d7c0f;
-  --team-5: #3d4fd6;
-  --team-6: #b42371;
-  --team-7: #1d6fb8;
-  --team-8: #7c5a3a;
+  /* Teams in a playbook's swimlanes, by a hash of the team (teamColour), the same in every palette:
+     Egyptian blue, malachite, yellow ochre, Tyrian purple, verdigris, raw umber, charcoal, madder */
+  --team-1: #2456a6;
+  --team-2: #2e7d5b;
+  --team-3: #9a6f12;
+  --team-4: #6b2a4f;
+  --team-5: #2b7c86;
+  --team-6: #6e4b2a;
+  --team-7: #4a4643;
+  --team-8: #b3456c;
   /* the period's other pigments, for small accents only: yellow ochre for what's open now, Tyrian
      purple (murex dye) for hunts */
   --yellow-ochre: #b07f1c;
   --tyrian: #6b2a4f;
+  --tyrian-ink: #ffffff;
   /* a hunt's card in the list: a faint Tyrian tint, where an incident's is plain */
   --hunt-ground: color-mix(in srgb, var(--tyrian) 7%, var(--surface));
 
@@ -109,16 +112,17 @@
     --graph-evidence: #a3d65c;
     --graph-finding: #8c9bff;
     --graph-technique: #d38ce8;
-    --team-1: #22b8cf;
-    --team-2: #d38ce8;
-    --team-3: #fdb022;
-    --team-4: #a3d65c;
-    --team-5: #8c9bff;
-    --team-6: #f472b6;
-    --team-7: #60a5fa;
-    --team-8: #c9a27e;
+    --team-1: #7ea6e8;
+    --team-2: #5cc497;
+    --team-3: #e0b458;
+    --team-4: #c27ba4;
+    --team-5: #6cc3cc;
+    --team-6: #c49a6c;
+    --team-7: #aaa39a;
+    --team-8: #e98aac;
     --yellow-ochre: #e0b458;
     --tyrian: #c27ba4;
+    --tyrian-ink: #17140f;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
     --mark-clay: none;
     --mark-limestone: block;
@@ -145,16 +149,17 @@
   --graph-evidence: #a3d65c;
   --graph-finding: #8c9bff;
   --graph-technique: #d38ce8;
-  --team-1: #22b8cf;
-  --team-2: #d38ce8;
-  --team-3: #fdb022;
-  --team-4: #a3d65c;
-  --team-5: #8c9bff;
-  --team-6: #f472b6;
-  --team-7: #60a5fa;
-  --team-8: #c9a27e;
+  --team-1: #7ea6e8;
+  --team-2: #5cc497;
+  --team-3: #e0b458;
+  --team-4: #c27ba4;
+  --team-5: #6cc3cc;
+  --team-6: #c49a6c;
+  --team-7: #aaa39a;
+  --team-8: #e98aac;
   --yellow-ochre: #e0b458;
   --tyrian: #c27ba4;
+  --tyrian-ink: #17140f;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
   --mark-clay: none;
   --mark-limestone: block;
@@ -196,13 +201,13 @@
 /* ---- Cobalt ---------------------------------------------------------------------------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-mode='light']):not([data-palette='ostrakon']):not([data-palette='ledger']) {
-    --bg: #101217; --surface: #171a21; --raised: #1e222b; --ink: #e7e9ee; --muted: #959cab;
-    --line: #272b35; --accent: #7ea6e8; --accent-ink: #101217; --accent-soft: #1b2840; --focus: #7ea6e8;
+    --bg: #17140f; --surface: #1f1b16; --raised: #27221c; --ink: #ece6dc; --muted: #a59b8d;
+    --line: #352e25; --accent: #7ea6e8; --accent-ink: #17140f; --accent-soft: #1e2a3d; --focus: #7ea6e8;
   }
 }
 :root[data-mode='dark']:not([data-palette='ostrakon']):not([data-palette='ledger']) {
-  --bg: #101217; --surface: #171a21; --raised: #1e222b; --ink: #e7e9ee; --muted: #959cab;
-  --line: #272b35; --accent: #7ea6e8; --accent-ink: #101217; --accent-soft: #1b2840; --focus: #7ea6e8;
+  --bg: #17140f; --surface: #1f1b16; --raised: #27221c; --ink: #ece6dc; --muted: #a59b8d;
+  --line: #352e25; --accent: #7ea6e8; --accent-ink: #17140f; --accent-soft: #1e2a3d; --focus: #7ea6e8;
 }
 
 /* ---- Ostrakon: limestone, fired clay and iron-gall ink, from the mark -------------------- */

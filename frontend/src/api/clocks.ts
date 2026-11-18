@@ -6,7 +6,7 @@ import type { Severity, Tlp } from '../brand';
 import type { PersonRef } from './incidents';
 
 export type RegimeKey = 'uk_gdpr' | 'uk_nis' | 'eu_nis2' | 'dora' | 'custom';
-export type ClockState = 'waiting' | 'running' | 'near' | 'closing' | 'breached' | 'met' | 'met_late';
+export type ClockState = 'waiting' | 'running' | 'near' | 'closing' | 'breached' | 'met' | 'met_late' | 'stopped';
 export type Unit = 'hours' | 'days' | 'months';
 export type Basis = 'aware' | 'classified' | 'previous';
 
@@ -130,6 +130,7 @@ export const stateNames: Record<ClockState, string> = {
   breached: 'Breached',
   met: 'Met',
   met_late: 'Met late',
+  stopped: 'Stopped',
 };
 
 export const unitNames: Record<Unit, string> = { hours: 'hours', days: 'days', months: 'months' };

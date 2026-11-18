@@ -7,7 +7,7 @@ import type { Incident } from '../../api/incidents';
 import { dueWords, finished, taskStatusNames } from '../../api/work';
 import type { AppliedPlaybook, Outcome, Playbook, Task, TaskLink, TaskStatus } from '../../api/work';
 import type { Me, Person, Team } from '../../api/types';
-import { severities } from '../../brand';
+import { severities, titleMax } from '../../brand';
 import { Notice, formatDate } from '../../components/ui';
 import { Workflow } from '../../components/Workflow';
 import { Watching, useRecordPresence } from '../../live/presence';
@@ -315,7 +315,7 @@ function Decide({ incident, task, outcomes }: { incident: Incident; task: Task; 
             choose(promoting, { title: form.get('title'), severity: form.get('severity'), summary: form.get('summary') ?? '' });
           }}
         >
-          <input className="input" name="title" required minLength={3} maxLength={200} placeholder="Incident title" aria-label="Incident title" autoFocus />
+          <input className="input" name="title" required minLength={3} maxLength={titleMax} placeholder="Incident title" aria-label="Incident title" autoFocus />
           <select name="severity" defaultValue="high" aria-label="Incident severity">
             {severities.map((sv) => (
               <option key={sv} value={sv}>

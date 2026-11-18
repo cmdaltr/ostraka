@@ -46,7 +46,7 @@ export function mayManageClocks(incident: Incident, me: Me): boolean {
   return role === 'commander' || role === 'comms';
 }
 
-const worst: ClockState[] = ['breached', 'closing', 'near', 'running', 'waiting', 'met_late', 'met'];
+const worst: ClockState[] = ['breached', 'closing', 'near', 'running', 'waiting', 'met_late', 'met', 'stopped'];
 
 function OwnerSelect({ incident, value, me }: { incident: Incident; value?: string; me: Me }) {
   const directory = useDirectory();
@@ -319,13 +319,14 @@ function MarkMet({ clock, milestone, incident, onDone }: { clock: Clock; milesto
 function Milestone({ clock, m, incident, now }: { clock: Clock; m: ClockMilestone; incident: Incident; now: number }) {
   const [marking, setMarking] = useState(false);
   const save = useSave(incident, ['clocks']);
-  const state = clock.closed_at && !m.met_at ? 'waiting' : stateAt(m, now);
+  // a closed clock no longer moves: the server judged it at the moment it closed
+  const state = clock.closed_at ? m.state : stateAt(m, now);
   const live = !clock.closed_at && !m.met_at && m.due_at;
   return (
     <li className={`clock-milestone clock-${state}`} data-state={state}>
       <div className="record-head">
         <strong>{m.name}</strong>
-        <span className={`clock-state clock-state-${state}`}>{clock.closed_at && !m.met_at ? 'Stopped' : stateNames[state]}</span>
+        <span className={`clock-state clock-state-${state}`}>{stateNames[state]}</span>
         {live && (
           <span className="clock-countdown mono num" role="timer" aria-label={`${m.name} countdown`}>
             {countdownWords(m.due_at!, now)}

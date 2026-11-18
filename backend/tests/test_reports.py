@@ -32,9 +32,7 @@ async def test_the_sample_ransomware_incident_reports_in_full_and_in_brief(
 ):
     await importer.run(importer.SAMPLE, http=client)
     await settle()
-    incident = await db.scalar(
-        select(Incident).where(Incident.title == "Ransomware on the finance file servers")
-    )
+    incident = await db.scalar(select(Incident).where(Incident.title == "Finance ransomware"))
     amara = await db.scalar(select(User).where(User.name.like("Amara%")))
     record = await content.gather(db, incident, amara)
     assert record.chain_ok and record.contained_after is not None

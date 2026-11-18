@@ -6,7 +6,7 @@ import { api, download } from '../../api/client';
 import { keys } from '../../api/incidents';
 import type { Incident } from '../../api/incidents';
 import type { Me } from '../../api/types';
-import { phasesOf, severities } from '../../brand';
+import { phasesOf, severities, titleMax } from '../../brand';
 import { PhaseStrip, SeverityPill, TlpPill } from '../../components/Pills';
 import { Assembling, Loading, useFinishing } from '../../components/sherd/Ostrakon';
 import { Notice, messageOf } from '../../components/ui';
@@ -108,13 +108,13 @@ function Promote({ hunt, onClose }: { hunt: Incident; onClose: () => void }) {
         <h2>Promote to an incident</h2>
         <p>
           The incident takes this hunt’s teams, tags and TLP, and links back to {hunt.ref}. The hunt stays open until
-          you conclude it. You become the incident commander.
+          you close it. You become the incident commander.
         </p>
       </header>
       <div className="form-row">
         <label className="field">
           <span>Incident title</span>
-          <input name="title" required minLength={3} maxLength={200} autoFocus />
+          <input name="title" required minLength={3} maxLength={titleMax} autoFocus />
         </label>
         <label className="field">
           <span>Severity</span>
@@ -248,7 +248,7 @@ export function IncidentPage({ me }: { me: Me }) {
   return (
     <Loading ready={!!incident} label={`Opening ${ref.toUpperCase()}`}>
       {incident && (
-    <div className="incident">
+    <div className={`incident kind-${incident.kind}`}>
       <header className="incident-head">
         <h1>{incident.title}</h1>
         {/* the reference and its labels at the far end of the title's row, with what you can do */}

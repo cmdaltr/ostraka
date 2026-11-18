@@ -126,6 +126,7 @@ async def test_only_commander_comms_or_an_admin_add_and_close_clocks(db, client,
     assert (await client.post(f"{url}/close", json=reason, headers=p["lead"].headers)).status_code == 403
     r = await client.post(f"{url}/close", json=reason, headers=p["soc"].headers)
     assert r.status_code == 200 and r.json()["closed_by"]["name"] == "Sam Soc" and not r.json()["can_mark"]
+    assert {m["state"] for m in r.json()["milestones"]} == {"stopped"}
     closed = r.json()
     r = await client.post(
         f"{url}/milestones/report/met", json={"version": closed["version"]}, headers=p["soc"].headers

@@ -157,6 +157,25 @@ test('a custom clock takes its own milestones', async ({ page }) => {
   });
 });
 
+test('a clock closed before its deadline reads stopped, even after the deadline has gone', async ({ page }) => {
+  await stubLive(page);
+  const closed = clock({
+    closed_at: hours(-150),
+    closed_by: sam,
+    close_reason: 'Not reportable: only a crawler opened the link',
+    can_mark: false,
+  });
+  closed.milestones = [{ ...closed.milestones[0], due_at: hours(-100), starts_at: hours(-172), state: 'stopped' }];
+  await stubApi(page, me(), (method, path) => {
+    if (method === 'GET' && path === '/api/incidents/i-1/clocks') return { json: [closed] };
+  });
+  await page.goto('/incidents/OST-26-001?s=clocks');
+  const milestone = page.locator('#CLK-3 .clock-milestone');
+  await expect(milestone).toHaveAttribute('data-state', 'stopped');
+  await expect(milestone.locator('.clock-state')).toHaveText('Stopped');
+  await expect(page.getByRole('timer')).toHaveCount(0);
+});
+
 test('an observer sees clocks but can’t start, change or mark them', async ({ page }) => {
   await stubLive(page);
   const observing = incident({ can_edit: false, can_manage: false, members: [] });
