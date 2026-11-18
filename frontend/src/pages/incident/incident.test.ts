@@ -21,7 +21,7 @@ describe('the comment trigger', () => {
 describe('references', () => {
   it('open the section that holds the record', () => {
     expect(refTarget('fnd-12')).toEqual({ search: '?s=findings', hash: '#FND-12' });
-    expect(refTarget('AST-3').search).toBe('?s=assets');
+    expect(refTarget('AST-3').search).toBe('?s=observables');
     expect(refTarget('OBS-9').search).toBe('?s=observables');
     expect(refTarget('EXH-2')).toEqual({ search: '?s=evidence', hash: '#EXH-2' });
   });

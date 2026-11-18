@@ -58,7 +58,7 @@ export function useSave(incident: Incident, sections: string[]) {
 
 const sectionOf: Record<string, string> = {
   FND: 'findings',
-  AST: 'assets',
+  AST: 'observables',
   OBS: 'observables',
   TSK: 'tasks',
   ASM: 'assessments',

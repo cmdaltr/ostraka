@@ -40,17 +40,17 @@ const sections = [
   ['tasks', 'Tasks'],
   ['findings', 'Findings'],
   ['observables', 'Observables'],
-  ['assets', 'Assets'],
   ['evidence', 'Evidence'],
   ['assessments', 'Assessments'],
   ['updates', 'Updates'],
   ['timeline', 'Timeline'],
 ] as const;
 type Section = (typeof sections)[number][0];
-// Old sections and where they went: Rowanholt's jobs to Evidence, detection gaps to Findings, the graph
+// Old sections and where they went: assets to Observables, Rowanholt's jobs to Evidence, detection gaps to Findings, the graph
 // and lessons to Overview, ACH to Assessments, the regulator clocks and the handover to Updates, and the
 // activity log to Timeline. The tabs fit on one row: one that scrolls hides what's past the edge.
 const renamed: Record<string, Section> = {
+  assets: 'observables',
   rowanholt: 'evidence',
   'detection-gaps': 'findings',
   detections: 'findings',
@@ -283,7 +283,11 @@ export function IncidentPage({ me }: { me: Me }) {
 
       <nav className="tabs" aria-label="Incident sections">
         {sections.map(([key, name]) => {
-          const count = (incident.counts as Record<string, number>)[key];
+          // the observables tab holds the assets too, so its count is both
+          const count =
+            key === 'observables'
+              ? incident.counts.observables + incident.counts.assets
+              : (incident.counts as Record<string, number>)[key];
           return (
             <button
               key={key}
@@ -312,8 +316,19 @@ export function IncidentPage({ me }: { me: Me }) {
             </>
           )}
           {section === 'tasks' && <Tasks incident={incident} me={me} />}
-          {section === 'observables' && <Observables incident={incident} me={me} />}
-          {section === 'assets' && <Assets incident={incident} />}
+          {section === 'observables' && (
+            <>
+              {/* what was seen, then where: the hosts and accounts and the movement between them */}
+              <section className="section-group" aria-labelledby="group-observables">
+                <h2 id="group-observables">Observables</h2>
+                <Observables incident={incident} me={me} />
+              </section>
+              <section className="section-group" aria-labelledby="group-assets">
+                <h2 id="group-assets">Assets</h2>
+                <Assets incident={incident} />
+              </section>
+            </>
+          )}
           {section === 'findings' && (
             <>
               <Findings incident={incident} />
