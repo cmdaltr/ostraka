@@ -110,7 +110,7 @@ test('lessons stay out of the overview until the incident reaches Learn', async 
   await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Record a lesson' })).toHaveCount(0);
   await expect(page.getByRole('navigation', { name: 'Incident sections' }).getByRole('button')).toHaveText([
-    /Overview/, /Tasks/, /Findings/, /Observables/, /Evidence/, /Assessments/, /Updates/, /Timeline/,
+    /Overview/, /Tasks/, /Findings/, /Observables/, /Assets/, /Evidence/, /Assessments/, /Updates/, /Timeline/,
   ]);
 });
 
@@ -126,10 +126,6 @@ test('the sections fit on one row, and old links land where their section went',
     rows: new Set([...nav.children].map((b) => (b as HTMLElement).offsetTop)).size,
   }));
   expect(row).toEqual({ scrolls: false, rows: 1 });
-
-  await page.goto('/incidents/OST-26-001?s=assets');
-  await expect(tabs.getByRole('button', { name: /Observables/ })).toHaveAttribute('aria-current', 'page');
-  await expect(page.getByRole('region', { name: 'Assets' })).toBeVisible();
 
   await page.goto('/incidents/OST-26-001?s=activity');
   await expect(tabs.getByRole('button', { name: 'Timeline' })).toHaveAttribute('aria-current', 'page');

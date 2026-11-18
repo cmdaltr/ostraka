@@ -328,20 +328,6 @@ textarea.input {
 .panel-head h2 {
   font-size: var(--text-lg);
 }
-/* One tab holding two lists, each under its own heading */
-.section-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-.section-group > h2 {
-  margin: 0;
-  font: 600 var(--text-lg) / 1.2 var(--font-ui);
-}
-.section-group + .section-group {
-  margin-top: var(--space-5);
-}
-
 .section-bar {
   display: flex;
   flex-wrap: wrap;
