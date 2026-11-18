@@ -14,6 +14,7 @@ import { useLiveIncident } from '../../live/live';
 import type { Present } from '../../live/live';
 import { PresenceProvider } from '../../live/presence';
 import { AchMatrix } from './AchMatrix';
+import { AttackFlow } from './AttackFlow';
 import { Activity } from './Activity';
 import { Assessments } from './Assessments';
 import { Assets } from './Assets';
@@ -318,6 +319,8 @@ export function IncidentPage({ me }: { me: Me }) {
               {(incident.status === 'closed' || incident.phase === phasesOf(incident.kind).at(-1)) && (
                 <Lessons incident={incident} me={me} />
               )}
+              {/* how the attack unfolds and how far the work has answered it, then the record as a graph */}
+              <AttackFlow incident={incident} />
               <Graph incident={incident} />
             </>
           )}

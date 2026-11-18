@@ -26,6 +26,16 @@ def _checklist(items: list[str]) -> list[str]:
 # ---- tasks ----------------------------------------------------------------------------------------
 
 
+def _known_stage(v: str | None) -> str | None:
+    from ostraka.flow import BY_KEY
+
+    if v is None or v == "":
+        return None
+    if v not in BY_KEY:
+        raise ValueError(f"No attack-flow stage is called {v}.")
+    return v
+
+
 class TaskIn(BaseModel):
     title: str = Field(min_length=3, max_length=200)
     parent_id: uuid.UUID | None = Field(default=None, description="Makes this a subtask, one level deep")
@@ -33,7 +43,15 @@ class TaskIn(BaseModel):
     team_id: uuid.UUID | None = None
     assignee_id: uuid.UUID | None = None
     due_at: datetime | None = None
+    stage: str | None = Field(
+        default=None, description="The attack-flow stage it answers (ostraka.flow.STAGES)"
+    )
     checklist: list[str] = Field(default_factory=list)
+
+    @field_validator("stage")
+    @classmethod
+    def _stage(cls, v: str | None) -> str | None:
+        return _known_stage(v)
 
     @field_validator("checklist")
     @classmethod
@@ -57,6 +75,12 @@ class TaskPatch(Versioned):
     due_at: datetime | None = None
     status: TaskStatus | None = None
     blocked_reason: str | None = Field(default=None, max_length=2000)
+    stage: str | None = None
+
+    @field_validator("stage")
+    @classmethod
+    def _stage(cls, v: str | None) -> str | None:
+        return _known_stage(v)
 
     @model_validator(mode="after")
     def _blocked(self) -> TaskPatch:
@@ -107,6 +131,7 @@ class TaskOut(BaseModel):
     blocked_reason: str
     due_at: datetime | None
     overdue: bool
+    stage: str | None = None
     checklist: list[ChecklistItemOut]
     blocked_by: list[TaskLink]
     blocks: list[TaskLink]

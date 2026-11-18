@@ -183,6 +183,16 @@ export async function stubApi(page: Page, who = me(), handle: Api['handle'] = ()
     'GET /api/users': [{ ...me(), ...sam }, { ...me(), ...dana, team: teams[1], role: 'team_lead' }],
     'GET /api/incidents': [incident()],
     'GET /api/incidents/codename': { codename: 'Quiet Kiln' },
+    'GET /api/incidents/i-1/flow': {
+      stages: [],
+      dismissed: [],
+      covered: 0,
+      peers: 0,
+      group: null,
+      all_stages: [{ id: 'gets_in', name: 'Gets in' }, { id: 'takes', name: 'Collects and takes' }],
+      can_edit: true,
+    },
+    'GET /api/attack/groups': [{ id: 'G0016', name: 'APT29' }],
     'GET /api/incidents/i-1/pnyx': {
       can_ask: true,
       why_not: '',

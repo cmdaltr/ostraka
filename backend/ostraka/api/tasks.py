@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ostraka import notify, work, workflow
+from ostraka import flow, notify, work, workflow
 from ostraka.api import links
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
@@ -102,6 +102,7 @@ async def create_task(
         team_id=team.id if team else None,
         assignee_id=assignee.id if assignee else None,
         due_at=body.due_at,
+        stage=body.stage,
         created_by=user.id,
         checklist=[ChecklistItem(position=i, text=t) for i, t in enumerate(body.checklist)],
     )
@@ -165,6 +166,11 @@ async def update_task(
         if field in sent and value is not None and value.strip() != getattr(task, field):
             setattr(task, field, value.strip())
             described.append("renamed it" if field == "title" else f"changed the {field.replace('_', ' ')}")
+    if "stage" in sent and body.stage != task.stage:
+        task.stage = body.stage
+        described.append(
+            f"put it under {flow.BY_KEY[body.stage].name}" if body.stage else "took it off the attack flow"
+        )
     if "due_at" in sent and body.due_at != task.due_at:
         task.due_at = body.due_at
         work.reset_reminders(task)

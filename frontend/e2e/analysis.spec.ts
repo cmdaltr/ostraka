@@ -33,7 +33,8 @@ test('an assessment is previewed and linted as it is written, and saved from its
   await expect(page.getByRole('button', { name: 'Save assessment' })).toBeDisabled();
 
   await page.getByLabel('Based on FND-12').check();
-  await expect(preview).not.toContainText('Must fix');
+  // the re-check waits for typing to stop, then asks the server: under a full run's load that can outlast 5 s
+  await expect(preview).not.toContainText('Must fix', { timeout: 10_000 });
   await page.getByRole('button', { name: 'Save assessment' }).click();
   await expect.poll(() => api.requests.find((r) => r.method === 'POST' && r.path.endsWith('/assessments'))?.body).toMatchObject({
     judgement: 'the actor definitely staged the payroll export',
@@ -247,6 +248,81 @@ test('without a model Pnyx still answers its questions and says why it cannot ta
   await expect(drawer.getByRole('textbox')).toBeDisabled();
   await expect(drawer.getByText(/only a local Ollama model/)).toBeVisible();
   await expect(drawer.getByRole('button', { name: 'Ask' })).toHaveCount(0);
+});
+
+const flowData = {
+  stages: [
+    {
+      key: 'gets_in', name: 'Gets in', says: 'First foothold', layer: 'seen', coverage: 'covered', why: '',
+      findings: [{ ref: 'FND-1', title: 'Invoice attachment opened', status: 'confirmed' }], links: [],
+      techniques: [{ id: 'T1566.001', name: 'Spearphishing Attachment' }], suggestions: [],
+      tasks_open: [], tasks_done: 1, call: null,
+    },
+    {
+      key: 'takes_credentials', name: 'Takes credentials', says: 'Steals logins and secrets', layer: 'expected',
+      coverage: 'open', why: '19 of the 25 ATT&CK groups most like this record (sharing T1566.001) reach this stage.',
+      findings: [], links: [], techniques: [],
+      suggestions: [{ id: 'T1003', name: 'OS Credential Dumping', groups: 19 }],
+      tasks_open: [{ ref: 'TSK-4', title: 'Check LSASS access' }], tasks_done: 0, call: null,
+    },
+  ],
+  dismissed: [{ key: 'impact', name: 'Does damage', note: 'No encryption anywhere', by: 'Dana Lead', at: '2026-11-18T10:00:00Z' }],
+  covered: 1,
+  peers: 25,
+  group: null,
+  all_stages: [
+    { id: 'gets_in', name: 'Gets in' },
+    { id: 'takes_credentials', name: 'Takes credentials' },
+    { id: 'talks_home', name: 'Talks home' },
+    { id: 'impact', name: 'Does damage' },
+  ],
+  can_edit: true,
+};
+
+test('the attack flow shows seen and expected stages, with coverage, calls and attribution', async ({ page }) => {
+  await stubLive(page);
+  const api = await stubApi(page, me(), (method, path) => {
+    if (method === 'GET' && path === '/api/incidents/i-1/flow') return { json: flowData };
+    if (method === 'PUT' && path.startsWith('/api/incidents/i-1/flow/')) return { status: 204 };
+    return undefined;
+  });
+  await page.goto('/incidents/OST-26-001');
+  const panel = page.locator('.attack-flow');
+  await expect(panel.getByText('of 2 stages covered')).toBeVisible();
+  const stages = panel.getByRole('list', { name: 'Stages' });
+  await expect(stages.getByRole('button', { name: /Gets in/ })).toContainText('Spearphishing Attachment');
+  await expect(stages.getByRole('button', { name: /Takes credentials/ })).toContainText('Check: OS Credential Dumping');
+  await expect(stages.getByText('Covered')).toBeVisible();
+
+  // the overlay toggles, and is remembered
+  await panel.getByLabel('Show coverage').uncheck();
+  await expect(stages.getByText('Covered')).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.attack-flow').getByLabel('Show coverage')).not.toBeChecked();
+
+  // a stage opens to what's in it, and takes a call naming where someone looked
+  await page.locator('.attack-flow').getByRole('button', { name: /Takes credentials/ }).click();
+  const detail = page.getByRole('region', { name: 'Takes credentials' });
+  await expect(detail.getByText(/19 of the 25 ATT&CK groups/)).toBeVisible();
+  await expect(detail.getByRole('link', { name: 'T1003' })).toHaveAttribute('href', 'https://attack.mitre.org/techniques/T1003/');
+  await detail.getByLabel('Where you looked').fill('EDR LSASS access alerts, 10–14 Nov');
+  await detail.getByRole('button', { name: 'Save' }).click();
+  await expect
+    .poll(() => api.requests.find((r) => r.method === 'PUT' && r.path.endsWith('/flow/stages/takes_credentials'))?.body)
+    .toEqual({ call: 'cleared', note: 'EDR LSASS access alerts, 10–14 Nov' });
+
+  await expect(page.getByText('No encryption anywhere')).toBeVisible();
+  await page.locator('.attack-flow').getByRole('combobox', { name: 'Attributed to' }).selectOption('G0016');
+  await expect
+    .poll(() => api.requests.find((r) => r.path.endsWith('/flow/attribution'))?.body)
+    .toEqual({ group: 'G0016' });
+});
+
+test('with no techniques yet the attack flow says how it builds itself', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me());
+  await page.goto('/incidents/OST-26-001');
+  await expect(page.locator('.attack-flow').getByText(/Give findings their ATT&CK techniques/)).toBeVisible();
 });
 
 test('export downloads the briefing, and is offered only to people who may export', async ({ page }) => {

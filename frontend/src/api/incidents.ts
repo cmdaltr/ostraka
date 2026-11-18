@@ -229,15 +229,15 @@ export function sectionsFor(entityType: string): string[] {
       return ['observables', 'timeline', 'observables-working', 'graph'];
     case 'asset':
     case 'asset_link':
-      return ['assets', 'links', 'timeline', 'graph'];
+      return ['assets', 'links', 'timeline', 'graph', 'flow'];
     case 'finding':
-      return ['findings', 'timeline', 'rowanholt', 'detection-gaps', 'graph', 'exhibits'];
+      return ['findings', 'timeline', 'rowanholt', 'detection-gaps', 'graph', 'exhibits', 'flow'];
     case 'exhibit':
       return ['exhibits', 'graph'];
     case 'comment':
       return ['comments'];
     case 'task':
-      return ['tasks', 'playbooks', 'ach', 'lessons'];
+      return ['tasks', 'playbooks', 'ach', 'lessons', 'flow'];
     case 'assessment':
       return ['assessments'];
     case 'hypothesis':
@@ -255,6 +255,9 @@ export function sectionsFor(entityType: string): string[] {
       return ['handover'];
     case 'rowanholt':
       return ['rowanholt'];
+    case 'flow':
+    case 'incident': // attribution shapes the flow's expectations
+      return ['flow'];
     case 'detection_gap':
       return ['detection-gaps', 'tasks'];
     default:

@@ -45,6 +45,7 @@ export interface Task {
   status: TaskStatus;
   blocked_reason: string;
   due_at: string | null;
+  stage?: string | null; // the attack-flow stage it answers
   overdue: boolean;
   checklist: ChecklistItem[];
   blocked_by: TaskLink[];

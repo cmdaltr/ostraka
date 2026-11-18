@@ -37,3 +37,14 @@ VERSION: str | None = _data().get("_version")
 TERMS: str = _data()["_terms"]
 TACTICS: list[tuple[str, str]] = [(t["shortname"], t["name"]) for t in _data()["_tactics"]]
 """(shortname, name) in kill-chain order, Reconnaissance first."""
+
+
+def groups() -> dict[str, tuple[str, frozenset[str]]]:
+    """Every ATT&CK group by ID: its name and the techniques it's known to use (directly, through its
+    software or through campaigns attributed to it), e.g. {"G0016": ("APT29", {...})}."""
+    return _groups()
+
+
+@cache
+def _groups() -> dict[str, tuple[str, frozenset[str]]]:
+    return {gid: (g["name"], frozenset(g["techniques"])) for gid, g in _data().get("_groups", {}).items()}

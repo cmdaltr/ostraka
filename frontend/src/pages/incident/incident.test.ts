@@ -29,7 +29,7 @@ describe('references', () => {
 
 describe('live invalidation', () => {
   it('refreshes the sections an event touches', () => {
-    expect(sectionsFor('asset_link')).toEqual(['assets', 'links', 'timeline', 'graph']);
+    expect(sectionsFor('asset_link')).toEqual(['assets', 'links', 'timeline', 'graph', 'flow']);
     expect(sectionsFor('exhibit')).toEqual(['exhibits', 'graph']);
     expect(sectionsFor('comment')).toEqual(['comments']);
     expect(sectionsFor('user')).toEqual([]);

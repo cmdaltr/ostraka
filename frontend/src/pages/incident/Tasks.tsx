@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
+import { flowStages } from '../../api/flow';
 import type { Incident } from '../../api/incidents';
 import { dueWords, finished, taskStatusNames } from '../../api/work';
 import type { AppliedPlaybook, Outcome, Playbook, Task, TaskLink, TaskStatus } from '../../api/work';
@@ -31,6 +32,8 @@ export function sortTasks(tasks: Task[]): Task[] {
 }
 
 function AddTask({ incident, parent, onDone }: { incident: Incident; parent?: Task; onDone: () => void }) {
+  // a subtask answers the same stage as its parent unless someone says otherwise
+  const stage = parent?.stage;
   const save = useSave(incident, ['tasks']);
   const teams = useTeams();
   const directory = useDirectory();
@@ -52,6 +55,7 @@ function AddTask({ incident, parent, onDone }: { incident: Incident; parent?: Ta
           team_id: owner === 'team' ? teamId : null,
           assignee_id: owner === 'person' ? form.get('assignee_id') : null,
           due_at: fromLocalInput(form.get('due_at')),
+          stage: form.get('stage') || null,
           checklist: String(form.get('checklist') ?? '').split('\n'),
         },
       }),
@@ -114,6 +118,18 @@ function AddTask({ incident, parent, onDone }: { incident: Incident; parent?: Ta
         <label className="field">
           <span>Due</span>
           <input id="task-due" type="datetime-local" name="due_at" />
+        </label>
+        {/* the attack-flow stage it answers: its box stays open until the task is done */}
+        <label className="field">
+          <span>Attack-flow stage</span>
+          <select id="task-stage" name="stage" defaultValue={stage ?? ''}>
+            <option value="">None</option>
+            {flowStages.map(([key, name]) => (
+              <option key={key} value={key}>
+                {name}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
       <label className="field">

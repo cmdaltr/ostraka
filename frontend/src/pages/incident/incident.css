@@ -1243,3 +1243,178 @@ details > summary h2.inline {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
+/* ---- the attack flow (AttackFlow.tsx) ---- */
+
+/* stages left to right in ATT&CK's order, joined by arrows; seen ones solid, expected ones dashed. Five to a
+   row (three on a tablet, one on a phone), so they wrap rather than scroll and no stage is out of sight; the
+   first in each row has no arrow before it */
+.flow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-6);
+}
+.flow-stage {
+  position: relative;
+}
+.flow-stage + .flow-stage::before {
+  content: '→';
+  position: absolute;
+  left: calc(-1 * var(--space-6) + 6px);
+  top: 18px;
+  color: var(--muted);
+  font-size: var(--text-lg);
+}
+.flow-stage:nth-child(5n + 1)::before {
+  content: none;
+}
+@media (max-width: 900px) {
+  .flow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .flow-stage:nth-child(5n + 1)::before {
+    content: '→';
+  }
+  .flow-stage:nth-child(3n + 1)::before {
+    content: none;
+  }
+}
+.flow-stage button {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: var(--space-2);
+  text-align: center;
+  font: inherit;
+  color: var(--ink);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.flow-stage button:hover {
+  background: var(--raised);
+}
+.flow-stage button[aria-pressed='true'] {
+  border-color: var(--ochre);
+  background: var(--ochre-soft);
+}
+.flow-ring {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  font-weight: 700;
+  color: var(--ok);
+}
+.flow-stage.layer-expected .flow-ring,
+.flow-stage.layer-added .flow-ring {
+  border-style: dashed;
+  border-color: var(--muted);
+}
+.flow-gist {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+/* the overlay: covered in malachite, being worked in yellow ochre, the rest as drawn */
+.flow.with-coverage .cov-covered .flow-ring {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, var(--surface));
+}
+.flow.with-coverage .cov-focused .flow-ring {
+  border-color: var(--yellow-ochre);
+  background: color-mix(in srgb, var(--yellow-ochre) 16%, var(--surface));
+}
+.flow-cov {
+  font: 600 var(--text-xs) / 1.2 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--raised);
+}
+.flow-cov.cov-covered {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, var(--surface));
+}
+.flow-cov.cov-focused {
+  color: var(--yellow-ochre-deep);
+  background: color-mix(in srgb, var(--yellow-ochre) 14%, var(--surface));
+}
+.flow-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.flow-key {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+}
+.flow-key.layer-expected {
+  border-style: dashed;
+  border-color: var(--muted);
+}
+.flow-attribution {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.flow-detail {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raised);
+}
+.flow-detail h3,
+.flow-detail h4,
+.flow-dismissed h4 {
+  margin: 0 0 4px;
+}
+.flow-detail header p {
+  margin: 2px 0 0;
+}
+.flow-list {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: 4px;
+}
+.flow-call {
+  margin: 0;
+}
+.flow-decide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.flow-decide .input:not(select) {
+  flex: 1 1 240px;
+}
+@media (max-width: 640px) {
+  .flow {
+    grid-template-columns: 1fr;
+  }
+  /* later than the row rules above, so it wins: every stage after the first has a down arrow */
+  .flow-stage + .flow-stage::before {
+    content: '↓';
+    left: 50%;
+    top: calc(-1 * var(--space-4) - 4px);
+  }
+}

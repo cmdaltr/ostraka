@@ -80,6 +80,8 @@ class Task(Base):
     status: Mapped[TaskStatus] = mapped_column(_enum(TaskStatus, "task_status"), default=TaskStatus.OPEN)
     blocked_reason: Mapped[str] = mapped_column(Text, default="")
     due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # the attack-flow stage this task answers (a key of ostraka.flow.STAGES), if any
+    stage: Mapped[str | None] = mapped_column(String(32))
     playbook_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("playbooks.id", ondelete="SET NULL"))
     # A playbook step's task: which applied playbook made it, and which step it is
     run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("incident_playbooks.id", ondelete="SET NULL"))

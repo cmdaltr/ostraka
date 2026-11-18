@@ -92,6 +92,7 @@ async def task_out(db: AsyncSession, task: Task, viewer: User | None = None) -> 
         blocked_reason=task.blocked_reason,
         due_at=task.due_at,
         overdue=is_overdue(task),
+        stage=task.stage,
         checklist=[
             ChecklistItemOut(
                 id=i.id,

@@ -158,6 +158,8 @@ class Incident(Base):
     title: Mapped[str] = mapped_column(String(200))
     # Two words from `ostraka.codenames`, always in their written form: safe to send where the title isn't
     codename: Mapped[str] = mapped_column(String(60))
+    # the ATT&CK group it's attributed to (G0016), which shapes the attack flow's expectations
+    attributed_group: Mapped[str | None] = mapped_column(String(16))
     summary: Mapped[str] = mapped_column(Text, default="")
     severity: Mapped[Severity] = mapped_column(_enum(Severity, "severity"))
     tlp: Mapped[Tlp] = mapped_column(_enum(Tlp, "tlp"))

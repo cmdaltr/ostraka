@@ -20,6 +20,7 @@ from ostraka.models.analysis import (
 from ostraka.models.clocks import Clock, ClockMilestone, RegimeKey
 from ostraka.models.evidence import CustodyEntry, CustodyKind, EvidenceItem, FindingEvidence, HashCheck
 from ostraka.models.exports import MispSettings
+from ostraka.models.flow import FlowStage, StageCall
 from ostraka.models.handover import HandoverNote, IncidentView
 from ostraka.models.incidents import (
     PHASES_OF,
@@ -137,6 +138,7 @@ __all__ = [
     "FindingKind",
     "FindingObservable",
     "FindingStatus",
+    "FlowStage",
     "FINISHED",
     "Incident",
     "IncidentCounter",
@@ -189,6 +191,7 @@ __all__ = [
     "EvidenceItem",
     "FindingEvidence",
     "HashCheck",
+    "StageCall",
     "Stakeholder",
     "StakeholderUpdate",
     "UpdatePlan",
