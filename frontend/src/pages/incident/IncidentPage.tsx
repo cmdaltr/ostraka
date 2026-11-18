@@ -41,20 +41,21 @@ const sections = [
   ['findings', 'Findings'],
   ['observables', 'Observables'],
   ['assets', 'Assets'],
-  ['detections', 'Detections'],
   ['evidence', 'Evidence'],
   ['assessments', 'Assessments'],
   ['updates', 'Updates'],
   ['timeline', 'Timeline'],
-  ['handover', 'Handover'],
-  ['activity', 'Activity'],
 ] as const;
 type Section = (typeof sections)[number][0];
-// Old sections and where they went: Rowanholt's jobs to Evidence, detection gaps to Detections, the graph
-// and lessons to Overview, ACH to Assessments, and the regulator clocks to Updates
+// Old sections and where they went: Rowanholt's jobs to Evidence, detection gaps to Findings, the graph
+// and lessons to Overview, ACH to Assessments, the regulator clocks and the handover to Updates, and the
+// activity log to Timeline. The tabs fit on one row: one that scrolls hides what's past the edge.
 const renamed: Record<string, Section> = {
   rowanholt: 'evidence',
-  'detection-gaps': 'detections',
+  'detection-gaps': 'findings',
+  detections: 'findings',
+  handover: 'updates',
+  activity: 'timeline',
   graph: 'overview',
   lessons: 'overview',
   ach: 'assessments',
@@ -313,14 +314,19 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'tasks' && <Tasks incident={incident} me={me} />}
           {section === 'observables' && <Observables incident={incident} me={me} />}
           {section === 'assets' && <Assets incident={incident} />}
-          {section === 'findings' && <Findings incident={incident} />}
+          {section === 'findings' && (
+            <>
+              <Findings incident={incident} />
+              {/* each gap is a technique a confirmed finding shows */}
+              <DetectionGaps incident={incident} me={me} />
+            </>
+          )}
           {section === 'evidence' && (
             <>
               <Evidence incident={incident} />
               <Rowanholt incident={incident} />
             </>
           )}
-          {section === 'detections' && <DetectionGaps incident={incident} me={me} />}
           {section === 'assessments' && (
             <>
               <Assessments incident={incident} />
@@ -332,11 +338,22 @@ export function IncidentPage({ me }: { me: Me }) {
               {/* the regulator's deadlines first: they're the updates the law sets the time for */}
               <Clocks incident={incident} me={me} />
               <Updates incident={incident} />
+              {/* the handover is the update for the next shift, drafted from the same log */}
+              <Handover incident={incident} me={me} />
             </>
           )}
-          {section === 'timeline' && <Timeline incident={incident} />}
-          {section === 'handover' && <Handover incident={incident} me={me} />}
-          {section === 'activity' && <Activity incident={incident} />}
+          {section === 'timeline' && (
+            <>
+              <section className="panel" aria-labelledby="timeline-attack">
+                <h2 id="timeline-attack">The attack</h2>
+                <Timeline incident={incident} />
+              </section>
+              <section className="panel" aria-labelledby="timeline-work">
+                <h2 id="timeline-work">The work</h2>
+                <Activity incident={incident} />
+              </section>
+            </>
+          )}
         </div>
         <Discussion count={incident.counts.comments}>
           <Comments incident={incident} me={me} />

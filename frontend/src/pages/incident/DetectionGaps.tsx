@@ -57,12 +57,13 @@ export function DetectionGaps({ incident, me }: { incident: Incident; me: Me }) 
 
   const g = gaps.data;
   if (gaps.error) return <Notice kind="error">{messageOf(gaps.error)}</Notice>;
-  if (!g) return null;
+  // it sits under the findings, so without Shikari and with nothing recorded it stays out of the way
+  if (!g || (!g.configured && g.gaps.length === 0)) return null;
   const open = g.gaps.filter((x) => x.status === 'open').length;
   // Rows here link within this incident
   const rows = g.gaps.map((x) => ({ ...x, incident: x.incident ?? { id: incident.id, ref: incident.ref, title: incident.title, severity: incident.severity, tlp: incident.tlp } }));
   return (
-    <section className="panel" aria-label="Detection gaps">
+    <section className="panel" id="detection-gaps" aria-label="Detection gaps">
       <header>
         <h2>Detection gaps</h2>
         <p>

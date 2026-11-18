@@ -110,9 +110,31 @@ test('lessons stay out of the overview until the incident reaches Learn', async 
   await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Record a lesson' })).toHaveCount(0);
   await expect(page.getByRole('navigation', { name: 'Incident sections' }).getByRole('button')).toHaveText([
-    /Overview/, /Tasks/, /Findings/, /Observables/, /Assets/, /Detections/, /Evidence/, /Assessments/, /Updates/,
-    /Timeline/, /Handover/, /Activity/,
+    /Overview/, /Tasks/, /Findings/, /Observables/, /Assets/, /Evidence/, /Assessments/, /Updates/, /Timeline/,
   ]);
+});
+
+test('the sections fit on one row, and old links land where their section went', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me());
+  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.goto('/incidents/OST-26-001?s=handover');
+  const tabs = page.getByRole('navigation', { name: 'Incident sections' });
+  await expect(tabs.getByRole('button', { name: 'Updates' })).toHaveAttribute('aria-current', 'page');
+  const row = await tabs.evaluate((nav) => ({
+    scrolls: nav.scrollWidth > nav.clientWidth,
+    rows: new Set([...nav.children].map((b) => (b as HTMLElement).offsetTop)).size,
+  }));
+  expect(row).toEqual({ scrolls: false, rows: 1 });
+
+  await page.goto('/incidents/OST-26-001?s=activity');
+  await expect(tabs.getByRole('button', { name: 'Timeline' })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('heading', { name: 'The attack' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'The work' })).toBeVisible();
+
+  // a phone has no room for one row, so the tabs wrap and every one stays in sight
+  await page.setViewportSize({ width: 390, height: 800 });
+  expect(await tabs.evaluate((nav) => nav.scrollWidth > nav.clientWidth)).toBe(false);
 });
 
 test('export downloads the briefing, and is offered only to people who may export', async ({ page }) => {

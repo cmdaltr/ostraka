@@ -76,7 +76,7 @@ function IncidentGap({ gap }: { gap: Gap }) {
     <>
       <tr className="gap-incident">
         <td colSpan={4}>
-          <Link to={`/incidents/${incident.ref}?s=detections`} className="mono ref-link">
+          <Link to={`/incidents/${incident.ref}?s=findings#detection-gaps`} className="mono ref-link">
             {incident.ref}
           </Link>{' '}
           {incident.title} <SeverityPill level={incident.severity} /> <TlpPill level={incident.tlp} />
