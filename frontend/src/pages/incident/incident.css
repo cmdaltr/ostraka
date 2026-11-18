@@ -268,13 +268,19 @@ textarea.input {
   justify-content: center;
 }
 
-/* The discussion: a tab on the right edge and the drawer it opens */
-.discussion-tab {
+/* The rail: flaps on the right edge (the discussion, Pnyx) and the drawer each opens */
+.rail-flaps {
   position: fixed;
   right: 0;
   top: 50%;
   z-index: 30;
   translate: 0 -50%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition: right 200ms ease;
+}
+.rail-flap {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -287,12 +293,17 @@ textarea.input {
   border-radius: var(--radius-md) 0 0 var(--radius-md);
   box-shadow: var(--shadow);
   cursor: pointer;
-  transition: right 200ms ease;
 }
-.discussion-tab svg {
+.rail-flap[aria-expanded='false'] {
+  opacity: 0.85;
+}
+.rail-flap[aria-expanded='true'] {
+  opacity: 1;
+}
+.rail-flap svg {
   rotate: 90deg;
 }
-.discussion-count {
+.rail-count {
   writing-mode: horizontal-tb;
   min-width: 20px;
   padding: 2px 5px;
@@ -302,7 +313,7 @@ textarea.input {
   color: var(--accent);
   background: var(--accent-ink);
 }
-.discussion-drawer {
+.rail-drawer {
   position: fixed;
   top: 64px;
   right: 0;
@@ -317,16 +328,73 @@ textarea.input {
   border-left: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
-.discussion-drawer[hidden] {
+.rail-drawer[hidden] {
   display: none;
 }
-.discussion.is-open .discussion-tab {
+.rail.is-open .rail-flaps {
   right: min(400px, 92vw);
 }
 @media (prefers-reduced-motion: reduce) {
-  .discussion-tab {
+  .rail-flaps {
     transition: none;
   }
+}
+
+/* Pnyx: the standing questions as a row of choices, the answer under them, then a free question */
+.pnyx {
+  display: grid;
+  gap: var(--space-4);
+}
+.pnyx-head h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.pnyx-head p {
+  margin: 2px 0 0;
+}
+.pnyx-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.pnyx-question {
+  font: 500 var(--text-sm) / 1.2 var(--font-ui);
+  padding: 6px 10px;
+  color: var(--ink);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.pnyx-question[aria-pressed='true'] {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.pnyx-answer ul {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: var(--space-2);
+}
+.pnyx-ask {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+.pnyx-ask .field {
+  width: 100%;
+}
+.pnyx-reply {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raised);
+}
+.pnyx-reply p {
+  margin: 0;
 }
 
 /* .panel > header would otherwise stack the heading and its button */

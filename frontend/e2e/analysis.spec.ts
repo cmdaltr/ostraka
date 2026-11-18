@@ -201,6 +201,54 @@ test('a card folds by its title, stays folded next time, and find-in-page still 
   await expect(page.locator('.panel', { has: page.getByRole('heading', { name: 'Summary' }) }).locator('.facts')).toBeHidden();
 });
 
+test('Pnyx gives the bearings and answers a free question, beside the discussion', async ({ page }) => {
+  await stubLive(page);
+  const api = await stubApi(page, me(), (method, path) =>
+    method === 'POST' && path === '/api/incidents/i-1/pnyx/ask'
+      ? { json: { answer: 'TSK-4 is yours and due this evening.', provider: 'ollama' } }
+      : undefined,
+  );
+  await page.goto('/incidents/OST-26-001');
+  await page.getByRole('button', { name: 'Pnyx' }).click();
+  const drawer = page.getByRole('complementary', { name: 'Pnyx' });
+  await expect(drawer.getByRole('button', { name: 'What do I do now?' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(drawer.getByRole('link', { name: 'TSK-4' })).toHaveAttribute('href', /s=tasks#TSK-4/);
+  await drawer.getByRole('button', { name: 'What’s the biggest concern?' }).click();
+  await expect(drawer.getByText('1 lead still open')).toBeVisible();
+
+  await drawer.getByRole('textbox').fill('What is mine?');
+  await drawer.getByRole('button', { name: 'Ask' }).click();
+  await expect(drawer.getByRole('region', { name: 'Pnyx’s answer' })).toContainText('TSK-4 is yours');
+  expect(api.requests.find((r) => r.path.endsWith('/pnyx/ask'))?.body).toEqual({ question: 'What is mine?' });
+
+  // one drawer at a time: opening the discussion shuts Pnyx
+  await page.getByRole('button', { name: 'Discussion' }).click();
+  await expect(drawer).toBeHidden();
+  await expect(page.getByRole('complementary', { name: 'Discussion' })).toBeVisible();
+});
+
+test('without a model Pnyx still answers its questions and says why it cannot take others', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me(), (method, path) =>
+    method === 'GET' && path === '/api/incidents/i-1/pnyx'
+      ? {
+          json: {
+            can_ask: false,
+            why_not: 'OST-26-001 is TLP:RED, so only a local Ollama model may read it, and none is configured.',
+            answers: [{ key: 'now', question: 'What do I do now?', lines: ['Nothing is waiting on you.'] }],
+          },
+        }
+      : undefined,
+  );
+  await page.goto('/incidents/OST-26-001');
+  await page.getByRole('button', { name: 'Pnyx' }).click();
+  const drawer = page.getByRole('complementary', { name: 'Pnyx' });
+  await expect(drawer.getByText('Nothing is waiting on you.')).toBeVisible();
+  await expect(drawer.getByRole('textbox')).toBeDisabled();
+  await expect(drawer.getByText(/only a local Ollama model/)).toBeVisible();
+  await expect(drawer.getByRole('button', { name: 'Ask' })).toHaveCount(0);
+});
+
 test('export downloads the briefing, and is offered only to people who may export', async ({ page }) => {
   await stubLive(page);
   await stubApi(page, me());

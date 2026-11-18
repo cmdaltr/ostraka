@@ -183,6 +183,17 @@ export async function stubApi(page: Page, who = me(), handle: Api['handle'] = ()
     'GET /api/users': [{ ...me(), ...sam }, { ...me(), ...dana, team: teams[1], role: 'team_lead' }],
     'GET /api/incidents': [incident()],
     'GET /api/incidents/codename': { codename: 'Quiet Kiln' },
+    'GET /api/incidents/i-1/pnyx': {
+      can_ask: true,
+      why_not: '',
+      answers: [
+        { key: 'now', question: 'What do I do now?', lines: ['Your task: TSK-4 Image the laptop, due 18 Nov 18:00 UTC.'] },
+        { key: 'outstanding', question: 'What’s outstanding?', lines: ['1 open task.'] },
+        { key: 'last_update', question: 'What was the last update?', lines: ['No stakeholder update has been sent for OST-26-001 yet.'] },
+        { key: 'concern', question: 'What’s the biggest concern?', lines: ['1 lead still open, not yet confirmed or refuted: FND-1.'] },
+        { key: 'leadership', question: 'What do I tell leadership?', lines: ['OST-26-001 Folded Lantern is open.'] },
+      ],
+    },
     'GET /api/incidents/by-ref/OST-26-001': incident(),
     'GET /api/incidents/i-1': incident(),
     'GET /api/incidents/i-1/observables': [observable],

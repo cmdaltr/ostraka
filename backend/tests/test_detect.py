@@ -93,3 +93,8 @@ def test_detect_many_pulls_confident_observables_once():
     assert (T.MITRE_TECHNIQUE, "T1071.001") in kinds
     assert sum(1 for k, _ in kinds if k is T.FILE_HASH_SHA256) == 1
     assert all(k is not T.OTHER for k, _ in kinds)
+
+
+def test_an_indicator_ending_a_question_or_exclamation_is_still_found():
+    found = detect_many("What talks to 185.220.101.4? Block evil.example!")
+    assert [d.value for d in found] == ["185.220.101.4", "evil.example"]

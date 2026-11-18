@@ -102,6 +102,10 @@ Colour directions: https://claude.ai/artifact/N5V8BUNbGEBcgWsCjX7Lpk
 4. **Graph and chain of custody**: as described in the core model. Built 11 November 2026 (`ostraka/graph.py`, `ostraka/custody.py`): the graph is read from the record each time and masked per viewer; exhibits carry their hashes, and each handover is offered, then accepted with a re-hash by the person receiving it, in a hash chain the technical report verifies at export. Still to do: `#EXH-n` references in text (`incidents/refs.py` and the frontend's token pattern know FND, AST, OBS and TSK only). Acceptance uses the session, not a TOTP step-up.
 5. **Detection-gap follow-through**: a follow-up for every confirmed technique without a detection. A gap only closes when Shikari has a detection for it. Built 11 November 2026 (`ostraka/integrations/gaps.py`): a confirmed finding's techniques are checked with Shikari, each gap opens a task for the detection team, and Shikari's signed `run.completed` webhook (an `automation` feature) re-checks the open ones.
 
+6. **Pnyx** (said "p-nicks"; the hill where the Athenian assembly met and voted the ostracisms): an incident's bearings for whoever has just walked in. It answers the standing questions (what do I do now, what's outstanding, what was the last update, what's the biggest concern, what do I tell leadership) and free questions about the incident.
+
+   Built 18 November 2026 (`ostraka/pnyx.py`, `api/pnyx.py`; Ben chose the name and the split). The standing questions are answered by fixed rules from the record, with no AI, and work with AI switched off. "What do I do now" is the asker's own tasks by deadline, then what their role owes (the commander: the update, regulator deadlines, blocked tasks, open leads), then their team's unclaimed queue. "Biggest concern" follows a fixed order: a regulator deadline past or within 24 h, overdue tasks, an overdue update, blocked tasks, open leads, nobody in command. A free question goes to the model with the bearings and the record, indicators always masked, under the TLP guard; the answer is checked without a model and set aside if it cites a reference the record doesn't hold, calls a lead confirmed, or asserts certainty in words. Only who asked and which provider is logged, never the question or the answer. It sits in a flap beside the discussion on every tab.
+
 ## Assessment standard for reports and updates
 
 Ben set four principles on 10 November 2026. Sources:
@@ -132,7 +136,7 @@ Ben set four principles on 10 November 2026. Sources:
 - **ACH:** plain arithmetic.
 - **Yardstick:** a closed list of terms.
 
-An update meets the standard with AI switched off, and AI never decides whether it does.
+An update meets the standard with AI switched off, and AI never decides whether it does. Pnyx's free questions are the one place AI writes words of its own (Ben, 18 November 2026): they answer a question about the record and are never an update, an assessment or a finding, and the same fixed checks stand between the model and the reader.
 4. **Analysis of Competing Hypotheses (ACH), built in.** Each incident can have an ACH matrix:
    - Hypotheses go across the top.
    - Evidence goes down the side: findings, observables, assumptions, and negative evidence (things that would be expected but are absent).

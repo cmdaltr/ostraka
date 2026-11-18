@@ -31,6 +31,7 @@ from ostraka.api import (
     notifications,
     observables,
     playbooks,
+    pnyx,
     reports,
     rowanholt,
     system,
@@ -111,6 +112,7 @@ def create_app() -> FastAPI:
         handover,
         evidence,
         graph,
+        pnyx,
     ):
         app.include_router(module.router)
     for extra in (incidents.refs_router, tasks.mine_router, playbooks.incident_router, clocks.mine_router):

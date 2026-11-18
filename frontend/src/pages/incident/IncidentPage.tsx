@@ -20,7 +20,6 @@ import { Assets } from './Assets';
 import { Clocks } from './Clocks';
 import { Comments } from './Comments';
 import { DetectionGaps } from './DetectionGaps';
-import { Discussion } from './Discussion';
 import { Findings } from './Findings';
 import { Handover, SinceYouLeftBanner } from './Handover';
 import { IntelExports } from './IntelExports';
@@ -29,6 +28,8 @@ import { Graph } from './Graph';
 import { Lessons } from './Lessons';
 import { Observables } from './Observables';
 import { Overview } from './Overview';
+import { CompassIcon, Pnyx } from './Pnyx';
+import { Rail } from './Rail';
 import { Rowanholt } from './Rowanholt';
 import { Tasks } from './Tasks';
 import { Timeline } from './Timeline';
@@ -61,6 +62,15 @@ const renamed: Record<string, Section> = {
   ach: 'assessments',
   clocks: 'updates',
 };
+
+// A speech bubble: the discussion
+function ChatIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 function Here({ people, me }: { people: Present[]; me: Me }) {
   const others = people.filter((p) => p.user_id !== me.id);
@@ -355,9 +365,23 @@ export function IncidentPage({ me }: { me: Me }) {
             </>
           )}
         </div>
-        <Discussion count={incident.counts.comments}>
-          <Comments incident={incident} me={me} />
-        </Discussion>
+        <Rail
+          flaps={[
+            {
+              key: 'discussion',
+              label: 'Discussion',
+              icon: <ChatIcon />,
+              count: incident.counts.comments,
+              content: () => <Comments incident={incident} me={me} />,
+            },
+            {
+              key: 'pnyx',
+              label: 'Pnyx',
+              icon: <CompassIcon />,
+              content: (open) => <Pnyx incident={incident} open={open} />,
+            },
+          ]}
+        />
       </div>
       </PresenceProvider>
     </div>
