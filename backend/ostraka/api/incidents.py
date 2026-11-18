@@ -9,13 +9,14 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ostraka import licence, notify, workflow
+from ostraka import codenames, licence, notify, workflow
 from ostraka.api import playbooks
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
 from ostraka.incident_schemas import (
     ActivityOut,
     ChainOut,
+    CodenameOut,
     IncidentIn,
     IncidentOut,
     IncidentPatch,
@@ -67,6 +68,23 @@ async def _next_number(db: AsyncSession, kind: RecordKind, year: int) -> int:
     return counter.last
 
 
+async def choose_codename(db: AsyncSession, wanted: str | None, record_id: uuid.UUID | None = None) -> str:
+    """The code name asked for, in its written form, or a free one when none is asked for. A name from
+    outside the lists is refused (422) and one another record holds is a conflict (409)."""
+    if wanted is None:
+        return codenames.generate((await db.scalars(select(Incident.codename))).all())
+    name = codenames.canonical(wanted)
+    if name is None:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "A code name is two words from Ostraka's lists, such as Folded Lantern: ask for a new one.",
+        )
+    holder = await db.scalar(select(Incident.id).where(Incident.codename == name))
+    if holder is not None and holder != record_id:
+        raise HTTPException(status.HTTP_409_CONFLICT, f"{name} is already another record's code name.")
+    return name
+
+
 async def open_record(db: AsyncSession, user: User, body: IncidentIn, team_ids: set[uuid.UUID]) -> Incident:
     """Declare an incident or start a hunt, with its playbooks. Whoever opens it is its commander.
     Written with the caller's commit."""
@@ -85,6 +103,7 @@ async def open_record(db: AsyncSession, user: User, body: IncidentIn, team_ids: 
         year=now.year,
         number=await _next_number(db, body.kind, now.year),
         title=body.title.strip(),
+        codename=await choose_codename(db, body.codename),
         summary=body.summary.strip(),
         severity=body.severity,
         tlp=body.tlp,
@@ -105,7 +124,7 @@ async def open_record(db: AsyncSession, user: User, body: IncidentIn, team_ids: 
         incident,
         user,
         "declared",
-        f"{user.name} {verb} {incident.ref}: {incident.title} "
+        f"{user.name} {verb} {incident.ref} ({incident.codename}): {incident.title} "
         f"({incident.severity.value}, TLP:{incident.tlp.value.upper()})",
     )
     for playbook_id in dict.fromkeys(body.playbook_ids):
@@ -135,6 +154,14 @@ async def declare(
     await activity.finish(db, user)
     await db.refresh(incident, ["teams", "members"])
     return await views.detail(db, user, incident)
+
+
+@router.get("/codename", response_model=CodenameOut)
+async def suggest_codename(
+    user: User = Depends(current_user), db: AsyncSession = Depends(get_session)
+) -> CodenameOut:
+    """A code name no record holds yet, to offer when declaring or renaming."""
+    return CodenameOut(codename=await choose_codename(db, None))
 
 
 @router.get("", response_model=list[IncidentSummary])
@@ -194,7 +221,7 @@ async def update_incident(
 ) -> IncidentOut:
     incident = await access.load(db, user, incident_id, edit=True)
     changes = body.model_dump(exclude_unset=True, exclude={"version"})
-    if {"tlp", "status", "sensitive"} & changes.keys():
+    if {"tlp", "status", "sensitive", "codename"} & changes.keys():
         access.require_manage(user, incident)
     if body.phase is not None and body.phase not in PHASES_OF[incident.kind]:
         raise HTTPException(
@@ -202,6 +229,8 @@ async def update_incident(
             f"A {incident.kind.value} moves through {', '.join(p.value for p in PHASES_OF[incident.kind])}.",
         )
     views.check_version(incident.version, body.version, "incident")
+    if changes.get("codename") is not None:
+        changes["codename"] = await choose_codename(db, changes["codename"], incident.id)
 
     described = []
     if "brand_id" in changes:
@@ -217,6 +246,8 @@ async def update_incident(
         setattr(incident, field, value)
         if field in ("title", "summary", "tags"):
             described.append(f"changed the {field}")
+        elif field == "codename":
+            described.append(f"code name {before} → {value}")
         else:
             shown = lambda v: v.value if hasattr(v, "value") else v  # noqa: E731
             described.append(f"{field.replace('_', ' ')} {shown(before)} → {shown(value)}")

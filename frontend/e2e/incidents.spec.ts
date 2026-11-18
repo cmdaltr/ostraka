@@ -3,9 +3,11 @@ import { count, finding, incident, me, observable, sam, stubApi, stubLive } from
 
 test('the list shows open incidents, and declaring one opens it', async ({ page }) => {
   await stubLive(page);
-  const api = await stubApi(page, me(), (method, path) =>
-    method === 'POST' && path === '/api/incidents' ? { status: 201, json: incident() } : undefined,
-  );
+  const offers = ['Quiet Kiln', 'Steady Orchard'];
+  const api = await stubApi(page, me(), (method, path) => {
+    if (method === 'POST' && path === '/api/incidents') return { status: 201, json: incident() };
+    if (method === 'GET' && path === '/api/incidents/codename') return { json: { codename: offers.shift() } };
+  });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Incidents' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Phishing leads to a foothold/ })).toBeVisible();
@@ -14,11 +16,14 @@ test('the list shows open incidents, and declaring one opens it', async ({ page 
   await page.locator('#declare-title').fill('Phishing leads to a foothold on FIN-WS-07');
   await page.locator('#declare-severity').selectOption('high');
   await page.locator('#declare-tags').fill('phishing, bec');
+  await expect(page.locator('#declare-codename')).toHaveValue('Quiet Kiln');
+  await page.getByRole('button', { name: 'Another code name' }).click();
+  await expect(page.locator('#declare-codename')).toHaveValue('Steady Orchard');
   await page.getByRole('button', { name: 'Declare', exact: true }).click();
 
   await expect(page).toHaveURL(/\/incidents\/OST-26-001$/);
   const sent = api.requests.find((r) => r.method === 'POST' && r.path === '/api/incidents')!.body as Record<string, unknown>;
-  expect(sent).toMatchObject({ severity: 'high', team_ids: ['t-soc'], tags: ['phishing', 'bec'] });
+  expect(sent).toMatchObject({ severity: 'high', codename: 'Steady Orchard', team_ids: ['t-soc'], tags: ['phishing', 'bec'] });
 });
 
 test('the incident page shows who else is here and refetches what a live event changed', async ({ page }) => {
@@ -26,7 +31,9 @@ test('the incident page shows who else is here and refetches what a live event c
   const api = await stubApi(page);
   await page.goto('/incidents/OST-26-001?s=findings');
 
-  await expect(page.getByRole('heading', { name: 'Phishing leads to a foothold on FIN-WS-07' })).toBeVisible();
+  // the code name heads the page and the title says what it is
+  await expect(page.getByRole('heading', { name: 'Folded Lantern', level: 1 })).toBeVisible();
+  await expect(page.locator('.incident-name')).toContainText('Phishing leads to a foothold on FIN-WS-07');
   await expect(page.getByRole('list', { name: 'Also here' })).toContainText('Dana Lead editing');
   await expect(page.getByRole('heading', { name: 'PowerShell download cradle on FIN-WS-07' })).toBeVisible();
 

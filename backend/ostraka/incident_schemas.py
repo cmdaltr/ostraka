@@ -66,6 +66,7 @@ class MemberOut(BaseModel):
 class IncidentIn(BaseModel):
     kind: RecordKind = RecordKind.INCIDENT
     title: str = Field(min_length=3, max_length=200)
+    codename: str | None = Field(default=None, max_length=60, description="From the lists; none picks one")
     summary: str = Field(default="", max_length=20_000)
     severity: Severity
     tlp: Tlp = Tlp.AMBER
@@ -80,8 +81,13 @@ class IncidentIn(BaseModel):
         return _tags(v)
 
 
+class CodenameOut(BaseModel):
+    codename: str
+
+
 class IncidentPatch(Versioned):
     title: str | None = Field(default=None, min_length=3, max_length=200)
+    codename: str | None = Field(default=None, max_length=60, description="From the code name lists")
     summary: str | None = Field(default=None, max_length=20_000)
     severity: Severity | None = None
     tlp: Tlp | None = None
@@ -103,6 +109,7 @@ class IncidentSummary(BaseModel):
     kind: RecordKind
     ref: str
     title: str
+    codename: str
     severity: Severity
     tlp: Tlp
     phase: Phase

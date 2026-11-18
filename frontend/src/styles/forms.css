@@ -43,9 +43,20 @@
   gap: 6px;
   min-width: 0;
 }
-.field > span {
+.field > span,
+.field-label {
   font-weight: 500;
   font-size: var(--text-sm);
+}
+/* a code name and the button that asks for another, one height */
+.codename-field {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+.codename-field .icon-button {
+  width: 2.75rem;
+  height: auto;
 }
 .input,
 .field input,

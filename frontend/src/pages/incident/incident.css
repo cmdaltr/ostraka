@@ -162,6 +162,12 @@ textarea.input {
 .incident-card h2 {
   font-size: var(--text-lg);
 }
+.incident-card-title {
+  margin-left: var(--space-2);
+  color: var(--muted);
+  font-weight: 400;
+  font-size: var(--text-md);
+}
 .incident-card-head,
 .incident-card-foot {
   display: flex;
@@ -184,6 +190,16 @@ textarea.input {
 }
 .incident-head h1 {
   font-size: var(--text-2xl);
+}
+.incident-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.incident-name p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-md);
 }
 .incident-head-side {
   display: flex;
@@ -363,6 +379,76 @@ textarea.input {
 }
 .chip-x:hover {
   color: var(--ink);
+}
+
+/* Teams and people: a label, then its chips and the control that adds one, on one row */
+.roster {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-3) var(--space-4);
+  align-items: center;
+  margin: 0;
+}
+.roster dt {
+  font: 500 var(--text-xs) / 1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.roster dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.person-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 3px;
+  font-size: var(--text-sm);
+}
+.person-initials {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font: 600 10px / 1 var(--font-ui);
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+/* the role reads as part of the chip; it is still a list for those who may change it */
+.person-role {
+  font: inherit;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--line);
+  padding: 0 0 0 6px;
+  cursor: pointer;
+}
+span.person-role {
+  cursor: default;
+}
+select.person-role {
+  field-sizing: content; /* as wide as the role it shows, not the longest one */
+  min-width: 0;
+  max-width: 100%;
+}
+.person-chip {
+  max-width: 100%;
+  white-space: normal;
+}
+@media (max-width: 640px) {
+  .roster {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+  .roster dd + dt {
+    margin-top: var(--space-2);
+  }
 }
 
 .inline-form {

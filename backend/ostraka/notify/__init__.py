@@ -100,17 +100,18 @@ def outward(kind: NotificationKind, title: str, body: str, incident: Incident | 
     """The title and text that may leave ostraka for this event."""
     if restricted(incident):
         return (
-            f"{KIND_WORDS[kind]} in {incident.ref}",
-            f"{incident.ref} is TLP:{incident.tlp.value.upper()}: open Ostraka to see the details.",
+            f"{KIND_WORDS[kind]} in {incident.ref} {incident.codename}",
+            f"{incident.ref} {incident.codename} is TLP:{incident.tlp.value.upper()}: "
+            "open Ostraka to see the details.",
         )
     return mask_text(title), mask_text(body)
 
 
 def outward_data(incident: Incident, data: dict[str, Any]) -> dict[str, Any]:
     """The structured equivalent of `outward`, for webhooks: every string masked, and for a
-    restricted incident nothing but its reference (the event's name travels beside it)."""
+    restricted incident nothing but its reference and code name (the event's name travels beside it)."""
     if restricted(incident):
-        return {"ref": incident.ref}
+        return {"ref": incident.ref, "codename": incident.codename}
     return _masked(data)
 
 

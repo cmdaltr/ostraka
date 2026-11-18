@@ -2,10 +2,15 @@
 the activity chain, the timeline, references and live updates."""
 
 import asyncio
+import importlib.util
+from pathlib import Path
 
 import pytest
+from alembic.operations import Operations
+from alembic.runtime.migration import MigrationContext
 from sqlalchemy import select, text
 
+from ostraka import codenames
 from ostraka.models import Mention, Role, Team
 
 pytestmark = pytest.mark.db
@@ -125,6 +130,66 @@ async def test_only_managers_change_tlp_or_close(db, client, people):
         url, json={"version": 1, "tlp": "red", "status": "closed"}, headers=p["soc"].headers
     )
     assert r.status_code == 200 and r.json()["tlp"] == "red" and r.json()["closed_at"]
+
+
+async def test_every_record_has_its_own_code_name_from_the_lists(db, client, people):
+    p = await people()
+    first = await declare(client, p["soc"])
+    assert codenames.canonical(first["codename"]) == first["codename"]
+    chosen = await declare(client, p["soc"], codename="folded lantern")
+    assert chosen["codename"] == "Folded Lantern"
+    r = await client.post(
+        "/api/incidents",
+        json={"title": "Taken", "severity": "low", "codename": "Folded Lantern"},
+        headers=p["soc"].headers,
+    )
+    assert r.status_code == 409
+    r = await client.post(
+        "/api/incidents",
+        json={"title": "Free text", "severity": "low", "codename": "Finance Ransomware"},
+        headers=p["soc"].headers,
+    )
+    assert r.status_code == 422  # only listed words, so a code name never says what the case is
+    offered = (await client.get("/api/incidents/codename", headers=p["soc"].headers)).json()["codename"]
+    assert codenames.canonical(offered) == offered and offered not in (first["codename"], "Folded Lantern")
+
+
+async def test_records_open_before_code_names_are_given_one_each(db, client, people):
+    """0021, from the bottom up: dropping the column and adding it again names every record afresh."""
+    path = Path(__file__).resolve().parents[1] / "migrations/versions/0021_codenames.py"
+    spec = importlib.util.spec_from_file_location("codenames_revision", path)
+    revision = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(revision)
+    p = await people()
+    for title in ("First", "Second", "Third"):
+        await declare(client, p["soc"], title=title)
+    connection = await db.connection()
+
+    def run(step):
+        def go(sync):
+            with Operations.context(MigrationContext.configure(sync)):
+                step()
+
+        return go
+
+    await connection.run_sync(run(revision.downgrade))
+    await connection.run_sync(run(revision.upgrade))
+    names = (await connection.exec_driver_sql("SELECT codename FROM incidents")).scalars().all()
+    assert len(names) == 3 and len(set(names)) == 3
+    assert all(codenames.canonical(n) == n for n in names)
+
+
+async def test_only_managers_rename_and_the_change_is_logged(db, client, people):
+    p = await people()
+    incident = await declare(client, p["soc"])
+    url = f"/api/incidents/{incident['id']}"
+    await client.put(f"{url}/members/{p['dfir'].id}", json={}, headers=p["soc"].headers)
+    r = await client.patch(url, json={"version": 1, "codename": "Quiet Kiln"}, headers=p["dfir"].headers)
+    assert r.status_code == 403
+    r = await client.patch(url, json={"version": 1, "codename": "quiet kiln"}, headers=p["soc"].headers)
+    assert r.status_code == 200 and r.json()["codename"] == "Quiet Kiln"
+    log = (await client.get(f"{url}/activity", headers=p["soc"].headers)).json()
+    assert any(f"code name {incident['codename']} → Quiet Kiln" in e["summary"] for e in log)
 
 
 async def test_handing_over_command(db, client, people):

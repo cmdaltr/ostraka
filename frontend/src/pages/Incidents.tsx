@@ -12,6 +12,7 @@ import { huntPhases, phases, phasesOf, severities, titleMax, tlpLevels } from '.
 import type { Phase, RecordKind, Severity, Tlp } from '../brand';
 import { PhasePill, PhaseStrip, SeverityPill, TlpPill } from '../components/Pills';
 import { PillSelect } from '../components/PillSelect';
+import { CodenameField } from '../components/CodenameField';
 import { Loading } from '../components/sherd/Ostrakon';
 import { Notice, formatDate, messageOf } from '../components/ui';
 import { splitTags } from './incident/shared';
@@ -43,6 +44,7 @@ function DeclareForm({ me, kind, onClose }: { me: Me; kind: RecordKind; onClose:
         json: {
           kind,
           title: form.get('title'),
+          codename: form.get('codename') || null,
           summary: form.get('summary'),
           severity: form.get('severity') as Severity,
           tlp: form.get('tlp') as Tlp,
@@ -85,6 +87,7 @@ function DeclareForm({ me, kind, onClose }: { me: Me; kind: RecordKind; onClose:
           A few words, as people will say it. The detail goes in the {hunt ? 'hypothesis' : 'summary'}.
         </small>
       </label>
+      <CodenameField id="declare-codename" />
       <div className="form-row">
         <label className="field">
           <span>Severity</span>
@@ -309,7 +312,9 @@ export function Incidents({ me }: { me: Me }) {
                     <TlpPill level={i.tlp} />
                     <span className="hint">updated {formatDate(i.updated_at)}</span>
                   </div>
-                  <h2>{i.title}</h2>
+                  <h2>
+                    {i.codename} <span className="incident-card-title">{i.title}</span>
+                  </h2>
                   <PhaseStrip current={i.phase} kind={i.kind} />
                   <div className="incident-card-foot hint">
                     <span>

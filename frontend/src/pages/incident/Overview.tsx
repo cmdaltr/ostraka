@@ -9,8 +9,10 @@ import type { Incident, IncidentRole } from '../../api/incidents';
 import type { Me, Person, Team } from '../../api/types';
 import { kindName, phasesOf, severities, titleMax, tlpLevels } from '../../brand';
 import { announce } from '../../live/live';
+import { initials } from '../../components/AppShell';
 import { PencilIcon } from '../../components/PencilIcon';
 import { PillSelect } from '../../components/PillSelect';
+import { CodenameField } from '../../components/CodenameField';
 import { PhasePill, SeverityPill, TlpPill } from '../../components/Pills';
 import { Notice, formatDate } from '../../components/ui';
 import { Links } from './Links';
@@ -70,7 +72,9 @@ function Details({ incident }: { incident: Incident }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const codename = form.get('codename');
     const done = await patch({
+      ...(codename && codename !== incident.codename ? { codename } : {}),
       title: form.get('title'),
       summary: form.get('summary'),
       tags: splitTags(String(form.get('tags') ?? '')),
@@ -112,6 +116,7 @@ function Details({ incident }: { incident: Incident }) {
             <span>Title</span>
             <input name="title" defaultValue={incident.title} required minLength={3} maxLength={titleMax} />
           </label>
+          {incident.can_manage && <CodenameField id="edit-codename" current={incident.codename} />}
           <label className="field">
             <span>Summary</span>
             <textarea className="input" name="summary" rows={6} defaultValue={incident.summary} />
@@ -236,16 +241,15 @@ function People({ incident, me }: { incident: Incident; me: Me }) {
 
   return (
     <section className="panel">
-      <header>
+      <header className="links-head">
         <h2>Teams and people</h2>
-        <p>
-          Everyone in an involved team can see and work on this {kindName(incident.kind)}. People added by name can too.
-        </p>
+        <p>Everyone in these teams, and anyone named here, can see and work on this {kindName(incident.kind)}.</p>
       </header>
 
-      <div className="stack">
-        <span className="label">Teams</span>
-        <div className="actions">
+      {/* one row of teams and one of people, each ending in the control that adds another */}
+      <dl className="roster">
+        <dt>Teams</dt>
+        <dd>
           {incident.teams.map((t) => (
             <span key={t.id} className="chip chip-accent">
               {t.name}
@@ -280,76 +284,66 @@ function People({ incident, me }: { incident: Incident; me: Me }) {
                 ))}
             </select>
           )}
-        </div>
-      </div>
-
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Person</th>
-            <th>Role here</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+        </dd>
+        <dt>People</dt>
+        <dd>
           {incident.members.map((m) => (
-            <tr key={m.user.id}>
-              <td>
+            <span key={m.user.id} className="chip person-chip">
+              <span className="person-initials" aria-hidden="true">
+                {initials(m.user.name)}
+              </span>
+              <span>
                 {m.user.name}
                 {m.user.id === me.id && <span className="hint"> (you)</span>}
-              </td>
-              <td>
-                {incident.can_manage ? (
-                  <select
-                    className="input"
-                    aria-label={`Role for ${m.user.name}`}
-                    value={m.role}
-                    onChange={(e) => setRole(m.user.id, e.target.value as IncidentRole)}
-                  >
-                    {roles.map((r) => (
-                      <option key={r} value={r}>
-                        {roleLabels[r]}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  roleLabels[m.role]
-                )}
-              </td>
-              <td>
-                {incident.can_manage && m.role !== 'commander' && (
-                  <button
-                    className="link-button"
-                    type="button"
-                    onClick={() => save.run(() => api(`${base}/members/${m.user.id}`, { method: 'DELETE' }))}
-                  >
-                    Remove
-                  </button>
-                )}
-              </td>
-            </tr>
+              </span>
+              {incident.can_manage ? (
+                <select
+                  className="person-role"
+                  aria-label={`Role for ${m.user.name}`}
+                  value={m.role}
+                  onChange={(e) => setRole(m.user.id, e.target.value as IncidentRole)}
+                >
+                  {roles.map((r) => (
+                    <option key={r} value={r}>
+                      {roleLabels[r]}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="person-role">{roleLabels[m.role]}</span>
+              )}
+              {incident.can_manage && m.role !== 'commander' && (
+                <button
+                  className="chip-x"
+                  type="button"
+                  aria-label={`Remove ${m.user.name}`}
+                  onClick={() => save.run(() => api(`${base}/members/${m.user.id}`, { method: 'DELETE' }))}
+                >
+                  ×
+                </button>
+              )}
+            </span>
           ))}
-        </tbody>
-      </table>
-
-      {incident.can_manage && (
-        <select
-          className="input inline"
-          aria-label="Add a person"
-          value=""
-          onChange={(e) => setRole(e.target.value, 'responder')}
-        >
-          <option value="">Add a person…</option>
-          {directory.data
-            ?.filter((p) => p.is_active && !members.has(p.id))
-            .map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-                {p.team ? ` · ${p.team.name}` : ''}
-              </option>
-            ))}
-        </select>
-      )}
+          {incident.can_manage && (
+            <select
+              className="input inline"
+              aria-label="Add a person"
+              value=""
+              onChange={(e) => setRole(e.target.value, 'responder')}
+            >
+              <option value="">Add a person…</option>
+              {directory.data
+                ?.filter((p) => p.is_active && !members.has(p.id))
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                    {p.team ? ` · ${p.team.name}` : ''}
+                  </option>
+                ))}
+            </select>
+          )}
+        </dd>
+      </dl>
       {save.error && <Notice kind="error">{save.error}</Notice>}
     </section>
   );

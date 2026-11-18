@@ -68,6 +68,7 @@ def summary(incident: Incident) -> IncidentSummary:
         kind=incident.kind,
         ref=incident.ref,
         title=incident.title,
+        codename=incident.codename,
         severity=incident.severity,
         tlp=incident.tlp,
         phase=incident.phase,

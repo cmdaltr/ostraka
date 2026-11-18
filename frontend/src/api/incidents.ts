@@ -19,6 +19,7 @@ export interface IncidentSummary {
   kind: RecordKind;
   ref: string;
   title: string;
+  codename: string;
   severity: Severity;
   tlp: Tlp;
   phase: Phase;

@@ -83,13 +83,13 @@ def test_the_signature_is_an_hmac_of_the_raw_body():
 
 
 def incident(tlp: Tlp):
-    return SimpleNamespace(ref="OST-26-007", tlp=tlp)
+    return SimpleNamespace(ref="OST-26-007", codename="Folded Lantern", tlp=tlp)
 
 
 @pytest.mark.parametrize("tlp", [Tlp.RED, Tlp.AMBER_STRICT])
-def test_a_restricted_incident_is_named_by_its_reference_only(tlp):
+def test_a_restricted_incident_is_named_by_its_reference_and_code_name_only(tlp):
     data = {"ref": "OST-26-007", "title": "Board member's account", "task": {"title": "Reset MFA"}}
-    assert notify.outward_data(incident(tlp), data) == {"ref": "OST-26-007"}
+    assert notify.outward_data(incident(tlp), data) == {"ref": "OST-26-007", "codename": "Folded Lantern"}
 
 
 def test_indicators_are_masked_all_the_way_down():

@@ -250,7 +250,11 @@ export function IncidentPage({ me }: { me: Me }) {
       {incident && (
     <div className={`incident kind-${incident.kind}`}>
       <header className="incident-head">
-        <h1>{incident.title}</h1>
+        {/* the code name is what people call it; the title says what it is */}
+        <hgroup className="incident-name">
+          <h1>{incident.codename}</h1>
+          <p>{incident.title}</p>
+        </hgroup>
         {/* the reference and its labels at the far end of the title's row, with what you can do */}
         <div className="incident-head-side">
           <span className="incident-card-head">

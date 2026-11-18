@@ -96,7 +96,7 @@ async def test_closing_and_assigning_send_their_events(db, client, people, outbo
     assert task["title"] == "Pull the audit log" and task["assignee"] == "Sam Soc"
 
 
-async def test_a_restricted_incident_sends_its_reference_only(db, client, people, outbox, licence_line):  # noqa: F811
+async def test_a_restricted_incident_sends_ref_and_code_name_only(db, client, people, outbox, licence_line):  # noqa: F811
     from tests.test_work import add_task
 
     p = await people()
@@ -108,7 +108,7 @@ async def test_a_restricted_incident_sends_its_reference_only(db, client, people
 
     bodies = [body for body, _, _ in sent(outbox)]
     assert [b["event"] for b in bodies] == ["incident.created", "task.assigned"]
-    assert all(b["data"] == {"ref": red["ref"]} for b in bodies)
+    assert all(b["data"] == {"ref": red["ref"], "codename": red["codename"]} for b in bodies)
     assert "board" not in json.dumps(bodies).lower()
 
 

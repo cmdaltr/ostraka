@@ -146,13 +146,18 @@ class VerificationMethod(StrEnum):
 
 class Incident(Base):
     __tablename__ = "incidents"
-    __table_args__ = (UniqueConstraint("kind", "year", "number", name="uq_incidents_kind_year_number"),)
+    __table_args__ = (
+        UniqueConstraint("kind", "year", "number", name="uq_incidents_kind_year_number"),
+        UniqueConstraint("codename", name="uq_incidents_codename"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     kind: Mapped[RecordKind] = mapped_column(_enum(RecordKind, "record_kind"), default=RecordKind.INCIDENT)
     year: Mapped[int] = mapped_column(Integer)
     number: Mapped[int] = mapped_column(Integer)  # within the kind and year: OST-26-014, HNT-26-003
     title: Mapped[str] = mapped_column(String(200))
+    # Two words from `ostraka.codenames`, always in their written form: safe to send where the title isn't
+    codename: Mapped[str] = mapped_column(String(60))
     summary: Mapped[str] = mapped_column(Text, default="")
     severity: Mapped[Severity] = mapped_column(_enum(Severity, "severity"))
     tlp: Mapped[Tlp] = mapped_column(_enum(Tlp, "tlp"))
