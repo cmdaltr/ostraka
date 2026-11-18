@@ -32,7 +32,7 @@ def _known_stage(v: str | None) -> str | None:
     if v is None or v == "":
         return None
     if v not in BY_KEY:
-        raise ValueError(f"No attack-flow stage is called {v}.")
+        raise ValueError(f"No attack-flow step is called {v}.")
     return v
 
 
@@ -44,7 +44,7 @@ class TaskIn(BaseModel):
     assignee_id: uuid.UUID | None = None
     due_at: datetime | None = None
     stage: str | None = Field(
-        default=None, description="The attack-flow stage it answers (ostraka.flow.STAGES)"
+        default=None, description="The attack-flow step it answers (ostraka.flow.STAGES)"
     )
     checklist: list[str] = Field(default_factory=list)
 

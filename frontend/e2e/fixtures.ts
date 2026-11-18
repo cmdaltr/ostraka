@@ -189,7 +189,7 @@ export async function stubApi(page: Page, who = me(), handle: Api['handle'] = ()
       covered: 0,
       peers: 0,
       group: null,
-      all_stages: [{ id: 'gets_in', name: 'Gets in' }, { id: 'takes', name: 'Collects and takes' }],
+      all_stages: [{ id: 'phishing', name: 'Phishing', column: 'way' }, { id: 'takes_out', name: 'Takes data out', column: 'action' }],
       can_edit: true,
     },
     'GET /api/attack/groups': [{ id: 'G0016', name: 'APT29' }],

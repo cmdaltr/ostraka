@@ -250,36 +250,47 @@ test('without a model Pnyx still answers its questions and says why it cannot ta
   await expect(drawer.getByRole('button', { name: 'Ask' })).toHaveCount(0);
 });
 
+const step = {
+  links: [], techniques: [], suggestions: [], tasks_open: [], tasks_done: 0, call: null, items: [], findings: [], why: '',
+};
 const flowData = {
   stages: [
     {
-      key: 'gets_in', name: 'Gets in', says: 'First foothold', layer: 'seen', coverage: 'covered', why: '',
-      findings: [{ ref: 'FND-1', title: 'Invoice attachment opened', status: 'confirmed' }], links: [],
-      techniques: [{ id: 'T1566.001', name: 'Spearphishing Attachment' }], suggestions: [],
-      tasks_open: [], tasks_done: 1, call: null,
+      ...step, key: 'phishing', name: 'Phishing', column: 'way', verb: 'Phishes', says: 'Lures', layer: 'seen', coverage: 'covered',
+      findings: [{ ref: 'FND-1', title: 'Invoice attachment opened', status: 'confirmed' }],
+      techniques: [{ id: 'T1566.001', name: 'Spearphishing Attachment' }], items: ['Dropbox'], tasks_done: 1,
     },
     {
-      key: 'takes_credentials', name: 'Takes credentials', says: 'Steals logins and secrets', layer: 'expected',
-      coverage: 'open', why: '19 of the 25 ATT&CK groups most like this record (sharing T1566.001) reach this stage.',
-      findings: [], links: [], techniques: [],
+      ...step, key: 'toolkit', name: 'Toolkit', column: 'toolkit', verb: 'Runs', says: 'What it runs', layer: 'seen', coverage: 'focused',
+      findings: [{ ref: 'FND-2', title: 'Mimikatz on WS-114', status: 'lead' }], items: ['Stealers: Mimikatz'],
+    },
+    {
+      ...step, key: 'steals_logins', name: 'Steals logins', column: 'action', verb: 'To', says: 'Something it does once in', layer: 'expected',
+      coverage: 'open', why: '19 of the 25 ATT&CK groups most like this record (sharing T1566.001) are known to do this.',
       suggestions: [{ id: 'T1003', name: 'OS Credential Dumping', groups: 19 }],
-      tasks_open: [{ ref: 'TSK-4', title: 'Check LSASS access' }], tasks_done: 0, call: null,
+      tasks_open: [{ ref: 'TSK-4', title: 'Check LSASS access' }],
+    },
+    {
+      ...step, key: 'infrastructure', name: 'Infrastructure', column: 'service', verb: 'Connects to', says: 'Its own addresses',
+      layer: 'seen', coverage: 'focused', items: ['2 addresses'],
     },
   ],
-  dismissed: [{ key: 'impact', name: 'Does damage', note: 'No encryption anywhere', by: 'Dana Lead', at: '2026-11-18T10:00:00Z' }],
+  dismissed: [{ key: 'destroys', name: 'Encrypts or destroys', note: 'No encryption anywhere', by: 'Dana Lead', at: '2026-11-18T10:00:00Z' }],
   covered: 1,
   peers: 25,
   group: null,
   all_stages: [
-    { id: 'gets_in', name: 'Gets in' },
-    { id: 'takes_credentials', name: 'Takes credentials' },
-    { id: 'talks_home', name: 'Talks home' },
-    { id: 'impact', name: 'Does damage' },
+    { id: 'phishing', name: 'Phishing', column: 'way' },
+    { id: 'toolkit', name: 'Toolkit', column: 'toolkit' },
+    { id: 'steals_logins', name: 'Steals logins', column: 'action' },
+    { id: 'gathers', name: 'Gathers data', column: 'action' },
+    { id: 'infrastructure', name: 'Infrastructure', column: 'service' },
+    { id: 'destroys', name: 'Encrypts or destroys', column: 'action' },
   ],
   can_edit: true,
 };
 
-test('the attack flow shows seen and expected stages, with coverage, calls and attribution', async ({ page }) => {
+test('the attack flow draws the anatomy, with coverage, calls and attribution', async ({ page }) => {
   await stubLive(page);
   const api = await stubApi(page, me(), (method, path) => {
     if (method === 'GET' && path === '/api/incidents/i-1/flow') return { json: flowData };
@@ -288,30 +299,39 @@ test('the attack flow shows seen and expected stages, with coverage, calls and a
   });
   await page.goto('/incidents/OST-26-001');
   const panel = page.locator('.attack-flow');
-  await expect(panel.getByText('of 2 stages covered')).toBeVisible();
-  const stages = panel.getByRole('list', { name: 'Stages' });
-  await expect(stages.getByRole('button', { name: /Gets in/ })).toContainText('Spearphishing Attachment');
-  await expect(stages.getByRole('button', { name: /Takes credentials/ })).toContainText('Check: OS Credential Dumping');
-  await expect(stages.getByText('Covered')).toBeVisible();
+  await expect(panel.getByText('of 4 steps covered')).toBeVisible();
+  const drawing = panel.getByRole('group', { name: 'How the attack unfolds' });
+  await expect(drawing.getByText('Phishes')).toBeVisible();
+  await expect(drawing.getByText('Dropbox')).toBeVisible();
+  await expect(drawing.getByText('Stealers: Mimikatz')).toBeVisible();
+  await expect(drawing.getByText('Unattributed')).toBeVisible();
+  await expect(drawing.getByRole('button', { name: 'Phishing, covered' })).toBeVisible();
+  await expect(drawing.getByRole('button', { name: 'Steals logins, to check' })).toBeVisible();
 
   // the overlay toggles, and is remembered
   await panel.getByLabel('Show coverage').uncheck();
-  await expect(stages.getByText('Covered')).toHaveCount(0);
+  await expect(drawing.getByRole('button', { name: 'Phishing', exact: true })).toBeVisible();
   await page.reload();
   await expect(page.locator('.attack-flow').getByLabel('Show coverage')).not.toBeChecked();
 
-  // a stage opens to what's in it, and takes a call naming where someone looked
-  await page.locator('.attack-flow').getByRole('button', { name: /Takes credentials/ }).click();
-  const detail = page.getByRole('region', { name: 'Takes credentials' });
+  // an action opens to what's in it, and takes a call naming where someone looked
+  await page.locator('.attack-flow').getByRole('button', { name: 'Steals logins' }).click();
+  const detail = page.getByRole('region', { name: 'Steals logins' });
   await expect(detail.getByText(/19 of the 25 ATT&CK groups/)).toBeVisible();
   await expect(detail.getByRole('link', { name: 'T1003' })).toHaveAttribute('href', 'https://attack.mitre.org/techniques/T1003/');
   await detail.getByLabel('Where you looked').fill('EDR LSASS access alerts, 10–14 Nov');
   await detail.getByRole('button', { name: 'Save' }).click();
   await expect
-    .poll(() => api.requests.find((r) => r.method === 'PUT' && r.path.endsWith('/flow/stages/takes_credentials'))?.body)
+    .poll(() => api.requests.find((r) => r.method === 'PUT' && r.path.endsWith('/flow/stages/steals_logins'))?.body)
     .toEqual({ call: 'cleared', note: 'EDR LSASS access alerts, 10–14 Nov' });
 
+  // a node opens the same way, with what the record names there
+  await page.locator('.attack-flow').getByRole('button', { name: 'Toolkit' }).click();
+  await expect(page.getByRole('region', { name: 'Toolkit' }).getByText('Stealers: Mimikatz')).toBeVisible();
+
   await expect(page.getByText('No encryption anywhere')).toBeVisible();
+  await page.locator('.attack-flow').getByRole('combobox', { name: 'Step' }).selectOption('gathers');
+  await expect(page.locator('.attack-flow').getByLabel('Why')).toBeVisible();
   await page.locator('.attack-flow').getByRole('combobox', { name: 'Attributed to' }).selectOption('G0016');
   await expect
     .poll(() => api.requests.find((r) => r.path.endsWith('/flow/attribution'))?.body)

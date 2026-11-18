@@ -3,7 +3,8 @@ import type { FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import { flowStages } from '../../api/flow';
+import { columnNames, flowSteps } from '../../api/flow';
+import type { FlowColumn } from '../../api/flow';
 import type { Incident } from '../../api/incidents';
 import { dueWords, finished, taskStatusNames } from '../../api/work';
 import type { AppliedPlaybook, Outcome, Playbook, Task, TaskLink, TaskStatus } from '../../api/work';
@@ -32,7 +33,7 @@ export function sortTasks(tasks: Task[]): Task[] {
 }
 
 function AddTask({ incident, parent, onDone }: { incident: Incident; parent?: Task; onDone: () => void }) {
-  // a subtask answers the same stage as its parent unless someone says otherwise
+  // a subtask answers the same attack-flow step as its parent unless someone says otherwise
   const stage = parent?.stage;
   const save = useSave(incident, ['tasks']);
   const teams = useTeams();
@@ -119,15 +120,21 @@ function AddTask({ incident, parent, onDone }: { incident: Incident; parent?: Ta
           <span>Due</span>
           <input id="task-due" type="datetime-local" name="due_at" />
         </label>
-        {/* the attack-flow stage it answers: its box stays open until the task is done */}
+        {/* the attack-flow step it answers: its part of the drawing stays open until the task is done */}
         <label className="field">
-          <span>Attack-flow stage</span>
+          <span>Attack-flow step</span>
           <select id="task-stage" name="stage" defaultValue={stage ?? ''}>
             <option value="">None</option>
-            {flowStages.map(([key, name]) => (
-              <option key={key} value={key}>
-                {name}
-              </option>
+            {(Object.keys(columnNames) as FlowColumn[]).map((column) => (
+              <optgroup key={column} label={columnNames[column]}>
+                {flowSteps
+                  .filter(([, , c]) => c === column)
+                  .map(([key, name]) => (
+                    <option key={key} value={key}>
+                      {name}
+                    </option>
+                  ))}
+              </optgroup>
             ))}
           </select>
         </label>

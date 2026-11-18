@@ -1,18 +1,21 @@
 """The attack flow: how the attack in a record unfolded, what it's likely to have done that nobody has
-looked at yet, and how far the team has got in answering each stage.
+looked at yet, and how far the team has got in answering each step.
 
-A stage groups ATT&CK tactics in plain words (Gets in, Runs, Takes credentials…). The flow is built per
-record, never from a template, in three layers:
+The steps are the attack's anatomy in plain words (`ostraka/anatomy.py`, Shikari's): the way in (Exploit,
+Phishing, Credentials), the Toolkit, the Actions once in (Steals logins, Keeps access…) and where it goes
+(Cloud, Messaging, Code and storage, Infrastructure). The flow is built per record, never from a template,
+in three layers:
 
-- **Seen:** stages the record's own findings and movement show, each with this incident's techniques.
-- **Expected:** stages it hasn't reached that the attack is likely to have, from ATT&CK: the groups whose
+- **Seen:** steps the record shows: its findings' techniques, the CVEs, tools and services they name, its
+  movement between assets and its malicious addresses.
+- **Expected:** steps it hasn't shown that the attack is likely to have, from ATT&CK: the groups whose
   known techniques overlap this record's, and what most of them go on to do. A record attributed to a
   group uses that group's techniques instead. Every expectation says why.
-- **Analyst:** a stage someone expects that ATT&CK didn't suggest, or one they've ruled out, with a reason.
+- **Analyst:** a step someone expects that ATT&CK didn't suggest, or one they've ruled out, with a reason.
 
-Each stage is then covered (answered: a confirmed finding there and no open task for it, or checked and
+Each step is then covered (answered: a confirmed finding there and no open task for it, or checked and
 nothing found, naming where), focused (a lead or open work there) or not yet looked at. Covering every
-stage is a measure of thoroughness, never a condition for closing the record. `build()` is a pure function
+step is a measure of thoroughness, never a condition for closing the record. `build()` is a pure function
 of a snapshot (`Facts`); nothing here is AI.
 """
 
@@ -26,6 +29,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ostraka import anatomy
 from ostraka.models import (
     FINISHED,
     Asset,
@@ -34,10 +38,13 @@ from ostraka.models import (
     FindingStatus,
     FlowStage,
     Incident,
+    IncidentObservable,
     LinkKind,
     StageCall,
     Task,
+    Verdict,
 )
+from ostraka.observables.detect import ObservableType
 from ostraka.reports import attack
 
 
@@ -45,33 +52,28 @@ from ostraka.reports import attack
 class Stage:
     key: str
     name: str
+    column: str  # way, toolkit, action or service: where it's drawn
+    verb: str  # the step into it, on the line that reaches it ("Phishes")
     says: str  # what the attacker does here, in a few words
-    tactics: tuple[str, ...]
+    prefixes: tuple[str, ...]  # techniques placed here, with their sub-techniques
 
 
 STAGES: tuple[Stage, ...] = (
-    Stage("prepares", "Prepares", "Scouts the target and readies infrastructure",
-          ("reconnaissance", "resource-development")),
-    Stage("gets_in", "Gets in", "First foothold", ("initial-access",)),
-    Stage("runs", "Runs", "Executes its tools", ("execution",)),
-    Stage("stays", "Stays and rises", "Keeps access and gains privilege",
-          ("persistence", "privilege-escalation")),
-    Stage("hides", "Hides", "Evades and impairs defences",
-          ("stealth", "defense-impairment", "defense-evasion")),
-    Stage("takes_credentials", "Takes credentials", "Steals logins and secrets", ("credential-access",)),
-    Stage("moves", "Looks around and moves", "Discovers and moves laterally",
-          ("discovery", "lateral-movement")),
-    Stage("talks_home", "Talks home", "Command and control", ("command-and-control",)),
-    Stage("takes", "Collects and takes", "Gathers and exfiltrates data", ("collection", "exfiltration")),
-    Stage("impact", "Does damage", "Encrypts, destroys or disrupts", ("impact",)),
+    *(Stage(k, n, "way", verb, says, p) for k, n, verb, p, says in anatomy.WAYS_IN),
+    Stage("toolkit", "Toolkit", "toolkit", "Runs", "What it runs: frameworks, stealers, web shells, RATs",
+          anatomy.TOOLKIT),
+    *(Stage(k, n, "action", "To", "Something it does once in", p) for k, n, p in anatomy.ACTIONS),
+    *(Stage(k, n, "service", verb, ", ".join(g) or "Its own addresses: C2 and staging", p)
+      for k, n, verb, g, p in anatomy.SERVICES),
 )  # fmt: skip
 BY_KEY = {s.key: s for s in STAGES}
-_OF_TACTIC = {t: s.key for s in STAGES for t in s.tactics}
+_SERVICE_OF_GROUP = {g: k for k, _, _, groups, _ in anatomy.SERVICES for g in groups}
 LINK_STAGE = {
     LinkKind.LATERAL_MOVEMENT: "moves",
-    LinkKind.C2: "talks_home",
-    LinkKind.EXFILTRATION: "takes",
+    LinkKind.C2: "infrastructure",
+    LinkKind.EXFILTRATION: "takes_out",
 }
+_EXFIL = BY_KEY["takes_out"].prefixes
 
 PEERS = 25  # the groups most like this record that expectations are drawn from
 EXPECT_SHARE = 0.5  # a stage is expected when at least this share of those groups reach it
@@ -79,10 +81,9 @@ SUGGEST = 5  # techniques suggested per stage
 
 
 def stages_of(technique: str) -> list[str]:
-    """The stages a technique belongs to, by its tactics."""
-    _, tactics = attack.technique(technique)
-    found = {_OF_TACTIC[t] for t in tactics if t in _OF_TACTIC}
-    return [s.key for s in STAGES if s.key in found]
+    """The steps a technique belongs to, in the anatomy's order (T1021.007 is a way in and a move)."""
+    t = technique.strip().upper()
+    return [s.key for s in STAGES if anatomy.has([t], s.prefixes)]
 
 
 def base(technique: str) -> str:
@@ -98,6 +99,13 @@ class FindingFact:
     title: str
     status: FindingStatus
     techniques: tuple[str, ...]
+    text: str = ""  # its statement: the CVEs, tools and services it names
+
+
+@dataclass(frozen=True)
+class ObservableFact:
+    kind: ObservableType
+    value: str
 
 
 @dataclass(frozen=True)
@@ -131,6 +139,7 @@ class Facts:
     links: list[LinkFact] = field(default_factory=list)
     tasks: list[TaskFact] = field(default_factory=list)
     calls: list[CallFact] = field(default_factory=list)
+    observables: list[ObservableFact] = field(default_factory=list)  # malicious or suspicious only
     group: str | None = None  # attributed ATT&CK group, G0016
 
 
@@ -148,6 +157,8 @@ class Suggestion:
 class StageOut:
     key: str
     name: str
+    column: str
+    verb: str
     says: str
     layer: str  # seen, expected (from ATT&CK) or added (by an analyst)
     coverage: str  # covered, focused or open
@@ -159,6 +170,7 @@ class StageOut:
     tasks_open: list[TaskFact] = field(default_factory=list)
     tasks_done: int = 0
     call: CallFact | None = None  # cleared or expected, by whom and why
+    items: list[str] = field(default_factory=list)  # what's named there: CVEs, tools, services
 
 
 @dataclass
@@ -193,8 +205,51 @@ def _peers(seen: set[str], group: str | None) -> tuple[list[frozenset[str]], tup
     return [t for _, t in scored[:PEERS]], None
 
 
+def _names(
+    facts: Facts, live: list[FindingFact], seen_in: dict[str, list[FindingFact]]
+) -> dict[str, list[str]]:
+    """What each step names, as Shikari shows it: the CVEs exploited, the services phished through or
+    signed in to, the tools run, and the services reached. Adds the steps they show to `seen_in`."""
+    items: dict[str, list[str]] = {}
+
+    def put(stage: str, item: str, finding: FindingFact | None = None) -> None:
+        if item not in items.setdefault(stage, []):
+            items[stage].append(item)
+        if finding is not None and finding not in seen_in.setdefault(stage, []):
+            seen_in[stage].append(finding)
+
+    for f in live:
+        text = f"{f.title}\n{f.text}"
+        way = next((k for k, *_ in anatomy.WAYS_IN if anatomy.has(f.techniques, BY_KEY[k].prefixes)), None)
+        for cve in anatomy.cves_in(text):
+            put("exploit", cve, f)
+        for group, name in anatomy.tools_in(text):
+            put("toolkit", f"{group}: {anatomy.tool_name(group, name)}", f)
+        for group, name in anatomy.services_in(text):
+            if way in ("phishing", "credentials"):
+                put(way, name, f)
+            elif group in anatomy.TOOLKIT_SERVICES:
+                if not any(i.endswith(f": {name}") for i in items.get("toolkit", [])):
+                    put("toolkit", f"Remote access: {name}", f)
+            else:
+                put(_SERVICE_OF_GROUP[group], name, f)
+    addresses = 0
+    for o in facts.observables:
+        named = anatomy.services_at(o.value) if o.kind in (ObservableType.DOMAIN, ObservableType.URL) else []
+        for group, name in named:
+            if group not in anatomy.TOOLKIT_SERVICES:
+                put(_SERVICE_OF_GROUP[group], name)
+        if not named and o.kind in (ObservableType.IP_ADDRESS, ObservableType.DOMAIN, ObservableType.URL):
+            addresses += 1
+    if addresses:
+        items.setdefault("infrastructure", []).insert(
+            0, f"{addresses} address{'es' if addresses > 1 else ''}"
+        )
+    return items
+
+
 def build(facts: Facts) -> Flow:
-    """The flow for a record, stage by stage in ATT&CK's order."""
+    """The flow for a record, step by step in the anatomy's order."""
     calls = {c.stage: c for c in facts.calls}
     live = [f for f in facts.findings if f.status is not FindingStatus.REFUTED]
 
@@ -206,6 +261,7 @@ def build(facts: Facts) -> Flow:
                 if f not in seen_in.setdefault(s, []):
                     seen_in[s].append(f)
                 seen_techniques.setdefault(s, set()).add(t.upper())
+    items = _names(facts, live, seen_in)
     links_in: dict[str, list[LinkFact]] = {}
     for link in facts.links:
         links_in.setdefault(link.stage, []).append(link)
@@ -215,7 +271,7 @@ def build(facts: Facts) -> Flow:
     seen_base = {base(t) for t in every_seen}
 
     peers, group = _peers(every_seen, facts.group)
-    # how many peers reach each stage, and with which techniques this record hasn't shown
+    # how many peers reach each step, and with which techniques this record hasn't shown
     reach: Counter[str] = Counter()
     unseen: dict[str, Counter[str]] = {}
     for techniques in peers:
@@ -231,6 +287,8 @@ def build(facts: Facts) -> Flow:
         ranked = sorted(unseen.get(stage, Counter()).items(), key=lambda x: (-x[1], x[0]))[:SUGGEST]
         return [Suggestion(t, attack.technique(t)[0], n) for t, n in ranked]
 
+    # the ways in are alternatives: once the record shows how they got in, the others aren't expected
+    got_in = any(k in seen_in or k in items for k, *_ in anatomy.WAYS_IN)
     shown = ", ".join(sorted(every_seen)[:4]) + ("…" if len(every_seen) > 4 else "")
     out: list[StageOut] = []
     dismissed: list[tuple[Stage, CallFact]] = []
@@ -239,15 +297,19 @@ def build(facts: Facts) -> Flow:
         if call is not None and call.call is StageCall.DISMISSED:
             dismissed.append((stage, call))
             continue
-        if stage.key in seen_in or stage.key in links_in:
+        if stage.key in seen_in or stage.key in links_in or stage.key in items:
             layer, why = "seen", ""
+        elif stage.column == "way" and got_in:
+            if call is None:
+                continue
+            layer, why = "added", ""
         elif group is not None and reach[stage.key]:
-            layer, why = "expected", f"{group[1]} ({group[0]}) is known to reach this stage."
-        elif peers and reach[stage.key] / len(peers) >= EXPECT_SHARE and stage.key != "prepares":
+            layer, why = "expected", f"{group[1]} ({group[0]}) is known to do this."
+        elif peers and reach[stage.key] / len(peers) >= EXPECT_SHARE:
             layer = "expected"
             why = (
                 f"{reach[stage.key]} of the {len(peers)} ATT&CK groups most like this record "
-                f"(sharing {shown}) reach this stage."
+                f"(sharing {shown}) are known to do this."
             )
         elif call is not None:
             layer, why = "added", ""
@@ -262,14 +324,19 @@ def build(facts: Facts) -> Flow:
             confirmed and not open_tasks
         ):
             coverage = "covered"
-        elif lead or open_tasks or confirmed or links_in.get(stage.key):
+        elif lead or open_tasks or confirmed or links_in.get(stage.key) or items.get(stage.key):
             coverage = "focused"
         else:
             coverage = "open"
+        verb = stage.verb
+        if stage.key == "storage" and (seen_in.get("takes_out") or links_in.get("takes_out")):
+            verb = "Uploads to"
         out.append(
             StageOut(
                 key=stage.key,
                 name=stage.name,
+                column=stage.column,
+                verb=verb,
                 says=stage.says,
                 layer=layer,
                 coverage=coverage,
@@ -283,6 +350,7 @@ def build(facts: Facts) -> Flow:
                 tasks_open=open_tasks,
                 tasks_done=len(tasks) - len(open_tasks),
                 call=call if call is not None and call.call is not StageCall.DISMISSED else None,
+                items=items.get(stage.key, []),
             )
         )
     return Flow(out, dismissed, len(peers), group, sorted(every_seen))
@@ -306,9 +374,18 @@ async def gather(db: AsyncSession, incident: Incident, names: dict[uuid.UUID, st
         await db.scalars(select(Task).where(Task.incident_id == incident.id, Task.stage.is_not(None)))
     ).all()
     calls = (await db.scalars(select(FlowStage).where(FlowStage.incident_id == incident.id))).all()
+    observables = (
+        await db.scalars(
+            select(IncidentObservable).where(
+                IncidentObservable.incident_id == incident.id,
+                IncidentObservable.verdict.in_((Verdict.MALICIOUS, Verdict.SUSPICIOUS)),
+            )
+        )
+    ).all()
     return Facts(
         findings=[
-            FindingFact(f"FND-{f.seq}", f.title, f.status, tuple(f.techniques or ())) for f in findings
+            FindingFact(f"FND-{f.seq}", f.title, f.status, tuple(f.techniques or ()), f.statement or "")
+            for f in findings
         ],
         links=[
             LinkFact(
@@ -322,5 +399,6 @@ async def gather(db: AsyncSession, incident: Incident, names: dict[uuid.UUID, st
         ],
         tasks=[TaskFact(t.ref, t.title, t.stage or "", t.status in FINISHED) for t in tasks],
         calls=[CallFact(c.stage, c.call, c.note, names.get(c.by, "") if c.by else "", c.at) for c in calls],
+        observables=[ObservableFact(o.observable.kind, o.observable.value) for o in observables],
         group=incident.attributed_group,
     )

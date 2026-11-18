@@ -1249,88 +1249,117 @@ details > summary h2.inline {
 /* stages left to right in ATT&CK's order, joined by arrows; seen ones solid, expected ones dashed. Five to a
    row (three on a tablet, one on a phone), so they wrap rather than scroll and no stage is out of sight; the
    first in each row has no arrow before it */
-.flow {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--space-4) var(--space-6);
+/* the drawing: nodes and the lines between them. Seen in the record is drawn solid, expected dashed;
+   with the overlay on, covered is malachite and being worked yellow ochre. What you've selected has a red
+   ochre halo */
+.flow-drawing {
+  overflow-x: auto;
 }
-.flow-stage {
-  position: relative;
-}
-.flow-stage + .flow-stage::before {
-  content: '→';
-  position: absolute;
-  left: calc(-1 * var(--space-6) + 6px);
-  top: 18px;
-  color: var(--muted);
-  font-size: var(--text-lg);
-}
-.flow-stage:nth-child(5n + 1)::before {
-  content: none;
-}
-@media (max-width: 900px) {
-  .flow {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .flow-stage:nth-child(5n + 1)::before {
-    content: '→';
-  }
-  .flow-stage:nth-child(3n + 1)::before {
-    content: none;
-  }
-}
-.flow-stage button {
+.flow-drawing svg {
+  display: block;
   width: 100%;
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  padding: var(--space-2);
-  text-align: center;
-  font: inherit;
-  color: var(--ink);
-  background: none;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  min-width: 760px;
+  height: auto;
+}
+.flow-drawing text {
+  fill: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+.flow-edge path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.6;
+}
+.flow-edge.layer-expected path:not(.flow-arrow) {
+  stroke-dasharray: 6 5;
+}
+.flow-edge text {
+  fill: var(--muted);
+}
+.flow-node circle {
+  fill: var(--surface);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.flow-node.layer-expected circle {
+  stroke: var(--muted);
+  stroke-dasharray: 5 4;
+}
+.flow-drawing .flow-node circle.flow-halo {
+  fill: none;
+  stroke: var(--ochre);
+  stroke-width: 2.5;
+  stroke-dasharray: none;
+}
+.flow-glyph {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.flow-node.layer-expected .flow-glyph {
+  stroke: var(--muted);
+}
+.flow-drawing .flow-title {
+  font-weight: 650;
+  font-size: 14px;
+}
+.flow-drawing .flow-sub {
+  fill: var(--muted);
+}
+.flow-drawing .flow-tick {
+  fill: var(--ok);
+  font-weight: 700;
+  font-size: 18px;
+}
+.flow-node[role='button'],
+.flow-action {
   cursor: pointer;
 }
-.flow-stage button:hover {
-  background: var(--raised);
+.flow-node[role='button']:hover circle:not(.flow-halo) {
+  fill: var(--raised);
 }
-.flow-stage button[aria-pressed='true'] {
-  border-color: var(--ochre);
-  background: var(--ochre-soft);
+.flow-node:focus,
+.flow-action:focus {
+  outline: none;
 }
-.flow-ring {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
-  font-weight: 700;
-  color: var(--ok);
+.flow-node:focus-visible circle:not(.flow-halo) {
+  stroke: var(--focus);
+  stroke-width: 3;
 }
-.flow-stage.layer-expected .flow-ring,
-.flow-stage.layer-added .flow-ring {
-  border-style: dashed;
-  border-color: var(--muted);
+.flow-action:focus-visible,
+.flow-action:hover {
+  text-decoration: underline;
 }
-.flow-gist {
-  font-size: var(--text-sm);
-  color: var(--muted);
-  overflow-wrap: anywhere;
+.flow-drawing .flow-action.layer-expected {
+  fill: var(--muted);
 }
-/* the overlay: covered in malachite, being worked in yellow ochre, the rest as drawn */
-.flow.with-coverage .cov-covered .flow-ring {
-  border-color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 14%, var(--surface));
+.flow-drawing .flow-action.chosen {
+  fill: var(--ochre);
+  font-weight: 650;
 }
-.flow.with-coverage .cov-focused .flow-ring {
-  border-color: var(--yellow-ochre);
-  background: color-mix(in srgb, var(--yellow-ochre) 16%, var(--surface));
+/* the overlay */
+.flow-edge.cov-covered path {
+  stroke: var(--ok);
+}
+.flow-edge.cov-focused path {
+  stroke: var(--yellow-ochre);
+}
+.flow-node.cov-covered circle:not(.flow-halo) {
+  stroke: var(--ok);
+  fill: color-mix(in srgb, var(--ok) 14%, var(--surface));
+}
+.flow-node.cov-focused circle:not(.flow-halo) {
+  stroke: var(--yellow-ochre);
+  fill: color-mix(in srgb, var(--yellow-ochre) 16%, var(--surface));
+}
+.flow-drawing .flow-action.cov-covered {
+  fill: var(--ok);
+}
+.flow-drawing .flow-action.cov-focused {
+  fill: var(--yellow-ochre-deep);
 }
 .flow-cov {
   font: 600 var(--text-xs) / 1.2 var(--font-mono);
@@ -1406,15 +1435,4 @@ details > summary h2.inline {
 }
 .flow-decide .input:not(select) {
   flex: 1 1 240px;
-}
-@media (max-width: 640px) {
-  .flow {
-    grid-template-columns: 1fr;
-  }
-  /* later than the row rules above, so it wins: every stage after the first has a down arrow */
-  .flow-stage + .flow-stage::before {
-    content: '↓';
-    left: 50%;
-    top: calc(-1 * var(--space-4) - 4px);
-  }
 }

@@ -33,14 +33,14 @@ async def test_the_flow_is_built_from_findings_and_covered_by_calls(db, client, 
     assert r.status_code == 201, r.text
 
     data = await flow_of(client, p["soc"], incident)
-    gets_in = stage(data, "gets_in")
-    assert gets_in["layer"] == "seen" and gets_in["coverage"] == "focused"  # a lead, not yet confirmed
-    assert gets_in["techniques"] == [{"id": "T1566.001", "name": "Spearphishing Attachment"}]
+    phishing = stage(data, "phishing")
+    assert phishing["layer"] == "seen" and phishing["coverage"] == "focused"  # a lead, not yet confirmed
+    assert phishing["techniques"] == [{"id": "T1566.001", "name": "Spearphishing Attachment"}]
     expected = [s for s in data["stages"] if s["layer"] == "expected"]
     assert expected and all("ATT&CK groups most like this record" in s["why"] for s in expected)
     assert data["covered"] == 0 and data["can_edit"] is True
 
-    # a task for a stage keeps it focused until it's done
+    # a task for a step keeps it focused until it's done
     target = expected[0]["key"]
     await add_task(
         client,
@@ -66,26 +66,26 @@ async def test_the_flow_is_built_from_findings_and_covered_by_calls(db, client, 
 
     # ruled out: it leaves the flow and is listed with the reason
     r = await client.put(
-        f"{base}/flow/stages/impact",
+        f"{base}/flow/stages/destroys",
         json={"call": "dismissed", "note": "No encryption anywhere"},
         headers=p["soc"].headers,
     )
     assert r.status_code == 204
     data = await flow_of(client, p["soc"], incident)
-    assert "impact" not in [s["key"] for s in data["stages"]]
+    assert "destroys" not in [s["key"] for s in data["stages"]]
     assert (
         data["dismissed"][0]["note"] == "No encryption anywhere" and data["dismissed"][0]["by"] == "Sam Soc"
     )
 
     # withdrawn, it's read from the record again
-    assert (await client.delete(f"{base}/flow/stages/impact", headers=p["soc"].headers)).status_code == 204
+    assert (await client.delete(f"{base}/flow/stages/destroys", headers=p["soc"].headers)).status_code == 204
     assert (await flow_of(client, p["soc"], incident))["dismissed"] == []
 
     summaries = (
         await db.scalars(select(ActivityEvent.summary).where(ActivityEvent.action == "flow_stage"))
     ).all()
     assert any("checked and found nothing in" in s for s in summaries)
-    assert any(s.startswith("Sam Soc withdrew the call on Does damage") for s in summaries)
+    assert any(s.startswith("Sam Soc withdrew the call on Encrypts or destroys") for s in summaries)
 
 
 async def test_attribution_shapes_the_expectations(db, client, people):  # noqa: F811
@@ -109,9 +109,7 @@ async def test_attribution_shapes_the_expectations(db, client, people):  # noqa:
     data = await flow_of(client, p["soc"], incident)
     assert data["group"] == {"id": "G0016", "name": "APT29"} and data["peers"] == 1
     assert all(
-        s["why"] == "APT29 (G0016) is known to reach this stage."
-        for s in data["stages"]
-        if s["layer"] == "expected"
+        s["why"] == "APT29 (G0016) is known to do this." for s in data["stages"] if s["layer"] == "expected"
     )
 
 
@@ -122,11 +120,11 @@ async def test_observers_read_the_flow_but_make_no_calls(db, client, people):  #
     data = await flow_of(client, p["exec"], incident)
     assert data["can_edit"] is False
     r = await client.put(
-        f"{base}/flow/stages/impact", json={"call": "dismissed", "note": "No"}, headers=p["exec"].headers
+        f"{base}/flow/stages/destroys", json={"call": "dismissed", "note": "No"}, headers=p["exec"].headers
     )
     assert r.status_code in (403, 422)
     r = await client.put(
-        f"{base}/flow/stages/impact",
+        f"{base}/flow/stages/destroys",
         json={"call": "dismissed", "note": "Not here"},
         headers=p["exec"].headers,
     )

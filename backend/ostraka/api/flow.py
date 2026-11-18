@@ -65,6 +65,8 @@ class CallOut(BaseModel):
 class StageOut(BaseModel):
     key: str
     name: str
+    column: str  # way, toolkit, action or service
+    verb: str  # the step into it ("Phishes")
     says: str
     layer: str  # seen, expected or added
     coverage: str  # covered, focused or open
@@ -76,6 +78,7 @@ class StageOut(BaseModel):
     tasks_open: list[TaskOut]
     tasks_done: int
     call: CallOut | None
+    items: list[str]  # what the record names there: CVEs, tools, services
 
 
 class DismissedOut(BaseModel):
@@ -91,13 +94,19 @@ class GroupOut(BaseModel):
     name: str
 
 
+class StepOut(BaseModel):
+    id: str
+    name: str
+    column: str
+
+
 class FlowOut(BaseModel):
     stages: list[StageOut]
     dismissed: list[DismissedOut]
     covered: int
     peers: int
     group: GroupOut | None
-    all_stages: list[GroupOut]  # every stage, for adding one or giving a task one
+    all_stages: list[StepOut]  # every step, for adding one or giving a task one
     can_edit: bool
 
 
@@ -112,7 +121,7 @@ class AttributionIn(BaseModel):
 
 def _stage(key: str) -> flow.Stage:
     if key not in flow.BY_KEY:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No attack-flow stage is called {key}.")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No attack-flow step is called {key}.")
     return flow.BY_KEY[key]
 
 
@@ -131,6 +140,8 @@ async def read_flow(
             StageOut(
                 key=s.key,
                 name=s.name,
+                column=s.column,
+                verb=s.verb,
                 says=s.says,
                 layer=s.layer,
                 coverage=s.coverage,
@@ -151,6 +162,7 @@ async def read_flow(
                 call=CallOut(call=s.call.call, note=seen(s.call.note), by=s.call.by, at=s.call.at)
                 if s.call
                 else None,
+                items=s.items,
             )
             for s in built.stages
         ],
@@ -161,7 +173,7 @@ async def read_flow(
         covered=built.covered,
         peers=built.peers,
         group=GroupOut(id=built.group[0], name=built.group[1]) if built.group else None,
-        all_stages=[GroupOut(id=s.key, name=s.name) for s in flow.STAGES],
+        all_stages=[StepOut(id=s.key, name=s.name, column=s.column) for s in flow.STAGES],
         can_edit=access.can_edit(user, incident),
     )
 
