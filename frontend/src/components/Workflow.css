@@ -172,7 +172,7 @@
 }
 .workflow-outcomes .chosen {
   font-weight: 700;
-  color: var(--accent);
+  color: var(--ochre);
 }
 
 .workflow-wrap {
@@ -252,5 +252,5 @@
   margin: 2px 0 0;
 }
 .workflow-detail .chosen {
-  color: var(--accent);
+  color: var(--ochre);
 }

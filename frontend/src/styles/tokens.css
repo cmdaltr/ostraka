@@ -87,9 +87,12 @@
   --team-6: #6e4b2a;
   --team-7: #4a4643;
   --team-8: #b3456c;
-  /* the period's other pigments, for small accents only: yellow ochre for what's open now, Tyrian
+  /* the period's other pigments: yellow ochre for what's current (the phase you're in), Tyrian
      purple (murex dye) for hunts */
   --yellow-ochre: #b07f1c;
+  /* yellow ochre dark enough to read as small text on a pale ground; ink to set on it solid */
+  --yellow-ochre-deep: #7d5a12;
+  --yellow-ochre-ink: #221e1a;
   --tyrian: #6b2a4f;
   --tyrian-ink: #ffffff;
   /* a hunt's card in the list: a faint Tyrian tint, where an incident's is plain */
@@ -121,6 +124,8 @@
     --team-7: #aaa39a;
     --team-8: #e98aac;
     --yellow-ochre: #e0b458;
+    --yellow-ochre-deep: #e0b458;
+    --yellow-ochre-ink: #17140f;
     --tyrian: #c27ba4;
     --tyrian-ink: #17140f;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
@@ -132,6 +137,7 @@
     --sherd-whole-opacity: 0.054;
     --inscription-ink: #e6e1d8;
     --ochre: #e07a5f;
+    --ochre-ink: #1e1612;
     --inscription-name-ink: #1e1612;
     --chalk: #8b8f97;
     --chalk-line-opacity: 0.45;
@@ -158,6 +164,8 @@
   --team-7: #aaa39a;
   --team-8: #e98aac;
   --yellow-ochre: #e0b458;
+  --yellow-ochre-deep: #e0b458;
+  --yellow-ochre-ink: #17140f;
   --tyrian: #c27ba4;
   --tyrian-ink: #17140f;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
@@ -169,6 +177,7 @@
   --sherd-whole-opacity: 0.054;
   --inscription-ink: #e6e1d8;
   --ochre: #e07a5f;
+  --ochre-ink: #1e1612;
   --inscription-name-ink: #1e1612;
   --chalk: #8b8f97;
   --chalk-line-opacity: 0.45;
@@ -189,9 +198,13 @@
   /* the sign-in inscription (components/Inscription.tsx): words in iron-gall ink, the name in red
      ochre, scratched out in black chalk (a soot grey by night, where black wouldn't show) */
   --inscription-ink: #2b211b;
-  /* red ochre, the brand's colour: the name, and the marks of structure (the active tab, your avatar,
-     the stroke under a page's heading); never a label, a state or a warning */
+  /* red ochre, the brand's colour: the name, the marks of structure (the active tab, your avatar, the
+     stroke under a page's heading) and what's been chosen (the page you're on, a pressed choice, a team
+     on the record); never a warning or a state. Egyptian blue is for what you act on, yellow ochre for
+     what's current, malachite for what's done. */
   --ochre: #a33a24;
+  --ochre-ink: #ffffff;
+  --ochre-soft: color-mix(in srgb, var(--ochre) 11%, var(--surface));
   --inscription-name: var(--ochre);
   --inscription-name-ink: #ffffff;
   --chalk: #161514;

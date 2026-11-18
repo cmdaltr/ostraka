@@ -21,8 +21,8 @@
   padding: var(--space-3);
 }
 .editions > div[aria-current] {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--ochre);
+  background: var(--ochre-soft);
 }
 .editions dt {
   font-weight: 600;

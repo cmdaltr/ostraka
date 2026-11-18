@@ -99,7 +99,7 @@ function InviteForm({ me, teams, onInvited }: { me: Me; teams: Team[]; onInvited
         ) : (
           <div className="field">
             <span>Team</span>
-            <span className="chip chip-accent">{me.team?.name}</span>
+            <span className="chip chip-chosen">{me.team?.name}</span>
           </div>
         )}
         <div className="actions">

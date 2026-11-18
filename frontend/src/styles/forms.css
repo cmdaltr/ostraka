@@ -274,6 +274,18 @@ select.input,
   border-color: transparent;
   color: var(--ink);
 }
+/* done: malachite, wherever something is finished (a sent update, a contained asset) */
+.chip-done {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--ok) 35%, var(--line));
+}
+/* something chosen for this record, such as a team on an incident: red ochre, as selection is */
+.chip-chosen {
+  background: var(--ochre-soft);
+  border-color: transparent;
+  color: var(--ink);
+}
 /* Availability: a dot before the word, so it doesn't rest on colour alone */
 .availability-available::before,
 .availability-busy::before,

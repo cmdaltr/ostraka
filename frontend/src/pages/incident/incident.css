@@ -24,7 +24,7 @@
 .segmented button[aria-pressed='true'],
 .segmented button[aria-checked='true'] {
   color: var(--ink);
-  background: var(--accent-soft);
+  background: var(--ochre-soft);
 }
 
 .count {
@@ -119,7 +119,7 @@ textarea.input {
 }
 /* every other card in a wash of the accent, and each edged in its severity, so the list reads card by card */
 /* A hunt is Tyrian purple wherever it's shown: its page and its card take Tyrian as their accent, so the
-   current phase, its buttons and its links read as a hunt's */
+   buttons and its links read as a hunt's (the current phase is yellow ochre, as for an incident) */
 .incident.kind-hunt,
 .incident-card.kind-hunt {
   --accent: var(--tyrian);
@@ -300,6 +300,15 @@ textarea.input {
 .rail-flap[aria-expanded='true'] {
   opacity: 1;
 }
+/* each flap its own colour, so the two read as different things at the page's edge */
+.rail-flap-pnyx {
+  color: var(--ochre-ink);
+  background: var(--ochre);
+}
+.rail-flap-pnyx .rail-count {
+  color: var(--ochre);
+  background: var(--ochre-ink);
+}
 .rail-flap svg {
   rotate: 90deg;
 }
@@ -367,9 +376,9 @@ textarea.input {
   cursor: pointer;
 }
 .pnyx-question[aria-pressed='true'] {
-  color: var(--accent-ink);
-  background: var(--accent);
-  border-color: var(--accent);
+  color: var(--ochre-ink);
+  background: var(--ochre);
+  border-color: var(--ochre);
 }
 .pnyx-answer ul {
   margin: 0;
@@ -496,8 +505,8 @@ textarea.input {
   height: 22px;
   border-radius: 50%;
   font: 600 10px / 1 var(--font-ui);
-  color: var(--accent-ink);
-  background: var(--accent);
+  color: var(--ochre-ink);
+  background: var(--ochre);
 }
 /* the role reads as part of the chip; it is still a list for those who may change it */
 .person-role {
@@ -846,6 +855,9 @@ select.person-role {
 .task-overdue {
   border-left: 3px solid var(--sev-high);
 }
+.task-done {
+  border-left: 3px solid var(--ok);
+}
 .task-done h3,
 .task-cancelled h3 {
   color: var(--muted);
@@ -1041,7 +1053,7 @@ select.person-role {
 }
 .decided {
   margin: 0;
-  color: var(--accent);
+  color: var(--ochre);
 }
 
 /* ---- assessments ---------------------------------------------------------------------------- */

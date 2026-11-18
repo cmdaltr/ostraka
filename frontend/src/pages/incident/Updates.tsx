@@ -477,6 +477,7 @@ function Sent({ update }: { update: StakeholderUpdate }) {
       <div className="record-head">
         <span className="mono ref">{update.ref}</span>
         <strong>Update {update.number}</strong>
+        <span className="chip chip-done">Sent</span>
         <span className="hint">
           {formatDate(update.approved_at)} · approved by {update.approved_by?.name}
         </span>

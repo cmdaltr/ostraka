@@ -58,17 +58,17 @@ Beside red ochre, the colours come from the palette of the scribes and potters w
 
 | Pigment | Token | Day | Night | Use |
 |---|---|---|---|---|
-| Red ochre | `--ochre` | `#a33a24` | `#e07a5f` | The brand: the name, active tabs, your avatar, the stroke under a heading |
-| Egyptian blue, the first made pigment | Cobalt's `--accent` | `#2456a6` | `#7ea6e8` | Buttons, links and the current phase in the default palette: ochre's complement |
+| Red ochre | `--ochre` | `#a33a24` | `#e07a5f` | The brand and what's chosen: the name, active tabs, the page you're on, pressed choices, a record's teams, avatars, the stroke under a heading, Pnyx's flap |
+| Egyptian blue, the first made pigment | Cobalt's `--accent` | `#2456a6` | `#7ea6e8` | What you act on in the default palette: buttons, links, focus, the discussion's flap. Ochre's complement |
 | Limestone, parchment and iron-gall ink | Cobalt's `--bg`, `--surface`, `--ink` | `#eeeae2`, `#fbf9f5`, `#221e1a` | `#17140f`, `#1f1b16`, `#ece6dc` | The ground of every page in the default palette: warm, as the period wrote on |
-| Malachite, ground copper ore | `--ok` | `#2e7d5b` | `#5cc497` | Done, confirmed, benign, and the phases a record has finished |
-| Yellow ochre | `--yellow-ochre` | `#b07f1c` | `#e0b458` | What's open now in a playbook drawing, and the phase a record comes to next (outlined) |
-| Tyrian purple, from the murex shell | `--tyrian` | `#6b2a4f` | `#c27ba4` | Hunts: a hunt's page and card take it as their accent (current phase, buttons, links), with its chip and the faint ground of its card |
+| Malachite, ground copper ore | `--ok` | `#2e7d5b` | `#5cc497` | Done, confirmed, benign: finished phases and tasks, sent updates, met clocks, assets from contained on |
+| Yellow ochre | `--yellow-ochre` | `#b07f1c` | `#e0b458` | What's current: the phase a record is in (solid), the one it comes to next (outlined), a phase as a label, and what's open now in a playbook drawing |
+| Tyrian purple, from the murex shell | `--tyrian` | `#6b2a4f` | `#c27ba4` | Hunts: a hunt's page and card take it as their accent (buttons, links), with its chip and the faint ground of its card |
 | Carbon black and limestone | `--chalk`, the sherd | | | The chalk lines and the stone behind every page |
 
 A playbook's team lanes are drawn from the same pigments: Egyptian blue, malachite, yellow ochre, Tyrian purple, verdigris, raw umber, charcoal and madder; whoever runs it is red ochre.
 
-Cinnabar, the period's other famous red, isn't used: it would be read as Critical. Yellow ochre and Tyrian purple stay small, never on a label that means a state.
+Cinnabar, the period's other famous red, isn't used: it would be read as Critical. Tyrian purple stays small. Yellow ochre marks only what's current, never a warning, so it isn't read as Medium severity's amber-brown.
 
 ## The Ostrakon palette
 
@@ -88,7 +88,7 @@ Severity and TLP colours never change with the palette; TLP chips keep the stand
 - Records stay records and findings stay findings: the imagery is in the brand, not in the product's words. Nobody should have to know what a sherd is to declare an incident.
 - Never use "ostracise" or "ostracism" in copy. It's the one meaning that works against a collaboration tool.
 - No Greek-key borders, columns, amphora clip art or laurel wreaths. The mended sherd carries the whole reference.
-- Red ochre (`--ochre`, `#a33a24` by day and `#e07a5f` by night) is the brand's colour, used throughout for structure: the name, the active tab, your avatar, a short stroke where each page's heading line begins, and the lane for whoever runs a playbook. It is never a label, a state or a warning, so it can't be read as severity (17 November 2026, replacing "one thing per screen").
+- Red ochre (`--ochre`, `#a33a24` by day and `#e07a5f` by night) is the brand's colour, used throughout for structure: the name, the active tab, your avatar, a short stroke where each page's heading line begins, and the lane for whoever runs a playbook. It is never a label, a state or a warning, so it can't be read as severity (17 November 2026, replacing "one thing per screen"). Since 18 November 2026 it also marks what's chosen, so that Egyptian blue is left for what you act on: each pigment has one job (blue acts, red ochre chooses, yellow ochre is current, malachite is done).
 - Severity reads by shape as well as colour: each label carries a level meter, four bars for Critical down to one for Low. High is a magenta-pink (`#c11574`, `#f670c7` by night), kept clear of both Critical's red and the ochre.
 - Inter and JetBrains Mono are the product's fonts, in every palette.
 - In writing the name is **Ostraka**, capitalised like any product name (11 November 2026); `ostraka` only in paths, commands and identifiers. The wordmark (the app's header and the status page) and the sign-in inscription set it in capitals, in the same lettering: the wordmark is the inscription's name, still.

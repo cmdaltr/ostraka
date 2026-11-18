@@ -61,7 +61,7 @@ export function Rail({ flaps }: { flaps: Flap[] }) {
         {flaps.map((f) => (
           <button
             key={f.key}
-            className="rail-flap"
+            className={`rail-flap rail-flap-${f.key}`}
             type="button"
             aria-expanded={open === f.key}
             aria-controls={`${f.key}-drawer`}

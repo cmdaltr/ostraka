@@ -9,6 +9,8 @@ import { Notice, formatDate } from '../../components/ui';
 import { Tags, fromLocalInput, splitTags, useSave, useSection } from './shared';
 
 const statuses: AssetStatus[] = ['identified', 'investigating', 'contained', 'eradicated', 'recovered', 'clean'];
+// from contained on, the asset's part is done: malachite, as done is everywhere
+const contained = new Set<AssetStatus>(['contained', 'eradicated', 'recovered', 'clean']);
 const linkKinds: LinkKind[] = ['lateral_movement', 'c2', 'exfiltration', 'other'];
 
 function AddAsset({ incident, onDone }: { incident: Incident; onDone: () => void }) {
@@ -135,7 +137,7 @@ function AssetCard({ incident, asset }: { incident: Incident; asset: Asset }) {
           </button>
         </div>
       ) : (
-        <span className="chip">{asset.status}</span>
+        <span className={`chip${contained.has(asset.status) ? ' chip-done' : ''}`}>{asset.status}</span>
       )}
       {save.error && <Notice kind="error">{save.error}</Notice>}
     </li>

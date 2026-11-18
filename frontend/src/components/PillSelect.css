@@ -92,14 +92,14 @@
 .pill-select-tick svg {
   visibility: hidden;
   fill: none;
-  stroke: var(--accent-ink);
+  stroke: var(--ochre-ink);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 .pill-select-option[aria-selected='true'] .pill-select-tick {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: var(--ochre);
+  background: var(--ochre);
 }
 .pill-select-option[aria-selected='true'] .pill-select-tick svg {
   visibility: visible;

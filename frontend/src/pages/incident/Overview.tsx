@@ -251,7 +251,7 @@ function People({ incident, me }: { incident: Incident; me: Me }) {
         <dt>Teams</dt>
         <dd>
           {incident.teams.map((t) => (
-            <span key={t.id} className="chip chip-accent">
+            <span key={t.id} className="chip chip-chosen">
               {t.name}
               {incident.can_manage && incident.teams.length > 1 && (
                 <button

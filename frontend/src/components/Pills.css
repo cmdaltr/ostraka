@@ -61,27 +61,29 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* done phases in a wash of the accent, the current one solid, those to come plain */
+/* done phases in malachite, the current one solid yellow ochre (what's current), the next outlined in it,
+   those to come plain */
 .phase-strip li.done {
   color: var(--ok);
   background: color-mix(in srgb, var(--ok) 12%, var(--surface));
   border-color: color-mix(in srgb, var(--ok) 35%, var(--line));
 }
 .phase-strip li.next {
-  color: var(--yellow-ochre);
+  color: var(--yellow-ochre-deep);
   border-color: var(--yellow-ochre);
   border-style: dashed;
 }
 .phase-strip li.on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
+  background: var(--yellow-ochre);
+  border-color: var(--yellow-ochre);
+  color: var(--yellow-ochre-ink);
+  font-weight: 600;
 }
 
-/* a phase as a label, in the accent: the filters and the overview */
+/* a phase as a label, in yellow ochre like the current step: the filters and the overview */
 .phase-pill {
-  color: var(--accent);
-  background: var(--accent-soft);
+  color: var(--yellow-ochre-deep);
+  background: color-mix(in srgb, var(--yellow-ochre) 14%, var(--surface));
 }
 
 /* a severity's level as bars, like a signal meter: four for critical down to one for low */

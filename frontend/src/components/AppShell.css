@@ -69,7 +69,7 @@
 }
 .shell-nav a.active {
   color: var(--ink);
-  background: var(--accent-soft);
+  background: var(--ochre-soft);
 }
 .shell-main {
   width: 100%;
@@ -166,7 +166,7 @@
   background: var(--raised);
 }
 .shell-me.active {
-  background: var(--accent-soft);
+  background: var(--ochre-soft);
 }
 .shell-avatar {
   flex: none;
@@ -186,8 +186,8 @@
   white-space: nowrap;
 }
 .shell-icon.active {
-  color: var(--accent);
-  background: var(--accent-soft);
+  color: var(--ochre);
+  background: var(--ochre-soft);
 }
 @media (max-width: 640px) {
   .shell-name {
