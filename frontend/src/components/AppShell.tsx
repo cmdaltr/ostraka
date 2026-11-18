@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { day, getLicence } from '../api/installation';
 import type { Me } from '../api/types';
 import { signOut } from '../auth/session';
@@ -8,6 +8,7 @@ import { brand } from '../brand';
 import { startLive } from '../live/live';
 import { Bell } from './Bell';
 import { CogIcon } from './CogIcon';
+import { useFoldingCards } from './collapsible';
 import { SignOutIcon } from './SignOutIcon';
 import { SiteLinks } from './SiteLinks';
 import { SherdField } from './sherd/SherdField';
@@ -44,6 +45,9 @@ export function AppShell({ me }: { me: Me }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   useEffect(() => startLive(queryClient), [queryClient]);
+  const main = useRef<HTMLElement>(null);
+  const { pathname, search } = useLocation();
+  useFoldingCards(main, pathname + search);
   return (
     <div className="shell">
       <SherdField />
@@ -89,7 +93,7 @@ export function AppShell({ me }: { me: Me }) {
           </button>
         </div>
       </header>
-      <main className="shell-main">
+      <main className="shell-main" ref={main}>
         {me.role === 'admin' && <LicenceRunningOut />}
         <Outlet />
       </main>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 const KEY = 'ostraka.discussion';
@@ -23,6 +23,22 @@ export function Discussion({ count, children }: { count: number; children: React
       // a private window: it just won't be remembered
     }
   }, [open]);
+  // Scrolling over the tab or the drawer moves the thread or nothing, never the page behind it. A wheel the
+  // drawer can still use passes to it; one it can't (at an end, or over the tab) stops here.
+  const rail = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = rail.current;
+    if (!el) return;
+    const hold = (e: WheelEvent) => {
+      const drawer = (e.target as Element).closest('.discussion-drawer');
+      const room =
+        drawer &&
+        (e.deltaY < 0 ? drawer.scrollTop > 0 : drawer.scrollTop + drawer.clientHeight < drawer.scrollHeight - 1);
+      if (!room) e.preventDefault();
+    };
+    el.addEventListener('wheel', hold, { passive: false });
+    return () => el.removeEventListener('wheel', hold);
+  }, []);
   useEffect(() => {
     if (!open) return;
     const close = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
@@ -30,7 +46,7 @@ export function Discussion({ count, children }: { count: number; children: React
     return () => window.removeEventListener('keydown', close);
   }, [open]);
   return (
-    <div className={`discussion${open ? ' is-open' : ''}`}>
+    <div ref={rail} className={`discussion${open ? ' is-open' : ''}`}>
       <button
         className="discussion-tab"
         type="button"

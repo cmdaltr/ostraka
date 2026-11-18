@@ -16,6 +16,48 @@
 .panel > header h2 {
   font-size: var(--text-lg);
 }
+/* A card's title folds it away (components/collapsible.ts); the chevron says which way it goes */
+.panel [data-folds] {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.panel [data-folds]::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  rotate: 45deg;
+  translate: 0 -2px;
+  transition: rotate 0.15s ease;
+}
+.panel.is-folded [data-folds]::after {
+  rotate: -45deg;
+  translate: 0 0;
+}
+.panel [data-folds]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+/* folded parts stay in the page for find-in-page, so they give up their room */
+.panel.is-folded {
+  gap: 0;
+}
+.panel.is-folded > [hidden='until-found'] {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-height: 0;
+  height: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel [data-folds]::after {
+    transition: none;
+  }
+}
 .panel > header p,
 .hint {
   margin: 0;

@@ -191,15 +191,19 @@ textarea.input {
 .incident-head h1 {
   font-size: var(--text-2xl);
 }
+/* the code name and the title on one line, sharing a baseline; they wrap only when there's no room */
 .incident-name {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-3);
+  row-gap: 2px;
   min-width: 0;
 }
 .incident-name p {
   margin: 0;
   color: var(--muted);
-  font-size: var(--text-md);
+  font-size: var(--text-lg);
 }
 .incident-head-side {
   display: flex;
@@ -258,6 +262,12 @@ textarea.input {
   min-width: 0;
 }
 
+/* An incident's sections share the row evenly */
+.incident .tabs button {
+  flex: 1 0 auto;
+  justify-content: center;
+}
+
 /* The discussion: a tab on the right edge and the drawer it opens */
 .discussion-tab {
   position: fixed;
@@ -300,6 +310,8 @@ textarea.input {
   z-index: 29;
   width: min(400px, 92vw);
   overflow-y: auto;
+  /* a touch scroll that reaches the end stays in the drawer too */
+  overscroll-behavior: contain;
   padding: var(--space-4);
   background: var(--surface);
   border-left: 1px solid var(--line);

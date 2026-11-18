@@ -40,6 +40,19 @@
   padding: 0 10px;
   border-radius: var(--radius-md);
 }
+/* On a wide screen the links start where the page's content does: the wordmark's column takes the margin
+   the content has (half of what's beyond 1120px, plus the content's padding, less the link's own), or its
+   own width where that's more */
+@media (min-width: 1100px) {
+  .shell-header {
+    display: grid;
+    grid-template-columns: minmax(max-content, calc((100% - 1120px) / 2 + var(--space-5) - 10px)) 1fr auto;
+    column-gap: 0;
+  }
+  .shell-home {
+    margin-right: var(--space-5);
+  }
+}
 .shell-declare {
   display: inline-flex;
   gap: var(--space-2);

@@ -137,6 +137,70 @@ test('the sections fit on one row, and old links land where their section went',
   expect(await tabs.evaluate((nav) => nav.scrollWidth > nav.clientWidth)).toBe(false);
 });
 
+test('the head reads code name and title on one line, and the tabs share the row evenly', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me());
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/incidents/OST-26-001');
+  const name = await page.locator('.incident-name').evaluate((el) => {
+    const [h1, p] = [el.querySelector('h1')!, el.querySelector('p')!].map((x) => x.getBoundingClientRect());
+    return { sameLine: Math.abs(h1.bottom - p.bottom) < 12, after: p.left > h1.right };
+  });
+  expect(name).toEqual({ sameLine: true, after: true });
+  const widths = await page
+    .getByRole('navigation', { name: 'Incident sections' })
+    .evaluate((nav) => [...nav.children].map((b) => b.getBoundingClientRect().width));
+  expect(Math.max(...widths) - Math.min(...widths)).toBeLessThan(60);
+});
+
+test('scrolling over the discussion never scrolls the page behind it', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me());
+  await page.setViewportSize({ width: 1280, height: 500 });
+  await page.goto('/incidents/OST-26-001');
+  await page.getByRole('heading', { name: 'Summary' }).waitFor();
+  const tab = page.getByRole('button', { name: /Discussion/ });
+  await tab.hover();
+  await page.mouse.wheel(0, 600);
+  await tab.click();
+  await page.getByRole('complementary', { name: 'Discussion' }).hover();
+  await page.mouse.wheel(0, 600);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});
+
+test('a card folds by its title, stays folded next time, and find-in-page still reaches inside', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me());
+  await page.goto('/incidents/OST-26-001');
+  const summary = page.locator('.panel', { has: page.getByRole('heading', { name: 'Summary' }) });
+  const facts = summary.locator('.facts');
+  await expect(facts).toBeVisible();
+  await page.getByRole('heading', { name: 'Summary' }).click();
+  await expect(facts).toBeHidden();
+  // hidden until found, not removed: the browser's find searches it
+  await expect(facts).toHaveAttribute('hidden', 'until-found');
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible();
+  await expect(summary.locator('.facts')).toHaveAttribute('hidden', 'until-found');
+
+  // what the browser does when find-in-page matches inside: beforematch, then the hidden part shows
+  await summary.locator('.facts').evaluate((el) => {
+    el.dispatchEvent(new Event('beforematch', { bubbles: true }));
+    el.removeAttribute('hidden');
+  });
+  await expect(summary.locator('.facts')).toBeVisible();
+  await expect(summary.locator('[hidden]')).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.panel', { has: page.getByRole('heading', { name: 'Summary' }) }).locator('.facts')).toBeVisible();
+
+  // and by keyboard
+  await page.getByRole('heading', { name: 'Summary' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.panel', { has: page.getByRole('heading', { name: 'Summary' }) }).locator('.facts')).toBeHidden();
+});
+
 test('export downloads the briefing, and is offered only to people who may export', async ({ page }) => {
   await stubLive(page);
   await stubApi(page, me());
