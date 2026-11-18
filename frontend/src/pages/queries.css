@@ -1,0 +1,71 @@
+/* SIEM queries (pages/Queries.tsx): the form, a run's rows and the list of queries run */
+.query-form textarea {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  resize: vertical;
+}
+.results-table {
+  overflow: auto;
+  max-height: 60vh;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.results-table table {
+  border-collapse: collapse;
+  font: var(--text-sm) / 1.4 var(--font-mono);
+  min-width: 100%;
+}
+.results-table th,
+.results-table td {
+  padding: 4px var(--space-2);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+  max-width: 40ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.results-table th {
+  position: sticky;
+  top: 0;
+  background: var(--raised);
+  font-weight: 600;
+}
+.query-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.query-list li {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--line);
+}
+.query-list li:first-child {
+  border-top: 0;
+}
+.query-list p {
+  margin: 0;
+}
+.query-text {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font: var(--text-sm) / 1.45 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--raised);
+  border-radius: var(--radius-sm);
+  max-height: 12em;
+  overflow: auto;
+}
+.query-text mark {
+  background: color-mix(in srgb, var(--yellow-ochre) 30%, transparent);
+  color: inherit;
+  border-radius: 2px;
+}
+.query-failed .query-text {
+  border-left: 3px solid var(--sev-critical);
+}

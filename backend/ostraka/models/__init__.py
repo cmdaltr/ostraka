@@ -78,6 +78,7 @@ from ostraka.models.people import (
     clock,
     utcnow,
 )
+from ostraka.models.siem import QueryOutcome, SiemConnection, SiemKind, SiemQuery
 from ostraka.models.updates import (
     Stakeholder,
     StakeholderUpdate,
@@ -139,6 +140,10 @@ __all__ = [
     "FindingObservable",
     "FindingStatus",
     "FlowStage",
+    "QueryOutcome",
+    "SiemConnection",
+    "SiemKind",
+    "SiemQuery",
     "FINISHED",
     "Incident",
     "IncidentCounter",

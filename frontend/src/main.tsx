@@ -19,6 +19,7 @@ import { IncidentPage } from './pages/incident/IncidentPage';
 import { Config, ToConfig } from './pages/Config';
 import { Incidents, listQuery } from './pages/Incidents';
 import { Playbooks } from './pages/Playbooks';
+import { Queries } from './pages/Queries';
 import { Profile } from './pages/Profile';
 import { SignIn } from './pages/SignIn';
 import { Status } from './pages/Status';
@@ -80,6 +81,7 @@ function App() {
             <Route index element={<Incidents me={session.me} />} />
             <Route path="incidents/:ref" element={<IncidentPage me={session.me} />} />
             <Route path="work" element={<Work me={session.me} />} />
+            <Route path="queries" element={<Queries me={session.me} />} />
             <Route path="detection-gaps" element={<DetectionGapsPage />} />
             <Route path="playbooks" element={<Playbooks me={session.me} />} />
             <Route path="config" element={<Config me={session.me} />} />

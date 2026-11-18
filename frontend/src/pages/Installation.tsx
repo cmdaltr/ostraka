@@ -9,6 +9,7 @@ import { Progress } from '../components/sherd/Progress';
 import { Notice, messageOf } from '../components/ui';
 import { IntegrationsTab } from './InstallationIntegrations';
 import { MispTab } from './InstallationMisp';
+import { SiemsTab } from './InstallationSiems';
 import { WebhooksTab } from './InstallationWebhooks';
 import './Installation.css';
 
@@ -597,6 +598,7 @@ export const installationTabs = [
   { key: 'webhooks', label: 'Webhooks' },
   { key: 'integrations', label: 'Rowanholt and Shikari' },
   { key: 'misp', label: 'MISP' },
+  { key: 'siems', label: 'SIEMs' },
 ] as const;
 export type InstallationTab = (typeof installationTabs)[number]['key'];
 
@@ -610,6 +612,8 @@ export function Installation({ tab }: { tab: InstallationTab }) {
     <WebhooksTab />
   ) : tab === 'misp' ? (
     <MispTab />
+  ) : tab === 'siems' ? (
+    <SiemsTab />
   ) : (
     <IntegrationsTab />
   );

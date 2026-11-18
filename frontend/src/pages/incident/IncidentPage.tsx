@@ -35,6 +35,7 @@ import { Rowanholt } from './Rowanholt';
 import { Tasks } from './Tasks';
 import { Timeline } from './Timeline';
 import { Updates } from './Updates';
+import { IncidentQueries } from './IncidentQueries';
 import './incident.css';
 
 const sections = [
@@ -337,6 +338,7 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'evidence' && (
             <>
               <Evidence incident={incident} />
+              <IncidentQueries incident={incident} />
               <Rowanholt incident={incident} />
             </>
           )}

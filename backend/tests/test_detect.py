@@ -98,3 +98,8 @@ def test_detect_many_pulls_confident_observables_once():
 def test_an_indicator_ending_a_question_or_exclamation_is_still_found():
     found = detect_many("What talks to 185.220.101.4? Block evil.example!")
     assert [d.value for d in found] == ["185.220.101.4", "evil.example"]
+
+
+def test_an_indicator_given_as_a_fields_value_is_found_and_a_url_keeps_its_query():
+    found = detect_many('index=proxy dest=203.0.113.7 src="10.1.2.3" see https://evil.example/a?b=c')
+    assert [d.value for d in found] == ["203.0.113.7", "10.1.2.3", "https://evil.example/a?b=c"]

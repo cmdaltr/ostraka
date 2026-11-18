@@ -255,6 +255,8 @@ export function sectionsFor(entityType: string): string[] {
       return ['handover'];
     case 'rowanholt':
       return ['rowanholt'];
+    case 'query':
+      return ['queries'];
     case 'flow':
     case 'incident': // attribution shapes the flow's expectations
       return ['flow'];

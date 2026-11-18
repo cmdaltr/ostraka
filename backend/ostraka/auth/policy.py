@@ -68,6 +68,18 @@ def can_manage_integrations(actor: User) -> str | None:
     return None if actor.role is Role.ADMIN else "Only admins can connect Rowanholt and Shikari."
 
 
+def can_manage_siems(actor: User) -> str | None:
+    """Connect, change or remove a SIEM: admins only, since its credentials read the organisation's
+    logs."""
+    return None if actor.role is Role.ADMIN else "Only admins can connect a SIEM."
+
+
+def can_run_queries(actor: User) -> str | None:
+    """Run a query against a connected SIEM: anyone but an observer, who reads the record and doesn't
+    work it. Searching the queries already run follows each one's record instead."""
+    return None if actor.role is not Role.OBSERVER else "Observers can't run queries."
+
+
 def can_manage_invitations_of(actor: User, team_id: uuid.UUID | None) -> bool:
     """See or revoke invitations into a team."""
     return actor.role is Role.ADMIN or (actor.role is Role.TEAM_LEAD and team_id == actor.team_id)

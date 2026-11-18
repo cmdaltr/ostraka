@@ -300,12 +300,17 @@ def detect_many(text: str, min_confidence: float = 0.8) -> list[Detection]:
     """Pull every confident observable out of a pasted block of text, first occurrence only."""
     seen: set[str] = set()
     found: list[Detection] = []
-    for token in _TOKEN_SPLIT.split(refang(text)):
-        token = token.strip(_WRAPPERS)
-        if len(token) < 3 or token.lower() in seen:
-            continue
-        seen.add(token.lower())
-        result = detect(token)
-        if result.kind is not ObservableType.OTHER and result.confidence >= min_confidence:
-            found.append(result)
+    for whole in _TOKEN_SPLIT.split(refang(text)):
+        whole = whole.strip(_WRAPPERS)
+        # a field and its value, as queries and logs write them (dest=203.0.113.7): the value too, when
+        # the whole isn't an indicator itself (a URL keeps its query string)
+        name, equals, value = whole.partition("=")
+        for token in (whole, value.strip(_WRAPPERS)) if equals and name else (whole,):
+            if len(token) < 3 or token.lower() in seen:
+                continue
+            seen.add(token.lower())
+            result = detect(token)
+            if result.kind is not ObservableType.OTHER and result.confidence >= min_confidence:
+                found.append(result)
+                break
     return found
