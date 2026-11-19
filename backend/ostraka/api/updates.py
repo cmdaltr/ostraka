@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka import audit
 from ostraka.analysis_schemas import LintFlag
-from ostraka.auth import policy
+from ostraka.auth import policy, sessions
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
 from ostraka.incidents import access, activity, views
@@ -353,7 +353,7 @@ async def add_stakeholder(
             db,
             "stakeholder_added",
             actor_id=user.id,
-            ip=request.client.host if request.client else "",
+            ip=sessions.client_ip(request),
             incident=incident.ref,
             email=stakeholder.email,
         )
@@ -389,7 +389,7 @@ async def remove_stakeholder(
             db,
             "stakeholder_removed",
             actor_id=user.id,
-            ip=request.client.host if request.client else "",
+            ip=sessions.client_ip(request),
             incident=incident.ref,
             email=stakeholder.email,
         )
@@ -563,7 +563,7 @@ async def approve(
         db,
         "stakeholder_update_approved",
         actor_id=user.id,
-        ip=request.client.host if request.client else "",
+        ip=sessions.client_ip(request),
         incident=incident.ref,
         update=update.ref,
         recipients=reached,

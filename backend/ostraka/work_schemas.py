@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from ostraka.incident_schemas import Person, TeamRef, Versioned, _tags
 from ostraka.models import NotificationKind, RecordKind, Severity, TaskStatus, Tlp
+from ostraka.notify import push
 
 CHECKLIST_MAX = 50
 
@@ -295,9 +296,9 @@ class PushSubscriptionIn(BaseModel):
 
     @field_validator("endpoint")
     @classmethod
-    def _https(cls, v: str) -> str:
-        if not v.startswith("https://"):
-            raise ValueError("A push endpoint is an https:// URL from the browser.")
+    def _push_service(cls, v: str) -> str:
+        if problem := push.endpoint_problem(v):
+            raise ValueError(problem)
         return v
 
 

@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     access_token_minutes: int = 15
     session_days: int = 14
     invitation_days: int = 7
+    # Proxies in front of the backend that each add the address they were reached from to
+    # X-Forwarded-For: 1 is the web container's nginx, 2 with Caddy, the homelab proxy or your own in
+    # front of that. Addresses are read that many from the right, so one a client writes is never believed
+    proxy_hops: int = Field(default=1, ge=0, le=5)
     max_failed_logins: int = 5
     lockout_minutes: int = 15
 

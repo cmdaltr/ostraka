@@ -162,7 +162,7 @@ make check          # lint, unit, database (throwaway Postgres) and e2e tests
 
 The backend is FastAPI with Postgres 16 (schema managed by Alembic only) and Redis. The frontend is React, TypeScript and Vite, styled with CSS design tokens and three palettes (Cobalt by default, then Ostrakon and Ledger), each in light and dark. `/design` shows the live design system.
 
-How it fits together, with diagrams, is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Conventions for contributors, human or AI, are in [.claude/CLAUDE.md](.claude/CLAUDE.md).
+How it fits together, with diagrams, is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). The security assessment of November 2026 is [docs/security/PENTEST-2026-11.md](docs/security/PENTEST-2026-11.md). Conventions for contributors, human or AI, are in [.claude/CLAUDE.md](.claude/CLAUDE.md).
 
 ## Licence
 

@@ -31,13 +31,14 @@ from datetime import datetime
 from typing import Any
 
 from samarkand import webhooks as shared
-from samarkand.webhooks import sign, url_problem  # noqa: F401  (re-exported for the API and tests)
+from samarkand.webhooks import sign  # noqa: F401  (re-exported for the API and tests)
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka import busy, licence, notify
 from ostraka.auth.secrets import decrypt
 from ostraka.db import sessions
+from ostraka.integrations import is_link_local
 from ostraka.log import get_logger
 from ostraka.models import (
     ActivityEvent,
@@ -65,6 +66,14 @@ TIMEOUT = 15.0  # as every other message Ostraka sends (notify.channels.fetch)
 _TASK_ACTIONS = frozenset({"task_added", "task_updated", "task_claimed"})
 _ACTIONS = frozenset({"declared", "incident_updated"}) | _TASK_ACTIONS
 _background: set[asyncio.Task] = set()
+
+
+def url_problem(url: str) -> str | None:
+    """Why a webhook can't use this URL, or None: samarkand's rules, with a link-local address
+    refused however it's written (samarkand reads only the dotted form)."""
+    if is_link_local(url):
+        return "Webhooks are never sent to link-local addresses."
+    return shared.url_problem(url)
 
 
 def events_problem(events: list[str]) -> str | None:

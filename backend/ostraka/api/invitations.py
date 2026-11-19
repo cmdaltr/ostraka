@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka import accounts, audit
-from ostraka.auth import policy, sessions, totp
+from ostraka.auth import lockout, policy, sessions, totp
 from ostraka.auth.deps import current_user
 from ostraka.auth.secrets import decrypt, encrypt, hash_password, password_problem
 from ostraka.db import get_session
@@ -177,8 +177,7 @@ async def accept_complete(
     user.password_hash = invitation.pending_password_hash
     user.totp_secret = invitation.pending_totp_secret
     user.totp_last_step = step
-    user.failed_logins = 0
-    user.locked_until = None
+    await lockout.clear(user.id)  # from every address: the person has proved who they are afresh
     user.last_login_at = utcnow()
     await db.flush()
 

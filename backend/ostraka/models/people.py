@@ -85,8 +85,6 @@ class User(Base):
     totp_secret: Mapped[str] = mapped_column(Text)
     totp_last_step: Mapped[int] = mapped_column(Integer, default=0)  # refuses a code being replayed
 
-    failed_logins: Mapped[int] = mapped_column(Integer, default=0)
-    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # Profile: what colleagues see beside the name (the phone only if they aren't observers)

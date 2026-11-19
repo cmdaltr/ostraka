@@ -5,7 +5,7 @@ description = "Platform for Incident Management, Response and Hunting"
 requires-python = ">=3.12"
 license = {text = "Elastic-2.0"}
 dependencies = [
-  "fastapi==0.115.6",
+  "fastapi==0.165.0",
   "uvicorn[standard]==0.34.0",
   "pydantic==2.14.3",
   "pydantic-settings==2.7.1",
@@ -14,21 +14,21 @@ dependencies = [
   "alembic==1.14.0",
   "redis==5.2.1",
   "argon2-cffi==25.1.0",
-  "pyjwt==2.10.1",
+  "pyjwt==2.15.1",
   "pyotp==2.9.0",
-  "cryptography==44.0.0",
+  "cryptography==50.0.2",
   "segno==1.6.1",
   "email-validator==2.2.0",
   "httpx==0.28.1",
   # The suite's shared wire formats: licences, signed webhooks, STIX, MISP and Navigator layers
   "samarkand==0.2.0",
-  # The MCP server at /mcp; sse-starlette 2.x keeps starlette at FastAPI's pin
+  # The MCP server at /mcp; sse-starlette 3.x works with Starlette 1.x, which FastAPI now uses
   "mcp==1.30.0",
-  "sse-starlette==2.4.1",
+  "sse-starlette==3.7.0",
   # Branded reports (ostraka.reports), at Shikari's pins where it has them
   "python-docx==1.1.2",  # the Word report
   "reportlab==4.2.5",  # the PDF report, with Inter and JetBrains Mono embedded
-  "Pillow==11.3.0",  # charts and the cover art; the last 11.x, wheels for Python 3.12 and 3.13
+  "Pillow==13.0.0",  # charts, the cover art and cleaning uploaded logos
 ]
 
 [project.scripts]

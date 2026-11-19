@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response,
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka import audit
+from ostraka.auth import sessions
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
 from ostraka.incidents import access, activity
@@ -56,7 +57,7 @@ async def export(
         # copy of this context, theme included.
         body = await asyncio.to_thread(branded.render, cover, blocks, fmt)
 
-    ip = request.client.host if request.client else ""
+    ip = sessions.client_ip(request)
     audit.record(
         db,
         "report_exported",

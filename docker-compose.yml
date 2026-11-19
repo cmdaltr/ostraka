@@ -42,6 +42,8 @@ services:
       OSTRAKA_REDIS_URL: redis://redis:6379/0
       OSTRAKA_PUBLIC_URL: ${OSTRAKA_PUBLIC_URL:-http://localhost:24747}
       OSTRAKA_AI_PROVIDER: ${OSTRAKA_AI_PROVIDER:-none}
+      # 2 with a reverse proxy in front of web (Caddy, the homelab proxy); see .env.example
+      OSTRAKA_PROXY_HOPS: ${OSTRAKA_PROXY_HOPS:-1}
       # Email (optional): SMTP or Microsoft Graph; unset, notifications stay in ostraka and push
       OSTRAKA_MAIL_TRANSPORT: ${OSTRAKA_MAIL_TRANSPORT:-smtp}
       OSTRAKA_GRAPH_TENANT_ID: ${OSTRAKA_GRAPH_TENANT_ID:-}

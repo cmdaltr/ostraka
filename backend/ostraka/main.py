@@ -48,7 +48,7 @@ from ostraka.api import live as live_api
 from ostraka.api import (
     webhooks as webhooks_api,
 )
-from ostraka.config import get_settings
+from ostraka.config import Environment, get_settings
 from ostraka.integrations import gaps
 from ostraka.log import configure
 
@@ -70,15 +70,17 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     settings = get_settings()
     configure(settings.log_level)
+    production = settings.env is Environment.PRODUCTION
     # No CORS middleware: the browser only ever talks to ostraka through its own origin (nginx in
     # production, Vite's proxy in development), so cross-origin requests have nothing to reach.
     app = FastAPI(
         title=branding.NAME,
         description=branding.TAGLINE,
         version=__version__,
-        docs_url="/api/docs",
+        # The schema maps every route and model, so production doesn't hand it to anyone who asks
+        docs_url=None if production else "/api/docs",
         redoc_url=None,
-        openapi_url="/api/openapi.json",
+        openapi_url=None if production else "/api/openapi.json",
         lifespan=lifespan,
     )
     for module in (

@@ -15,6 +15,7 @@ host, artefact, row) and ATT&CK technique ids.
 from __future__ import annotations
 
 import ipaddress
+import socket
 from urllib.parse import urlsplit
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,10 +34,28 @@ _OWN_SUFFIXES = (".ts.net", ".internal", ".lan", ".home.arpa", ".localhost")
 
 
 def _address(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    """The address a host names, read as the resolver would: 2852039166, 0xa9fea9fe and 169.254.43518
+    are all 169.254.169.254, so a check on the dotted form alone would let them through."""
     try:
-        return ipaddress.ip_address(host)
+        address = ipaddress.ip_address(host)
     except ValueError:
-        return None
+        try:
+            return ipaddress.IPv4Address(socket.inet_aton(host))
+        except OSError:
+            return None
+    if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
+        return address.ipv4_mapped
+    return address
+
+
+def is_link_local(url: str) -> bool:
+    """Whether a URL names a link-local address (cloud metadata) in any of the forms an address takes."""
+    try:
+        host = (urlsplit(url.strip()).hostname or "").lower()
+    except ValueError:
+        return False
+    address = _address(host)
+    return address is not None and address.is_link_local
 
 
 def on_own_network(url: str) -> bool:
@@ -57,8 +76,7 @@ def url_problem(url: str) -> str | None:
         return "The URL must start with https://."
     if parts.username or parts.password or parts.query or parts.fragment:
         return "Give the server's address only, without a user name, query or fragment."
-    address = _address(host)
-    if address is not None and address.is_link_local:
+    if is_link_local(url):
         return "Ostraka doesn't connect to link-local addresses."
     if parts.scheme == "http" and not on_own_network(url):
         return "Use https://. Plain http:// is only allowed to this machine or a private network."

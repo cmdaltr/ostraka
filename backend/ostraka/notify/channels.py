@@ -164,7 +164,11 @@ async def send_email(to: str, subject: str, text: str) -> bool:
 
 
 async def send_push(endpoint: str, p256dh: str, auth: str, payload: dict, *, urgent: bool = False) -> int:
-    """The push service's status code; 404 and 410 mean the subscription has gone."""
+    """The push service's status code; 404 and 410 mean the subscription has gone, as does an
+    endpoint no browser's push service would give (saved before they were checked)."""
+    if push.endpoint_problem(endpoint):
+        log.warning("push to %s refused: not a browser push service", urlsplit(endpoint).hostname)
+        return 410
     request = push.build(endpoint, p256dh, auth, json.dumps(payload).encode(), urgent=urgent)
     try:
         return await post(request.url, content=request.body, headers=request.headers)

@@ -27,7 +27,29 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from ostraka.config import get_settings
 
 RECORD_SIZE = 4096
+# The browsers' push services: Chrome and its kin (FCM), Firefox, Edge (WNS) and Safari. A
+# subscription anywhere else is refused, so nobody can point Ostraka's requests at an internal address
+SERVICE_HOSTS = ("fcm.googleapis.com", "updates.push.services.mozilla.com")
+SERVICE_SUFFIXES = (".notify.windows.com", ".push.apple.com")
 _P256_ORDER = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
+
+
+def endpoint_problem(endpoint: str) -> str | None:
+    """Why Ostraka won't send to this push endpoint, or None: https, on a browser's push service."""
+    try:
+        parts = urlsplit(endpoint.strip())
+        host = (parts.hostname or "").lower()
+        port = parts.port
+    except ValueError:
+        host, port = "", None
+    if (
+        parts.scheme != "https"
+        or port not in (None, 443)
+        or parts.username is not None
+        or not (host in SERVICE_HOSTS or host.endswith(SERVICE_SUFFIXES))
+    ):
+        return "A push endpoint is an https:// URL from a browser's push service."
+    return None
 
 
 def b64url(data: bytes) -> str:

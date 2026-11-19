@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import uuid
 from datetime import timedelta
 
@@ -19,7 +20,19 @@ COOKIE_PATH = "/api/auth"
 
 
 def client_ip(request: Request) -> str:
-    return request.client.host if request.client else ""
+    """The address the request came from, for the security log and new-device alerts: the entry in
+    X-Forwarded-For that the furthest trusted proxy added (`proxy_hops` from the right). Entries to
+    its left are whatever the client sent. Uvicorn's own reading trusts the leftmost, so isn't used."""
+    peer = request.scope.get("client")
+    hops = get_settings().proxy_hops
+    forwarded = [h.strip() for h in request.headers.get("x-forwarded-for", "").split(",") if h.strip()]
+    if hops and forwarded:
+        candidate = forwarded[-min(hops, len(forwarded))]
+        try:
+            return str(ipaddress.ip_address(candidate))
+        except ValueError:
+            pass
+    return peer[0] if peer else ""
 
 
 def set_cookie(response: Response, refresh: str) -> None:

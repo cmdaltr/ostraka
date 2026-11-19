@@ -213,13 +213,36 @@ async def test_backup_codes_work_once(db, client, make_person, sign_in):
     assert await events(db, "backup_code_used") == 1
 
 
-async def test_five_wrong_passwords_lock_the_account(db, client, make_person):
+async def test_five_wrong_passwords_lock_the_account_from_that_address_only(db, client, make_person):
     person = await make_person()
+    # nginx's address for each client, the rightmost entry (OSTRAKA_PROXY_HOPS=1)
+    attacker, owner = {"X-Forwarded-For": "198.51.100.7"}, {"X-Forwarded-For": "198.51.100.8"}
     for _ in range(5):
-        await client.post("/api/auth/login", json={"email": person.user.email, "password": "wrong" * 4})
-    r = await client.post("/api/auth/login", json={"email": person.user.email, "password": PASSWORD})
-    assert r.status_code == 401
+        r = await client.post(
+            "/api/auth/login", json={"email": person.user.email, "password": "wrong" * 4}, headers=attacker
+        )
+        assert r.status_code == 401
+    login = {"email": person.user.email, "password": PASSWORD}
+    assert (await client.post("/api/auth/login", json=login, headers=attacker)).status_code == 401
     assert await events(db, "account_locked") == 1
+    # the owner, elsewhere, isn't locked out by someone failing on purpose
+    assert (await client.post("/api/auth/login", json=login, headers=owner)).status_code == 200
+    # and a spoofed leftmost entry doesn't get the attacker a fresh count
+    spoofed = {"X-Forwarded-For": "203.0.113.1, 198.51.100.7"}
+    assert (await client.post("/api/auth/login", json=login, headers=spoofed)).status_code == 401
+
+
+async def test_an_admin_reset_clears_the_lock_from_every_address(db, client, make_person):
+    from ostraka.auth import lockout
+
+    person = await make_person()
+    for address in ("198.51.100.7", "198.51.100.9"):
+        for _ in range(5):
+            await lockout.failed(person.user.id, address)
+        assert await lockout.locked(person.user.id, address)
+    await lockout.clear(person.user.id)
+    assert not await lockout.locked(person.user.id, "198.51.100.7")
+    assert not await lockout.locked(person.user.id, "198.51.100.9")
 
 
 # ---- sessions -------------------------------------------------------------------------------------

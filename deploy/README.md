@@ -32,7 +32,7 @@ Distribute it through MDM, Group Policy or `update-ca-certificates`; `ost` takes
 
 ### Your own reverse proxy
 
-Ostraka needs the WebSocket at `/ws` upgraded, uploads up to 100 MB, and `OSTRAKA_PUBLIC_URL` set to the address the proxy serves (sign-in cookies are marked Secure when it starts `https://`).
+Ostraka needs the WebSocket at `/ws` upgraded, uploads up to 100 MB, and `OSTRAKA_PUBLIC_URL` set to the address the proxy serves (sign-in cookies are marked Secure when it starts `https://`). Set `OSTRAKA_PROXY_HOPS=2` in `.env` (`install.sh --caddy` and `--no-caddy` do) so the security log and sign-in lockout use the address your proxy saw; the proxy must add it to `X-Forwarded-For` as both examples do. With 1, every sign-in looks as if it came from the proxy.
 
 Caddy on the host (`/etc/caddy/Caddyfile`), which also gets the certificate:
 

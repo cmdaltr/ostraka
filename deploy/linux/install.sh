@@ -299,11 +299,13 @@ write_env() {
             # Caddy without being told.
             env_set COMPOSE_FILE "docker-compose.yml:$CADDY_COMPOSE"
             if [ "$CADDY" = internal ]; then env_set OSTRAKA_CADDY_CERTS "--internal-certs"; else env_set OSTRAKA_CADDY_CERTS ""; fi
+            env_set OSTRAKA_PROXY_HOPS 2  # Caddy, then nginx
             say "Caddy will serve $URL on 80 and 443 ($([ "$CADDY" = internal ] && echo "its own CA" || echo "Let's Encrypt"))."
             ;;
         off)
             env_unset COMPOSE_FILE
             env_unset OSTRAKA_CADDY_CERTS
+            env_set OSTRAKA_PROXY_HOPS 2  # your own proxy, then nginx
             say "Caddy is off: put your own reverse proxy in front of 127.0.0.1:$WEB_PORT."
             ;;
     esac

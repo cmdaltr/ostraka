@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
-
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka import audit, notify, profile
-from ostraka.auth import sessions, tokens, totp
+from ostraka.auth import lockout, sessions, tokens, totp
 from ostraka.auth.deps import browser_only
 from ostraka.auth.secrets import decrypt, normalise_backup_code, token_hash, verify_password
-from ostraka.config import get_settings
 from ostraka.db import get_session
 from ostraka.models import BackupCode, NotificationKind, Session, User, utcnow
 from ostraka.schemas import LoginIn, LoginStep, MfaIn, TokenOut
@@ -27,16 +24,9 @@ WRONG = (
 WRONG_CODE = "That code didn't work. Check the time on your device, or use a backup code."
 
 
-def _locked(user: User) -> bool:
-    return user.locked_until is not None and user.locked_until > utcnow()
-
-
-def _failed(db: AsyncSession, user: User, ip: str, action: str) -> None:
-    settings = get_settings()
-    user.failed_logins += 1
-    if user.failed_logins >= settings.max_failed_logins:
-        user.locked_until = utcnow() + timedelta(minutes=settings.lockout_minutes)
-        user.failed_logins = 0
+async def _failed(db: AsyncSession, user: User, ip: str, action: str) -> None:
+    """A wrong password or code, counted against this account from this address (`auth.lockout`)."""
+    if await lockout.failed(user.id, ip):
         audit.record(db, "account_locked", subject_id=user.id, ip=ip)
     audit.record(db, action, subject_id=user.id, ip=ip)
 
@@ -47,9 +37,10 @@ async def login(body: LoginIn, request: Request, db: AsyncSession = Depends(get_
     ip = sessions.client_ip(request)
     user = await db.scalar(select(User).where(User.email == body.email.lower()))
     password_ok = verify_password(body.password, user.password_hash if user else None)
-    if user is None or not user.is_active or _locked(user) or not password_ok:
-        if user is not None and user.is_active and not _locked(user):
-            _failed(db, user, ip, "login_failed")
+    locked = user is not None and await lockout.locked(user.id, ip)
+    if user is None or not user.is_active or locked or not password_ok:
+        if user is not None and user.is_active and not locked:
+            await _failed(db, user, ip, "login_failed")
             await db.commit()
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, WRONG)
     return LoginStep(ticket=tokens.mfa_ticket(user.id))
@@ -75,7 +66,7 @@ async def mfa(
     ip = sessions.client_ip(request)
     user_id = tokens.read_mfa_ticket(body.ticket)
     user = await db.get(User, user_id) if user_id else None
-    if user is None or not user.is_active or _locked(user):
+    if user is None or not user.is_active or await lockout.locked(user.id, ip):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Your sign-in took too long. Start again.")
 
     digits = "".join(ch for ch in body.code if ch.isdigit())
@@ -89,12 +80,11 @@ async def mfa(
         ok = used_backup = await _use_backup_code(db, user, body.code)
 
     if not ok:
-        _failed(db, user, ip, "mfa_failed")
+        await _failed(db, user, ip, "mfa_failed")
         await db.commit()
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, WRONG_CODE)
 
-    user.failed_logins = 0
-    user.locked_until = None
+    await lockout.clear(user.id, ip)
     user.last_login_at = utcnow()
     new_device = await _new_device(db, user, request)
     grant = await sessions.start(db, user, request, response)
