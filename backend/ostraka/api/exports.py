@@ -264,12 +264,12 @@ async def set_misp(
     _admin(user)
     url = body.url.strip().rstrip("/")
     if problem := webhooks.url_problem(url):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, problem.replace("webhooks", "requests"))
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, problem.replace("webhooks", "requests"))
     settings = await _settings(db)
     key = (body.api_key or "").strip()
     if settings is None:
         if not key:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Give MISP's API key.")
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Give MISP's API key.")
         settings = MispSettings(id=1, url=url, api_key=encrypt(key), version=1)
         db.add(settings)
         changes = ["url", "api_key"]

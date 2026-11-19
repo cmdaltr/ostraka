@@ -98,7 +98,7 @@ async def set_channel(
     team = await _channel_team(db, actor, team_id)
     url = body.url.strip()
     if url and (problem := channels.teams_webhook_problem(url)):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, problem)
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, problem)
     team.teams_webhook = encrypt(url) if url else ""
     audit.record(
         db,

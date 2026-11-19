@@ -50,7 +50,7 @@ async def define_tag(
     db: AsyncSession = Depends(get_session),
 ) -> TagOut:
     if body.name != name:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "The name in the path and body differ.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "The name in the path and body differ.")
     tag = await db.get(TagDefinition, name) or TagDefinition(name=name)
     tag.description = body.description
     db.add(tag)

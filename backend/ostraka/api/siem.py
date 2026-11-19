@@ -214,7 +214,7 @@ async def add_connection(
     await _named(db, body.name)
     settings, secrets = siem.split(body.kind, body.values)
     if reason := siem.problem(body.kind, settings, secrets):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, reason)
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, reason)
     row = SiemConnection(
         name=body.name.strip(),
         kind=body.kind,
@@ -264,7 +264,7 @@ async def change_connection(
         settings, sent = siem.split(row.kind, body.values)
         secrets = siem.secrets_of(row) | sent
         if reason := siem.problem(row.kind, settings, secrets):
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, reason)
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, reason)
         secrets_changed = sorted(sent)
         row.settings, row.secret = settings, encrypt(json.dumps(secrets)) if secrets else ""
         row.checked_at, row.check_ok, row.check_message = None, None, ""

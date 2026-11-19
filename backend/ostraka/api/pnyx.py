@@ -92,7 +92,7 @@ async def ask(
     if problems:
         log.info("pnyx answer set aside: %s", "; ".join(problems))
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             "Pnyx's answer was set aside: " + " ".join(problems) + " Try asking another way.",
         )
     return ReplyOut(answer=for_viewer(user, answer), provider=provider)

@@ -132,7 +132,7 @@ async def accept_start(token: str, body: AcceptStart, db: AsyncSession = Depends
     """Name and password. Returns a new authenticator secret to scan; starting again replaces it."""
     invitation = await _open(db, token)
     if problem := password_problem(body.password, invitation.email, body.name):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, problem)
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, problem)
     secret = totp.new_secret()
     invitation.pending_name = body.name.strip()
     invitation.pending_password_hash = hash_password(body.password)
@@ -157,7 +157,9 @@ async def accept_complete(
         raise HTTPException(status.HTTP_409_CONFLICT, "Choose a password first.")
     step = totp.matching_step(decrypt(invitation.pending_totp_secret), body.code, 0)
     if step is None:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "That code didn't match. Try the next one.")
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "That code didn't match. Try the next one."
+        )
 
     ip = sessions.client_ip(request)
     if invitation.user_id is not None:

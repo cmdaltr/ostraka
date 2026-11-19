@@ -89,7 +89,7 @@ async def create_task(
     if body.parent_id is not None:
         parent = await _task(db, incident, body.parent_id)
         if parent.parent_id is not None:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Subtasks go one level deep.")
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Subtasks go one level deep.")
     team, assignee = await work.check_owner(db, user, incident, body.team_id, body.assignee_id)
     task = Task(
         incident_id=incident.id,
@@ -152,7 +152,7 @@ async def update_task(
         team_id = body.team_id if "team_id" in sent else task.team_id
         assignee_id = body.assignee_id if "assignee_id" in sent else task.assignee_id
         if team_id is None and assignee_id is None:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "A task needs a team or a person.")
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "A task needs a team or a person.")
         if (team_id, assignee_id) != (task.team_id, task.assignee_id):
             team, assignee = await work.check_owner(db, user, incident, team_id, assignee_id)
             task.team_id, task.assignee_id = team_id, assignee_id
@@ -262,7 +262,7 @@ async def release(
         views.check_version(task.version, body.version, "task")
     if task.team_id is None:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "This task has no team queue to go back to."
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "This task has no team queue to go back to."
         )
     if task.assignee_id != user.id:
         access.require_manage(user, incident)
@@ -302,7 +302,7 @@ async def add_item(
     incident = await access.load(db, user, incident_id, edit=True)
     task = await _task(db, incident, task_id)
     if len(task.checklist) >= 50:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "A checklist holds at most 50 items.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "A checklist holds at most 50 items.")
     position = max((i.position for i in task.checklist), default=-1) + 1
     task.checklist.append(ChecklistItem(position=position, text=body.text.strip()))
     task.updated_at = utcnow()
@@ -427,7 +427,7 @@ async def add_blocker(
     if blocker is None or not access.can_view(user, blocker_incident):
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No task {body.ref.lstrip('#')} that you can see.")
     if blocker.id == task.id:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "A task can't wait on itself.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "A task can't wait on itself.")
     if await _waits_on(db, blocker.id, task.id):
         raise HTTPException(status.HTTP_409_CONFLICT, f"{blocker.ref} already waits on {task.ref}.")
     if await db.get(TaskDependency, (task.id, blocker.id)):
@@ -506,7 +506,7 @@ async def nudge(
     recipients = work.recipients_without(await work.owners(db, task), user.id)
     if not recipients:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "There's nobody else on this task to nudge."
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "There's nobody else on this task to nudge."
         )
     message = body.message.strip()
     link = notify.incident_link(incident, "tasks", task.ref)

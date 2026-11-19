@@ -92,7 +92,7 @@ def _parsed(text: str) -> licence.Licence:
     try:
         return licence.check_installable(licence.parse(text))
     except licence.LicenceProblem as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
 
 @router.post("/licence/check", response_model=LicencePreview)
@@ -126,7 +126,7 @@ async def install_licence(
     version = licence.terms()[0]
     if not body.accept_terms:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             f"Accept the commercial licence terms for {lic.licensee} to install this licence.",
         )
     if body.terms_version != version:
@@ -272,7 +272,7 @@ async def change_brand(
         await _name_free(db, changes["name"], brand.id)
         changes["name"] = changes["name"].strip()
     if changes.get("primary") == "":
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "A brand needs a primary colour.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "A brand needs a primary colour.")
     if changes.pop("is_default", None):
         await db.execute(update(ReportBrand).where(ReportBrand.id != brand.id).values(is_default=False))
         await db.flush()
@@ -335,7 +335,7 @@ async def upload_logo(
     try:
         cleaned = clean_logo(bytes(data))
     except LogoProblem as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
     setattr(brand, f"{slot}_logo", cleaned)
     brand.version += 1
     audit.record(

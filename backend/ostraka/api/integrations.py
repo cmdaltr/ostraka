@@ -90,7 +90,7 @@ async def save_integration(
     (Rowanholt in local mode needs none)."""
     _admin(user)
     if problem := url_problem(body.url):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, problem)
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, problem)
     if body.detection_team_id and await db.get(Team, body.detection_team_id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such team.")
     row = await db.get(Integration, product)
@@ -104,7 +104,7 @@ async def save_integration(
         action = "integration_added"
     else:
         if body.version is None:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Send the version you loaded.")
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Send the version you loaded.")
         views.check_version(row.version, body.version, "server")
         row.version += 1
         action = "integration_changed"
@@ -267,7 +267,7 @@ async def shikari_webhook(request: Request, db: AsyncSession = Depends(get_sessi
     try:
         delivery = webhooks.parse(body)
     except webhooks.NotADelivery:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Not a Shikari webhook.") from None
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Not a Shikari webhook.") from None
     event, data = delivery.event, delivery.data
     if event not in shikari.RECHECK_EVENTS:
         return JSONResponse(

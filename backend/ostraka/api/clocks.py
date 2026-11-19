@@ -60,7 +60,7 @@ def _refuse(refusal: str | None) -> None:
 
 
 def _unprocessable(message: str) -> HTTPException:
-    return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, message)
+    return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, message)
 
 
 async def _clock(db: AsyncSession, incident: Incident, clock_id: uuid.UUID) -> Clock:

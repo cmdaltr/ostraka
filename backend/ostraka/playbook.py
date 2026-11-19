@@ -54,7 +54,7 @@ def check_parts(parts: Iterable[str]) -> None:
     unknown = sorted(set(parts) - set(PARTS))
     if unknown:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, f"No part of the attack called {unknown[0]!r}."
+            status.HTTP_422_UNPROCESSABLE_CONTENT, f"No part of the attack called {unknown[0]!r}."
         )
 
 
@@ -101,7 +101,7 @@ async def apply(
     missing = [p for p in wanted if p not in parts_of(playbook)]
     if missing:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, f"{playbook.name} has no checks for {NAMES[missing[0]]}."
+            status.HTTP_422_UNPROCESSABLE_CONTENT, f"{playbook.name} has no checks for {NAMES[missing[0]]}."
         )
     run = await db.scalar(
         select(IncidentPlaybook).where(

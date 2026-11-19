@@ -39,7 +39,7 @@ def _admin(user: User) -> None:
 
 def _check(url: str, events: list[str]) -> None:
     if problem := webhooks.url_problem(url) or webhooks.events_problem(events):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, problem)
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, problem)
 
 
 async def _out(db: AsyncSession, hook: Webhook, secret: str | None = None) -> WebhookOut:

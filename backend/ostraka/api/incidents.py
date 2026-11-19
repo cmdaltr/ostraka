@@ -76,7 +76,7 @@ async def choose_codename(db: AsyncSession, wanted: str | None, record_id: uuid.
     name = codenames.canonical(wanted)
     if name is None:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             "A code name is two words from Ostraka's lists, such as Folded Lantern: ask for a new one.",
         )
     holder = await db.scalar(select(Incident.id).where(Incident.codename == name))
@@ -225,7 +225,7 @@ async def update_incident(
         access.require_manage(user, incident)
     if body.phase is not None and body.phase not in PHASES_OF[incident.kind]:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             f"A {incident.kind.value} moves through {', '.join(p.value for p in PHASES_OF[incident.kind])}.",
         )
     views.check_version(incident.version, body.version, "incident")
@@ -341,7 +341,7 @@ async def set_member(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such person.")
     if body.role is not IncidentRole.RESPONDER and target.role is Role.OBSERVER:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Observers can follow an incident but not hold a role."
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Observers can follow an incident but not hold a role."
         )
 
     member = next((m for m in incident.members if m.user_id == target.id), None)

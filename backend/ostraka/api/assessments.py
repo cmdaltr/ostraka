@@ -189,7 +189,7 @@ async def make_assessment(
     findings = await _findings(db, incident, body.finding_ids)
     draft = draft_of(body.judgement, body.probability, findings, body.absences, body.so_what, body.what_next)
     if errors := [f for f in lint(draft) if f.severity == "error"]:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, " ".join(f.message for f in errors))
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, " ".join(f.message for f in errors))
 
     replaced = None
     if body.supersedes_id is not None:

@@ -134,7 +134,7 @@ async def add_link(
             status.HTTP_404_NOT_FOUND, f"No incident or hunt {body.ref.lstrip('#')} that you can see."
         )
     if other.id == incident.id:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "A record can't link to itself.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "A record can't link to itself.")
 
     pair = f"{incident.ref} and {other.ref}"
     # One link per pair of records, whichever way round it was made
@@ -202,7 +202,7 @@ async def promote_hunt(db: AsyncSession, user: User, hunt: Incident, body: Promo
     """Declare an incident from a hunt, linked to it. Written with the caller's commit."""
     if hunt.kind is not RecordKind.HUNT:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Only a hunt can be promoted to an incident."
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Only a hunt can be promoted to an incident."
         )
     declared = IncidentIn(
         kind=RecordKind.INCIDENT,

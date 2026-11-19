@@ -66,7 +66,7 @@ async def update_me(
         setattr(user, field, value)
     if (user.quiet_from is None) != (user.quiet_until is None):
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Set both ends of your quiet hours, or neither."
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Set both ends of your quiet hours, or neither."
         )
     # Which fields, not what they now say: the profile holds a phone number
     audit.record(
@@ -256,7 +256,7 @@ async def change_password(
     if not verify_password(body.current_password, user.password_hash):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Your current password isn't right.")
     if problem := password_problem(body.new_password, user.email, user.name):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, problem)
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, problem)
     user.password_hash = hash_password(body.new_password)
     await sessions.revoke_all(db, user.id, keep_family=caller.session.family)
     audit.record(db, "password_changed", actor_id=user.id, ip=sessions.client_ip(request))
@@ -329,7 +329,7 @@ async def change_account(
     role = changes.get("role", target.role)
     team_id = changes.get("team_id", target.team_id)
     if role is not Role.ADMIN and team_id is None:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Everyone except an admin needs a team.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Everyone except an admin needs a team.")
     if team_id is not None and await db.get(Team, team_id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "That team doesn't exist.")
     losing_admin = (

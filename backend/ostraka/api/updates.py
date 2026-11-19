@@ -556,7 +556,7 @@ async def approve(
     _editable(update, body.version)
     check = await drafts.check(db, update)
     if check.errors:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, " ".join(f.message for f in check.errors))
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, " ".join(f.message for f in check.errors))
     sent = await drafts.send(db, incident, update, user)
     reached = sum(r["sent"] for r in sent)
     audit.record(

@@ -145,10 +145,10 @@ async def add_comment(
     if body.parent_id is not None:
         parent = await _comment(db, incident, body.parent_id)
         if parent.parent_id is not None:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Reply to the thread's first comment.")
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Reply to the thread's first comment.")
         if (parent.target_type, parent.target_id) != (body.target_type, target_id):
             raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_ENTITY, "A reply belongs on the same item as its thread."
+                status.HTTP_422_UNPROCESSABLE_CONTENT, "A reply belongs on the same item as its thread."
             )
     comment = Comment(
         incident_id=incident.id,
@@ -249,7 +249,7 @@ async def resolve(
     comment = await _comment(db, incident, comment_id)
     if comment.parent_id is not None:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Resolve the thread from its first comment."
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Resolve the thread from its first comment."
         )
     if body is not None and body.version is not None:
         views.check_version(comment.version, body.version, "thread")

@@ -288,7 +288,7 @@ async def add_evidence(
             raise HTTPException(status.HTTP_404_NOT_FOUND, "No such person.")
         _refuse(
             policy.can_receive_custody(holder, can_view=access.can_view(holder, incident), holder_id=None),
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
         )
     item = EvidenceItem(
         incident_id=incident.id,
@@ -390,7 +390,7 @@ async def offer(
         policy.can_receive_custody(
             recipient, can_view=access.can_view(recipient, incident), holder_id=now.holder_id
         ),
-        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
     )
     entry = _append(
         db,

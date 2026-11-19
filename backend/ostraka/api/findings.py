@@ -194,7 +194,7 @@ async def _decide(
             "on the host or source.",
         )
     if decision is FindingStatus.REFUTED and not body.note.strip():
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Say why it's refuted.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Say why it's refuted.")
     # Shikari is asked about the finding's techniques before anything is locked
     plan = (
         await gaps.prepare(db, incident, finding.techniques or [])

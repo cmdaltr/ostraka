@@ -162,7 +162,7 @@ async def check_owner(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such person.")
     if assignee is not None and assignee.role is Role.OBSERVER:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Observers can follow an incident but not hold tasks."
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Observers can follow an incident but not hold tasks."
         )
 
     if team is not None and not any(t.team_id == team.id for t in incident.teams):

@@ -332,7 +332,7 @@ async def milestone_task(
     incident = await access.load(db, user, incident_id, edit=True)
     hypothesis = await _hypothesis(db, incident, hypothesis_id)
     if not hypothesis.milestone:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Write the milestone first.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Write the milestone first.")
     if hypothesis.milestone_task_id:
         raise HTTPException(status.HTTP_409_CONFLICT, "That milestone is already a task.")
     task = await create_task(

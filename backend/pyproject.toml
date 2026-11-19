@@ -27,7 +27,7 @@ dependencies = [
   "sse-starlette==3.7.0",
   # Branded reports (ostraka.reports), at Shikari's pins where it has them
   "python-docx==1.1.2",  # the Word report
-  "reportlab==4.2.5",  # the PDF report, with Inter and JetBrains Mono embedded
+  "reportlab==4.5.1",  # the PDF report, with Inter and JetBrains Mono embedded
   "Pillow==13.0.0",  # charts, the cover art and cleaning uploaded logos
 ]
 
@@ -36,6 +36,7 @@ ostraka = "ostraka.cli:main"
 
 [project.optional-dependencies]
 dev = [
+  "httpx2==2.16.2",  # starlette.testclient, for the WebSocket tests
   "pytest==8.3.4",
   "pytest-asyncio==0.25.0",
   "ruff==0.8.4",
@@ -58,6 +59,12 @@ testpaths = ["tests"]
 pythonpath = ["."]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# A deprecation fails the run while it's one rename, not after the next major removes it
+filterwarnings = [
+  "error::DeprecationWarning",
+  "error::PendingDeprecationWarning",
+  "error::starlette.exceptions.StarletteDeprecationWarning",
+]
 markers = ["db: needs a Postgres database (OSTRAKA_TEST_DATABASE_URL)"]
 
 [tool.ruff]

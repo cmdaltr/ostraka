@@ -256,7 +256,7 @@ async def attribute(
     known = attack.groups()
     group = (body.group or "").strip().upper() or None
     if group is not None and group not in known:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"{group} isn't an ATT&CK group.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"{group} isn't an ATT&CK group.")
     if group == incident.attributed_group:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     incident.attributed_group = group

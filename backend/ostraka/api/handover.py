@@ -186,7 +186,7 @@ async def post_handover(
     last = await handover.through(db, incident.id)
     if not body.from_position <= body.through_position <= last:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "That stretch of the activity log doesn't exist here."
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "That stretch of the activity log doesn't exist here."
         )
     state = await handover.gather(db, incident, user, body.from_position)
     state.through_position = body.through_position
