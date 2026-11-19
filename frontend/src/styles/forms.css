@@ -224,8 +224,14 @@ select.input,
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
 }
-.codes-copy {
-  justify-self: start;
+.codes-actions {
+  gap: var(--space-3);
+}
+.codes-actions .check {
+  align-items: center;
+}
+.codes-actions .check input {
+  margin-top: 0;
 }
 
 .table-wrap {

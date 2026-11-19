@@ -62,14 +62,14 @@ export function BackupCodes({ codes, onDone }: { codes: string[]; onDone: () => 
           <li key={c}>{c}</li>
         ))}
       </ol>
-      <button className="btn btn-quiet codes-copy" type="button" onClick={copy}>
-        {copied ? 'Copied' : 'Copy codes'}
-      </button>
-      <label className="check">
-        <input id="codes-saved" type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} />
-        <span>I’ve saved these codes</span>
-      </label>
-      <div className="actions">
+      <div className="actions codes-actions">
+        <label className="check">
+          <input id="codes-saved" type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} />
+          <span>I’ve saved these codes</span>
+        </label>
+        <button className="btn btn-quiet" type="button" onClick={copy}>
+          {copied ? 'Copied' : 'Copy codes'}
+        </button>
         <button className="btn btn-primary" type="button" disabled={!saved} onClick={onDone}>
           Continue
         </button>
