@@ -377,17 +377,14 @@ async def reset_access(
     if target.is_active and not accounts.holds_place(target):
         if problem := await accounts.seat_refusal(db, target.role):
             raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, problem)
-    invitation, link = await accounts.create_invitation(
-        db,
-        email=target.email,
-        role=target.role,
-        team_id=target.team_id,
-        invited_by=actor.id,
-        user_id=target.id,
-    )
-    await sessions.revoke_all(db, target.id)
+    invitation, link, revoked = await accounts.reset_access(db, target, invited_by=actor.id)
     audit.record(
-        db, "access_reset_issued", actor_id=actor.id, subject_id=target.id, ip=sessions.client_ip(request)
+        db,
+        "access_reset_issued",
+        actor_id=actor.id,
+        subject_id=target.id,
+        ip=sessions.client_ip(request),
+        tokens_revoked=revoked,
     )
     await db.commit()
     return {**InvitationOut.model_validate(invitation).model_dump(), "is_reset": True, "link": link}

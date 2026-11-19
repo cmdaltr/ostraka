@@ -399,12 +399,13 @@ function Invoke-FirstAdmin([string[]]$Rest) {
     # The backend's own exit is passed on: $ExitAdminExists when there's an admin already, 1 otherwise
     $code = $LASTEXITCODE
     if ($code -ne 0) { exit $code }
-    $link = @($out | Where-Object { $_ -match '/invite/' }) | Select-Object -Last 1
+    $link = @($out | Where-Object { $_ -match '/invite[#/]' }) | Select-Object -Last 1
     if (-not $link) { Stop-WithError 1 "the backend didn't print an invitation link." }
     # The link is opened on this computer, so it gets this computer's address whatever
-    # OSTRAKA_PUBLIC_URL says (an older .env may still name another server)
-    $token = $link.Substring($link.LastIndexOf('/invite/') + 8).Trim()
-    Write-Output "$(Get-LocalUrl)/invite/$token"
+    # OSTRAKA_PUBLIC_URL says (an older .env may still name another server). The token goes after
+    # #, which a browser never sends, whichever form an older backend printed
+    $token = $link.Substring($link.LastIndexOf('/invite') + 8).Trim()
+    Write-Output "$(Get-LocalUrl)/invite#$token"
     exit 0
 }
 

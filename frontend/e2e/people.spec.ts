@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { Route } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 const teams = [
@@ -132,19 +133,30 @@ test('a wrong password shows the server’s message and stays on the first step'
 test('accepting an invitation: password, authenticator, then backup codes that must be saved', async ({ page }) => {
   await signedOut(page);
   const svg = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>').toString('base64');
-  await page.route('**/api/invitations/accept/tok', (r) =>
-    r.fulfill({ json: { email: 'new@example.org', role: 'responder', team: 'DFIR', is_reset: false, expires_at: '2026-11-17T12:00:00Z' } }),
+  // The token is in each request's body, never its address (the link carries it after #)
+  const tokens: unknown[] = [];
+  const answer = (json: unknown) => (r: Route) => {
+    tokens.push(r.request().postDataJSON().token);
+    return r.fulfill({ json });
+  };
+  await page.route(
+    '**/api/invitations/accept',
+    answer({ email: 'new@example.org', role: 'responder', team: 'DFIR', is_reset: false, expires_at: '2026-11-17T12:00:00Z' }),
   );
-  await page.route('**/api/invitations/accept/tok/start', (r) =>
-    r.fulfill({ json: { otpauth_uri: 'otpauth://totp/x', qr_svg: svg, secret: 'JBSWY3DPEHPK3PXP' } }),
+  await page.route(
+    '**/api/invitations/accept/start',
+    answer({ otpauth_uri: 'otpauth://totp/x', qr_svg: svg, secret: 'JBSWY3DPEHPK3PXP' }),
   );
   const codes = Array.from({ length: 10 }, (_, i) => `ABCD${i}-EFGH${i}`);
-  await page.route('**/api/invitations/accept/tok/complete', (r) =>
-    r.fulfill({ json: { access_token: 'access', expires_in: 900, backup_codes: codes } }),
+  await page.route(
+    '**/api/invitations/accept/complete',
+    answer({ access_token: 'access', expires_in: 900, backup_codes: codes }),
   );
   await page.route('**/api/users/me', (r) => r.fulfill({ json: me({ name: 'New Person' }) }));
 
-  await page.goto('/invite/tok');
+  await page.goto('/invite#tok');
+  // Read once, then out of the address bar
+  await expect(page).toHaveURL(/\/invite$/);
   await expect(page.getByText('invited as responder in DFIR')).toBeVisible();
   await page.locator('#name').fill('New Person');
   await page.locator('#password').fill('a long enough passphrase');
@@ -173,6 +185,7 @@ test('accepting an invitation: password, authenticator, then backup codes that m
   await continueButton.click();
   await expect(page.getByRole('heading', { name: 'Incidents', level: 1 })).toBeVisible();
   await expect(page.getByRole('banner')).toContainText('New');
+  expect(tokens).toEqual(['tok', 'tok', 'tok']);
 });
 
 test('a team lead invites only responders and observers, into their own team', async ({ page }) => {
@@ -185,7 +198,7 @@ test('a team lead invites only responders and observers, into their own team', a
         status: 201,
         json: {
           id: 'i-1', email: 'a@example.org', role: 'observer', team: teams[0], created_at: '2026-11-10T12:00:00Z',
-          expires_at: '2026-11-17T12:00:00Z', is_reset: false, link: 'http://ostraka.test/invite/abc',
+          expires_at: '2026-11-17T12:00:00Z', is_reset: false, link: 'http://ostraka.test/invite#abc',
         },
       });
     }
@@ -199,7 +212,7 @@ test('a team lead invites only responders and observers, into their own team', a
   await page.locator('#invite-role').selectOption('observer');
   await page.getByRole('button', { name: 'Create invitation' }).click();
 
-  await expect(page.getByLabel('Invitation link')).toHaveText('http://ostraka.test/invite/abc');
+  await expect(page.getByLabel('Invitation link')).toHaveText('http://ostraka.test/invite#abc');
   expect(sent).toEqual({ email: 'a@example.org', role: 'observer', team_id: 't-soc' });
 });
 

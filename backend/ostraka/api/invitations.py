@@ -15,19 +15,21 @@ from ostraka.auth.secrets import decrypt, encrypt, hash_password, password_probl
 from ostraka.db import get_session
 from ostraka.models import Invitation, Role, Team, User, utcnow
 from ostraka.schemas import (
+    AcceptCode,
     AcceptDone,
     AcceptEnrol,
     AcceptStart,
-    CodeIn,
     InvitationCreated,
     InvitationIn,
     InvitationOut,
     InvitationPreview,
+    InvitationToken,
 )
 
 router = APIRouter(prefix="/api/invitations", tags=["invitations"])
 
 GONE = "This invitation has expired, been replaced, or already been used. Ask for a new one."
+LOCKED = "Too many wrong codes. Try again later."
 
 
 def _out(invitation: Invitation, **extra) -> dict:
@@ -115,9 +117,9 @@ async def _open(db: AsyncSession, token: str) -> Invitation:
     return invitation
 
 
-@router.get("/accept/{token}", response_model=InvitationPreview)
-async def preview(token: str, db: AsyncSession = Depends(get_session)) -> dict:
-    invitation = await _open(db, token)
+@router.post("/accept", response_model=InvitationPreview)
+async def preview(body: InvitationToken, db: AsyncSession = Depends(get_session)) -> dict:
+    invitation = await _open(db, body.token)
     return {
         "email": invitation.email,
         "role": invitation.role,
@@ -127,10 +129,10 @@ async def preview(token: str, db: AsyncSession = Depends(get_session)) -> dict:
     }
 
 
-@router.post("/accept/{token}/start", response_model=AcceptEnrol)
-async def accept_start(token: str, body: AcceptStart, db: AsyncSession = Depends(get_session)) -> dict:
+@router.post("/accept/start", response_model=AcceptEnrol)
+async def accept_start(body: AcceptStart, db: AsyncSession = Depends(get_session)) -> dict:
     """Name and password. Returns a new authenticator secret to scan; starting again replaces it."""
-    invitation = await _open(db, token)
+    invitation = await _open(db, body.token)
     if problem := password_problem(body.password, invitation.email, body.name):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, problem)
     secret = totp.new_secret()
@@ -142,31 +144,42 @@ async def accept_start(token: str, body: AcceptStart, db: AsyncSession = Depends
     return {"otpauth_uri": uri, "qr_svg": totp.qr_svg_data_uri(uri), "secret": secret}
 
 
-@router.post("/accept/{token}/complete", response_model=AcceptDone)
+@router.post("/accept/complete", response_model=AcceptDone)
 async def accept_complete(
-    token: str,
-    body: CodeIn,
+    body: AcceptCode,
     request: Request,
     response: Response,
     db: AsyncSession = Depends(get_session),
 ) -> dict:
     """A code from the new authenticator proves it works. Creates (or restores) the account, signs
     in, and returns the backup codes, which are shown only this once."""
-    invitation = await _open(db, token)
+    invitation = await _open(db, body.token)
     if not (invitation.pending_password_hash and invitation.pending_totp_secret and invitation.pending_name):
         raise HTTPException(status.HTTP_409_CONFLICT, "Choose a password first.")
+    ip = sessions.client_ip(request)
+    # A reset is a way into an existing account, so its wrong codes count as sign-in failures do
+    reset = await db.get(User, invitation.user_id) if invitation.user_id is not None else None
+    if invitation.user_id is not None and reset is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, GONE)
+    if reset is not None and await lockout.locked(reset.id, ip):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, LOCKED)
     step = totp.matching_step(decrypt(invitation.pending_totp_secret), body.code, 0)
     if step is None:
+        if reset is not None:
+            if await lockout.failed(reset.id, ip):
+                audit.record(db, "account_locked", subject_id=reset.id, ip=ip)
+            audit.record(db, "access_reset_failed", subject_id=reset.id, ip=ip)
+            await db.commit()
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "That code didn't match. Try the next one."
         )
 
-    ip = sessions.client_ip(request)
-    if invitation.user_id is not None:
-        user = await db.get(User, invitation.user_id)
-        if user is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, GONE)
+    revoked = 0
+    if reset is not None:
+        user = reset
         await sessions.revoke_all(db, user.id)
+        # Any made with the old sign-in since the link was issued
+        revoked = await accounts.revoke_api_tokens(db, user.id)
         action = "access_reset_completed"
     else:
         if await db.scalar(select(User.id).where(User.email == invitation.email)):
@@ -187,8 +200,15 @@ async def accept_complete(
     invitation.pending_password_hash = invitation.pending_totp_secret = None
     codes = await accounts.replace_backup_codes(db, user)
     grant = await sessions.start(db, user, request, response)
+    detail = {"tokens_revoked": revoked} if reset is not None else {}
     audit.record(
-        db, action, actor_id=user.id, subject_id=user.id, ip=ip, invited_by=str(invitation.invited_by)
+        db,
+        action,
+        actor_id=user.id,
+        subject_id=user.id,
+        ip=ip,
+        invited_by=str(invitation.invited_by),
+        **detail,
     )
     await db.commit()
     return {**grant, "backup_codes": codes}

@@ -50,7 +50,7 @@ You need Docker with Compose. From a checkout, the `ostraka` command writes `.en
 ./ostraka status
 ```
 
-There is no default account and no self-registration. `first-admin` prints a one-time link for the first admin (`make env` and `make up` still work, with `docker compose exec backend ostraka bootstrap-admin you@example.org`). Open it, choose a password, scan the QR code with an authenticator app, and save your backup codes. Every sign-in needs the authenticator. After that, admins and team leads invite everyone else from **People**.
+There is no default account and no self-registration. `first-admin` prints a one-time link for the first admin (`make env` and `make up` still work, with `docker compose exec backend ostraka bootstrap-admin you@example.org`). Open it, choose a password, scan the QR code with an authenticator app, and save your backup codes. Every sign-in needs the authenticator. After that, admins and team leads invite everyone else from **People**. Invitation links work once, within 24 hours. Someone who has lost their password, authenticator or backup codes gets a one-time link from **People → Reset access**, or, when no admin can sign in, from the server: `ostraka reset-access you@example.org`. It ends their sign-ins and revokes their API tokens straight away, so any script or MCP client using those tokens needs a new one.
 
 ### Notifications
 

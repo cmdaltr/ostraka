@@ -14,8 +14,17 @@ type Step = 'password' | 'authenticator' | 'codes';
 
 // Joining ostraka: choose a password, enrol an authenticator, save backup codes. The account exists
 // only once the authenticator has produced a working code.
+// The token is after # (a browser never sends that part, so no log holds it) and goes to the API in
+// the body. Read once, then taken out of the address bar. An older /invite/<token> link still works.
+function takeToken(fromPath: string | undefined): string {
+  const fromHash = window.location.hash.slice(1);
+  if (fromHash) window.history.replaceState(null, '', window.location.pathname);
+  return fromHash || fromPath || '';
+}
+
 export function AcceptInvite() {
-  const { token = '' } = useParams();
+  const params = useParams();
+  const [token] = useState(() => takeToken(params.token));
   const navigate = useNavigate();
   const [invite, setInvite] = useState<InvitationPreview | null>(null);
   const [gone, setGone] = useState<string | null>(null);
@@ -26,7 +35,11 @@ export function AcceptInvite() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api<InvitationPreview>(`/api/invitations/accept/${token}`)
+    if (!token) {
+      setGone('This link is incomplete. Copy the whole link, or ask for a new one.');
+      return;
+    }
+    api<InvitationPreview>('/api/invitations/accept', { method: 'POST', json: { token } })
       .then(setInvite)
       .catch((e) => setGone(messageOf(e)));
   }, [token]);
@@ -42,9 +55,9 @@ export function AcceptInvite() {
     setError(null);
     try {
       setEnrol(
-        await api<Enrolment>(`/api/invitations/accept/${token}/start`, {
+        await api<Enrolment>('/api/invitations/accept/start', {
           method: 'POST',
-          json: { name: form.get('name'), password: form.get('password') },
+          json: { token, name: form.get('name'), password: form.get('password') },
         }),
       );
       setStep('authenticator');
@@ -60,9 +73,9 @@ export function AcceptInvite() {
     setBusy(true);
     setError(null);
     try {
-      const result = await api<Grant & { backup_codes: string[] }>(`/api/invitations/accept/${token}/complete`, {
+      const result = await api<Grant & { backup_codes: string[] }>('/api/invitations/accept/complete', {
         method: 'POST',
-        json: { code: new FormData(event.currentTarget).get('code') },
+        json: { token, code: new FormData(event.currentTarget).get('code') },
       });
       setDone(result);
       setStep('codes');

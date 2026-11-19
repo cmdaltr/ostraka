@@ -370,10 +370,10 @@ first_admin() {
     step "First admin"
     local out rc=0 link
     out=$(compose exec -T backend ostraka bootstrap-admin "$ADMIN" 2>&1) || rc=$?
-    link=$(grep -Eo 'https?://[^[:space:]]+/invite/[^[:space:]]+' <<<"$out" | sed -n 1p || true)
+    link=$(grep -Eo 'https?://[^[:space:]]+/invite[#/][^[:space:]]+' <<<"$out" | sed -n 1p || true)
     if [ "$rc" -eq 0 ] && [ -n "$link" ]; then
         INVITE_LINK=$link
-        say "Invitation for $ADMIN (admin): open it within the next few days, set a password and scan the QR code."
+        say "Invitation for $ADMIN (admin): open it within 24 hours, set a password and scan the QR code."
     elif grep -q 'already has an admin' <<<"$out"; then
         say "Ostraka already has an admin: they invite everyone else from People."
     else

@@ -81,12 +81,12 @@ run from an Ostraka source tree: the repo checkout, or the copy a package unpack
 | `ostraka stop` | `docker compose stop` (data stays) |
 | `ostraka status [--json]` | Exit 0 running, 3 stopped, 4 Docker missing or not running. `--json`: `{"running": bool, "url": str, "version": str, "docker": "ok"|"missing"|"stopped", "has_admin": bool|null}` (`null` while the stack is down) |
 | `ostraka url` | Prints the local URL, `http://127.0.0.1:24747` (or `OSTRAKA_PORT`) |
-| `ostraka first-admin EMAIL` | On a fresh install with no admin: creates the first admin's invitation and prints only the link (`http://127.0.0.1:24747/invite/<token>`), for the launcher to open. Exit 5 when there's an admin already (the backend's `bootstrap-admin` exit, passed on); 1 for any other failure |
+| `ostraka first-admin EMAIL` | On a fresh install with no admin: creates the first admin's invitation and prints only the link (`http://127.0.0.1:24747/invite#<token>`: after `#`, so no log holds the token; it works once, within 24 hours), for the launcher to open. Exit 5 when there's an admin already (the backend's `bootstrap-admin` exit, passed on); 1 for any other failure |
 | `ostraka logs [service]` | `docker compose logs -f` |
 | `ostraka server init [options]` | Central-server setup (see `deploy/`): `deploy/linux/install.sh` on Linux, `deploy/windows/install-service.ps1` (WSL 2) from `ostraka-cli.ps1`, with the options passed on |
 | `ostraka app install` / `app uninstall` | A desktop entry for a checkout (macOS app built with `swiftc`, Linux menu entry, Windows shortcuts) |
 | `ostraka version` | The version (`backend/ostraka/__init__.py`) |
-| anything else | Passed to the backend's own CLI: `docker compose exec backend ostraka "$@"` (`licence install`, `bootstrap-admin`, `import`) |
+| anything else | Passed to the backend's own CLI: `docker compose exec backend ostraka "$@"` (`licence install`, `bootstrap-admin`, `reset-access`, `import`) |
 
 `start` writes `OSTRAKA_PUBLIC_URL=http://127.0.0.1:<port>` into a new `.env`, so a local install's links
 point at itself. `OSTRAKA_START_TIMEOUT` (180 s) and `OSTRAKA_DOCKER_WAIT` (120 s) bound the waits.

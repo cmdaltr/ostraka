@@ -201,12 +201,11 @@ def test_first_admin_passes_the_backends_exit_on(tmp_path, code):
     assert out.returncode == int(code) and out.stdout == ""
 
 
-def test_first_admin_prints_the_local_link(tmp_path):
-    out = Cli(tmp_path).run(
-        "first-admin", "a@example.org", FAKE_EXEC_OUT="https://x.example.org/invite/tok_1"
-    )
+@pytest.mark.parametrize("printed", ["https://x.example.org/invite#tok_1", "https://x.example.org/invite/tok_1"])
+def test_first_admin_prints_the_local_link(tmp_path, printed):
+    out = Cli(tmp_path).run("first-admin", "a@example.org", FAKE_EXEC_OUT=printed)
     assert out.returncode == 0, out.stderr
-    assert out.stdout.strip() == "http://127.0.0.1:24747/invite/tok_1"
+    assert out.stdout.strip() == "http://127.0.0.1:24747/invite#tok_1"
 
 
 def test_server_init_runs_the_windows_service_script(tmp_path):

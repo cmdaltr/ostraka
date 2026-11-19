@@ -22,7 +22,7 @@ Out of scope: SOAR playbook engine, alert ingestion and triage, artefact parsing
 | Frontend | React, Vite, TypeScript SPA |
 | Accounts | Real team; invite-only local accounts with TOTP MFA and backup tokens; Tailscale identity only pre-fills the login |
 | Roles | Admin, Team lead, Responder, Observer (read-only briefing access) |
-| Invitations | Admins invite anyone into any team; team leads invite responders and observers, only into their own team. Links work once and last 7 days. |
+| Invitations | Admins invite anyone into any team; team leads invite responders and observers, only into their own team. Links work once and last 24 hours. |
 | MFA | Mandatory for every account (TOTP and 10 backup codes), set up while accepting the invitation; a password alone never opens a session |
 | First admin | No default account: `ostraka bootstrap-admin EMAIL` on the server prints a one-time link |
 | Incident visibility | Members of the teams involved, plus people added individually; admins see every incident |

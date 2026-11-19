@@ -2,6 +2,7 @@
 
     ostraka bootstrap-admin EMAIL [--force] [--link-only]
     ostraka has-admin                       true or false: is there an active admin?
+    ostraka reset-access EMAIL              a one-time link to a new password and authenticator
     ostraka import FILE | --sample          load records through the API (see ostraka/importer.py)
     ostraka import --remove FILE | --remove-sample
     ostraka licence [show] | remove                   the edition and places taken; back to free
@@ -11,6 +12,9 @@ ostraka has no default account. The first admin comes from this command, run on 
 (`docker compose exec backend ostraka bootstrap-admin you@example.com`), which prints a one-time
 invitation link. It refuses while an active admin exists unless --force is given. --link-only prints
 the link and nothing else, for the host `ostraka first-admin` and the desktop launchers that open it.
+
+reset-access is the admin's Reset access, from the server: for when nobody who could do it can sign
+in (the only admin has lost their authenticator). It ends the account's sign-ins and is audited.
 """
 
 from __future__ import annotations
@@ -21,11 +25,11 @@ import sys
 from pathlib import Path
 
 from email_validator import EmailNotValidError, validate_email
-from sqlalchemy import update
+from sqlalchemy import select, update
 
 from ostraka import accounts, audit, importer, licence
 from ostraka.db import sessions
-from ostraka.models import Invitation, Role, utcnow
+from ostraka.models import Invitation, Role, User, utcnow
 
 # bootstrap-admin's exit when there's an admin already: the launchers stop asking for one only on this
 ADMIN_EXISTS = 5
@@ -61,7 +65,7 @@ async def _bootstrap_admin(email: str, force: bool, link_only: bool = False) -> 
     if link_only:
         print(link)  # noqa: T201
     else:
-        print(f"Invitation for {email} (admin). Open within the next few days:\n\n  {link}\n")  # noqa: T201
+        print(f"Invitation for {email} (admin). It works once, within 24 hours:\n\n  {link}\n")  # noqa: T201
     return 0
 
 
@@ -71,6 +75,29 @@ async def _has_admin() -> int:
     async with sessions()() as db:
         admins = await accounts.active_admins(db)
     print("true" if admins > 0 else "false")  # noqa: T201
+    return 0
+
+
+async def _reset_access(email: str) -> int:
+    async with sessions()() as db:
+        user = await db.scalar(select(User).where(User.email == email))
+        if user is None:
+            print(f"There's no account for {email}.", file=sys.stderr)  # noqa: T201
+            return 1
+        if not user.is_active:
+            print(f"{email} is deactivated. Reactivate them from People first.", file=sys.stderr)  # noqa: T201
+            return 1
+        # Someone imported, being given a way in for the first time, takes a place
+        if not accounts.holds_place(user) and (problem := await accounts.seat_refusal(db, user.role)):
+            print(problem, file=sys.stderr)  # noqa: T201
+            return 1
+        _, link, revoked = await accounts.reset_access(db, user, invited_by=None)
+        audit.record(db, "access_reset_issued", subject_id=user.id, via="cli", tokens_revoked=revoked)
+        await db.commit()
+    print(  # noqa: T201
+        f"Reset for {email}: their sign-ins have ended and their API tokens are revoked. "
+        f"The link works once, within 24 hours:\n\n  {link}\n"
+    )
     return 0
 
 
@@ -167,6 +194,10 @@ def main(argv: list[str] | None = None) -> int:
     boot.add_argument("--force", action="store_true", help="even if an active admin already exists")
     boot.add_argument("--link-only", action="store_true", help="print only the link, for a launcher to open")
     commands.add_parser("has-admin", help="print true or false: whether an active admin exists")
+    reset = commands.add_parser(
+        "reset-access", help="print a one-time link to a new password and authenticator"
+    )
+    reset.add_argument("email")
     load = commands.add_parser("import", help="load incidents and hunts from a ostraka-import/1 file")
     which = load.add_mutually_exclusive_group(required=True)
     which.add_argument("file", nargs="?", type=Path, help="the file to load")
@@ -195,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_bootstrap_admin(email, args.force, args.link_only))
     if args.command == "has-admin":
         return asyncio.run(_has_admin())
+    if args.command == "reset-access":
+        return asyncio.run(_reset_access(args.email.strip().lower()))
     if args.command == "import":
         if args.remove or args.remove_sample:
             return asyncio.run(_import(args.remove or importer.SAMPLE, remove=True))

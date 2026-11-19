@@ -378,15 +378,12 @@ def test_help(launcher):
 # ---- first-admin --------------------------------------------------------------------------------
 
 
-def test_first_admin_prints_only_the_local_link(launcher):
-    out = launcher.run(
-        "first-admin",
-        "first@example.org",
-        FAKE_BACKEND_RUNNING="1",
-        FAKE_EXEC_OUT="https://ostraka.example.org/invite/tok_123",
-    )
+@pytest.mark.parametrize("printed", ["https://ostraka.example.org/invite#tok_123", "https://ostraka.example.org/invite/tok_123"])
+def test_first_admin_prints_only_the_local_link(launcher, printed):
+    # The token goes after # (no log holds it), whichever form the backend printed
+    out = launcher.run("first-admin", "first@example.org", FAKE_BACKEND_RUNNING="1", FAKE_EXEC_OUT=printed)
     assert out.returncode == 0, out.stderr
-    assert out.stdout == "http://127.0.0.1:24747/invite/tok_123\n"
+    assert out.stdout == "http://127.0.0.1:24747/invite#tok_123\n"
     asked = "compose exec -T backend ostraka bootstrap-admin --link-only first@example.org"
     assert asked in launcher.docker_calls()
 

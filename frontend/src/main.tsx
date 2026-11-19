@@ -42,9 +42,10 @@ function App() {
   });
   const opening = session.status === 'loading' || (first.fetchStatus === 'fetching' && first.isPending);
 
-  if (location.pathname.startsWith('/invite/'))
+  if (location.pathname === '/invite' || location.pathname.startsWith('/invite/'))
     return (
       <Routes>
+        <Route path="/invite" element={<AcceptInvite />} />
         <Route path="/invite/:token" element={<AcceptInvite />} />
       </Routes>
     );

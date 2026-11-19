@@ -359,11 +359,13 @@ cmd_first_admin() {
     link="$(compose exec -T backend ostraka bootstrap-admin --link-only "$1")"
     status=$?
     [ "$status" -eq 0 ] || exit "$status"
-    link="$(printf '%s\n' "$link" | grep '/invite/' | tail -1)"
+    link="$(printf '%s\n' "$link" | grep -E '/invite[#/]' | tail -1)"
     [ -n "$link" ] || fail 1 "the backend didn't print an invitation link."
     # The link is opened on this computer, so it gets this computer's address whatever
-    # OSTRAKA_PUBLIC_URL says (an older .env may still name another server)
-    echo "$(local_url)/invite/${link##*/invite/}"
+    # OSTRAKA_PUBLIC_URL says (an older .env may still name another server). The token goes after
+    # #, which a browser never sends, whichever form an older backend printed
+    link="${link##*/invite}"
+    echo "$(local_url)/invite#${link#?}"
 }
 
 cmd_logs() {

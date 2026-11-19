@@ -17,15 +17,24 @@ async def team_id(db, name: str) -> str:
     return str(await db.scalar(select(Team.id).where(Team.name == name)))
 
 
+def token_of(link: str) -> str:
+    """The token, after the link's #: a browser never sends that part, so no log holds it."""
+    base, token = link.split("#", 1)
+    assert base.endswith("/invite")
+    return token
+
+
 async def accept(client, link: str, name: str = "New Person", password: str = PASSWORD) -> dict:
     """Follow an invitation link through password, authenticator and backup codes."""
-    token = link.rsplit("/", 1)[1]
-    r = await client.post(f"/api/invitations/accept/{token}/start", json={"name": name, "password": password})
+    token = token_of(link)
+    r = await client.post(
+        "/api/invitations/accept/start", json={"token": token, "name": name, "password": password}
+    )
     assert r.status_code == 200, r.text
     enrol = r.json()
     assert enrol["qr_svg"].startswith("data:image/svg+xml")
     code = pyotp.TOTP(enrol["secret"]).now()
-    r = await client.post(f"/api/invitations/accept/{token}/complete", json={"code": code})
+    r = await client.post("/api/invitations/accept/complete", json={"token": token, "code": code})
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -77,9 +86,9 @@ async def test_invitation_creates_an_account_with_mfa_and_backup_codes(db, clien
     )
     assert r.status_code == 201, r.text
     link = r.json()["link"]
-    assert link.startswith("http://localhost:24747/invite/")
+    assert link.startswith("http://localhost:24747/invite#")
 
-    preview = await client.get(f"/api/invitations/accept/{link.rsplit('/', 1)[1]}")
+    preview = await client.post("/api/invitations/accept", json={"token": token_of(link)})
     assert preview.json()["email"] == "new.person@example.org"
     assert preview.json()["team"] == "Forensics"
 
@@ -91,7 +100,7 @@ async def test_invitation_creates_an_account_with_mfa_and_backup_codes(db, clien
     assert me.json()["backup_codes_left"] == 10
 
     again = await client.post(
-        f"/api/invitations/accept/{link.rsplit('/', 1)[1]}/start", json={"name": "X", "password": PASSWORD}
+        "/api/invitations/accept/start", json={"token": token_of(link), "name": "X", "password": PASSWORD}
     )
     assert again.status_code == 404  # one use only
     assert await events(db, "account_created") == 1
@@ -102,7 +111,7 @@ async def test_a_newer_invitation_replaces_the_older_link(db, client, make_perso
     body = {"email": "twice@example.org", "role": "observer", "team_id": await team_id(db, "Leadership")}
     first = (await client.post("/api/invitations", json=body, headers=admin.headers)).json()["link"]
     await client.post("/api/invitations", json=body, headers=admin.headers)
-    assert (await client.get(f"/api/invitations/accept/{first.rsplit('/', 1)[1]}")).status_code == 404
+    assert (await client.post("/api/invitations/accept", json={"token": token_of(first)})).status_code == 404
 
 
 async def test_weak_passwords_are_refused_at_acceptance(db, client, make_person, sign_in):
@@ -110,7 +119,7 @@ async def test_weak_passwords_are_refused_at_acceptance(db, client, make_person,
     body = {"email": "weak@example.org", "role": "responder", "team_id": await team_id(db, "SOC")}
     link = (await client.post("/api/invitations", json=body, headers=admin.headers)).json()["link"]
     r = await client.post(
-        f"/api/invitations/accept/{link.rsplit('/', 1)[1]}/start", json={"name": "W", "password": "short"}
+        "/api/invitations/accept/start", json={"token": token_of(link), "name": "W", "password": "short"}
     )
     assert r.status_code == 422
 
@@ -383,6 +392,69 @@ async def test_reset_access_issues_a_link_and_ends_sessions(db, client, make_per
     assert login.status_code == 401  # the old password no longer works
 
 
+async def test_reset_access_lasts_a_day_and_revokes_api_tokens_at_both_ends(db, client, make_person, sign_in):
+    from datetime import timedelta
+
+    from ostraka.models import ApiToken, Invitation, SecurityEvent, utcnow
+
+    admin = await sign_in(await make_person("admin@example.org", Role.ADMIN, None))
+    target = await sign_in(await make_person("lost@example.org"))
+    target_id = target.id
+    before = await client.post("/api/tokens", json={"name": "script"}, headers=target.headers)
+    script = {"Authorization": f"Bearer {before.json()['token']}"}
+
+    r = await client.post(f"/api/users/{target.id}/reset-access", headers=admin.headers)
+    link = r.json()["link"]
+    assert (await client.get("/api/users/me", headers=script)).status_code == 401  # revoked at issue
+    expires = await db.scalar(select(Invitation.expires_at).where(Invitation.user_id == target.id))
+    assert timedelta(hours=23) < expires - utcnow() <= timedelta(hours=24)
+
+    # A token made with the old sign-in between issue and use is revoked when the reset completes
+    again = await sign_in(target)
+    during = await client.post("/api/tokens", json={"name": "later"}, headers=again.headers)
+    await accept(client, link, name="Lost Person", password="a completely new passphrase")
+    later = {"Authorization": f"Bearer {during.json()['token']}"}
+    assert (await client.get("/api/users/me", headers=later)).status_code == 401
+
+    db.expire_all()
+    live = select(ApiToken).where(ApiToken.user_id == target_id, ApiToken.revoked_at.is_(None))
+    assert (await db.execute(live)).first() is None
+    counts = select(SecurityEvent.action, SecurityEvent.detail).where(SecurityEvent.subject_id == target_id)
+    details = {action: detail for action, detail in (await db.execute(counts)).all()}
+    assert details["access_reset_issued"]["tokens_revoked"] == 1
+    assert details["access_reset_completed"]["tokens_revoked"] == 1
+
+
+async def test_wrong_codes_on_a_reset_count_towards_the_lockout(db, client, make_person, sign_in):
+    admin = await sign_in(await make_person("admin@example.org", Role.ADMIN, None))
+    target = await make_person("lost@example.org")
+    token = token_of(
+        (await client.post(f"/api/users/{target.id}/reset-access", headers=admin.headers)).json()["link"]
+    )
+    r = await client.post(
+        "/api/invitations/accept/start",
+        json={"token": token, "name": "Lost", "password": "a completely new passphrase"},
+    )
+    secret = r.json()["secret"]
+    for _ in range(5):
+        wrong = await client.post("/api/invitations/accept/complete", json={"token": token, "code": "000000"})
+        assert wrong.status_code == 422
+    right = await client.post(
+        "/api/invitations/accept/complete", json={"token": token, "code": pyotp.TOTP(secret).now()}
+    )
+    assert right.status_code == 429  # locked, even with the right code
+    assert await events(db, "account_locked") == 1
+    assert await events(db, "access_reset_failed") == 5
+
+
+async def test_an_invitation_token_is_never_in_an_api_address(db, client, make_person, sign_in):
+    admin = await sign_in(await make_person("admin@example.org", Role.ADMIN, None))
+    body = {"email": "new@example.org", "role": "responder", "team_id": await team_id(db, "SOC")}
+    token = token_of((await client.post("/api/invitations", json=body, headers=admin.headers)).json()["link"])
+    assert (await client.get(f"/api/invitations/accept/{token}")).status_code in (404, 405)
+    assert (await client.post(f"/api/invitations/accept/{token}/start", json={})).status_code in (404, 405)
+
+
 # ---- API tokens -----------------------------------------------------------------------------------
 
 
@@ -413,6 +485,6 @@ async def test_api_tokens(db, client, make_person, sign_in):
 
 async def test_bootstrap_admin_refuses_when_an_admin_exists(db, make_person, capsys):
     assert await cli._bootstrap_admin("first@example.org", force=False) == 0
-    assert "/invite/" in capsys.readouterr().out
+    assert "/invite#" in capsys.readouterr().out
     await make_person("admin@example.org", Role.ADMIN, None)
     assert await cli._bootstrap_admin("second@example.org", force=False) == cli.ADMIN_EXISTS

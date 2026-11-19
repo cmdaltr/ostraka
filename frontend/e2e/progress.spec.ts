@@ -309,12 +309,13 @@ test('the assessment check assembles while it runs, then glows', async ({ page }
 });
 
 test('accepting an invitation assembles in the button while the password is set', async ({ page }) => {
-  await page.route('**/api/invitations/accept/tok', (r) =>
+  await page.route('**/api/invitations/accept', (r) =>
     r.fulfill({ json: { email: 'new@example.org', role: 'responder', team: 'DFIR', is_reset: false } }),
   );
   // The newest route runs first, so the hold goes on top of the answer
-  await page.route('**/api/invitations/accept/tok/start', (r) => r.fulfill({ status: 400, json: { detail: 'Too weak' } }));
-  const open = await hold(page, '**/api/invitations/accept/tok/start');
+  await page.route('**/api/invitations/accept/start', (r) => r.fulfill({ status: 400, json: { detail: 'Too weak' } }));
+  const open = await hold(page, '**/api/invitations/accept/start');
+  // An older link, with the token in the path, still opens
   await page.goto('/invite/tok');
   await page.getByLabel('Your name').fill('New Person');
   await page.getByLabel('Password', { exact: true }).fill('correct horse battery staple');

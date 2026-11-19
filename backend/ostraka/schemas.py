@@ -260,9 +260,20 @@ class InvitationPreview(BaseModel):
     expires_at: datetime
 
 
-class AcceptStart(BaseModel):
+class InvitationToken(BaseModel):
+    """An invitation's token, in the body: the link carries it after #, so it reaches no log on
+    the way in, and putting it in an API path would undo that."""
+
+    token: str = Field(min_length=16, max_length=128)
+
+
+class AcceptStart(InvitationToken):
     name: str = Field(min_length=1, max_length=120)
     password: str = Field(max_length=256)
+
+
+class AcceptCode(InvitationToken):
+    code: str = Field(min_length=6, max_length=16)
 
 
 class AcceptEnrol(BaseModel):

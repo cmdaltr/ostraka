@@ -54,7 +54,8 @@ class Settings(BaseSettings):
 
     access_token_minutes: int = 15
     session_days: int = 14
-    invitation_days: int = 7
+    # Invitations, the first admin's link and access resets: each works once, within this
+    invitation_hours: int = 24
     # Proxies in front of the backend that each add the address they were reached from to
     # X-Forwarded-For: 1 is the web container's nginx, 2 with Caddy, the homelab proxy or your own in
     # front of that. Addresses are read that many from the right, so one a client writes is never believed

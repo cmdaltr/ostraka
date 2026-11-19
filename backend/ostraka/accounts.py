@@ -9,10 +9,10 @@ from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka import licence
-from ostraka.auth import policy
+from ostraka.auth import policy, sessions
 from ostraka.auth.secrets import hash_password, new_backup_code, new_token, token_hash
 from ostraka.config import get_settings
-from ostraka.models import BackupCode, Invitation, Role, User, utcnow
+from ostraka.models import ApiToken, BackupCode, Invitation, Role, User, utcnow
 
 BACKUP_CODE_COUNT = 10
 # The password of someone `ostraka import` created: a record of who did what, not an account anyone
@@ -48,12 +48,43 @@ async def create_invitation(
         user_id=user_id,
         token_hash=token_hash(token),
         invited_by=invited_by,
-        expires_at=now + timedelta(days=get_settings().invitation_days),
+        expires_at=now + timedelta(hours=get_settings().invitation_hours),
     )
     db.add(invitation)
     await db.flush()
     await db.refresh(invitation, ["team"])
-    return invitation, f"{get_settings().public_url.rstrip('/')}/invite/{token}"
+    # After #, which a browser never sends: the token reaches no server or proxy log
+    return invitation, f"{get_settings().public_url.rstrip('/')}/invite#{token}"
+
+
+async def revoke_api_tokens(db: AsyncSession, user_id: uuid.UUID) -> int:
+    """Revoke every live API token the account has; returns how many."""
+    result = await db.execute(
+        update(ApiToken)
+        .where(ApiToken.user_id == user_id, ApiToken.revoked_at.is_(None))
+        .values(revoked_at=utcnow())
+    )
+    return result.rowcount or 0
+
+
+async def reset_access(
+    db: AsyncSession, user: User, *, invited_by: uuid.UUID | None
+) -> tuple[Invitation, str, int]:
+    """For someone who has lost their password, authenticator or backup codes: a one-time link to
+    choose a new password and enrol a new authenticator, within a day. Their sign-ins end and
+    their API tokens are revoked now (a token made by whoever had the account mustn't outlast the
+    reset), and any earlier reset link stops working. Returns the invitation, the link and how many
+    tokens were revoked."""
+    invitation, link = await create_invitation(
+        db,
+        email=user.email,
+        role=user.role,
+        team_id=user.team_id,
+        invited_by=invited_by,
+        user_id=user.id,
+    )
+    await sessions.revoke_all(db, user.id)
+    return invitation, link, await revoke_api_tokens(db, user.id)
 
 
 async def find_open_invitation(db: AsyncSession, token: str) -> Invitation | None:
