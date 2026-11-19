@@ -28,6 +28,7 @@ from typing import Any
 
 import httpx
 from samarkand import misp as shared
+from samarkand import netguard
 from samarkand.misp import (  # noqa: F401  (re-exported for the API and tests)
     CONFIDENCE_TAG,
     DISTRIBUTIONS,
@@ -150,7 +151,9 @@ async def fetch(
         "Content-Type": "application/json",
         "User-Agent": USER_AGENT,
     }
-    async with httpx.AsyncClient(timeout=TIMEOUT, verify=verify, follow_redirects=False) as client:
+    # netguard: never a link-local address, whatever MISP's name resolves to; the transport does the TLS check
+    transport = netguard.AsyncTransport(verify=verify)
+    async with httpx.AsyncClient(timeout=TIMEOUT, transport=transport, follow_redirects=False) as client:
         response = await client.request(method, url, content=body, headers=headers)
         return response.status_code, response.content
 

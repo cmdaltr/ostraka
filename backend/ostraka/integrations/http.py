@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 import httpx
+from samarkand import netguard
 
 from ostraka import __version__
 from ostraka.log import get_logger
@@ -47,8 +48,10 @@ async def get_json(name: str, base: str, token: str, path: str, params: dict[str
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
+        # netguard: never a link-local address, whatever the server's name resolves to
+        transport = TRANSPORT or netguard.AsyncTransport()
         async with httpx.AsyncClient(
-            base_url=base, timeout=TIMEOUT, follow_redirects=False, transport=TRANSPORT
+            base_url=base, timeout=TIMEOUT, follow_redirects=False, transport=transport
         ) as client:
             response = await client.get(path, params=params, headers=headers)
     except httpx.TimeoutException as exc:

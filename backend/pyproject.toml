@@ -21,7 +21,7 @@ dependencies = [
   "email-validator==2.2.0",
   "httpx==0.28.1",
   # The suite's shared wire formats: licences, signed webhooks, STIX, MISP and Navigator layers
-  "samarkand==0.2.1",
+  "samarkand==0.2.2",
   # The MCP server at /mcp; sse-starlette 3.x works with Starlette 1.x, which FastAPI now uses
   "mcp==1.30.0",
   "sse-starlette==3.7.0",
