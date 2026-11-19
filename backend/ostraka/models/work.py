@@ -83,12 +83,8 @@ class Task(Base):
     # the attack-flow stage this task answers (a key of ostraka.flow.STAGES), if any
     stage: Mapped[str | None] = mapped_column(String(32))
     playbook_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("playbooks.id", ondelete="SET NULL"))
-    # A playbook step's task: which applied playbook made it, and which step it is
+    # A playbook check's task: which applied playbook made it
     run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("incident_playbooks.id", ondelete="SET NULL"))
-    step: Mapped[int | None] = mapped_column(Integer)
-    # A decision: it's finished by choosing one of these, not by marking it done
-    outcomes: Mapped[list[str]] = mapped_column(ARRAY(String(120)), default=list)
-    outcome: Mapped[str | None] = mapped_column(String(120))
 
     created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -141,7 +137,10 @@ class ChecklistItem(Base):
 
 
 class Playbook(Base):
-    """A set of tasks to start an incident with. Trigger tags suggest it in the declare form."""
+    """Checks to work through, drawn on the attack's anatomy (ostraka.anatomy): each check belongs to a
+    part of the attack (a way in, the toolkit, an action, a service) or to none ("any"). A part can
+    carry an "only if" (`conditions`, part to words), and then starts unselected when the playbook is
+    applied. Trigger tags suggest it in the declare form."""
 
     __tablename__ = "playbooks"
 
@@ -153,44 +152,34 @@ class Playbook(Base):
         _enum(RecordKind, "record_kind"), default=RecordKind.INCIDENT
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    conditions: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict)
     created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     version: Mapped[int] = mapped_column(Integer, default=1)
 
-    steps: Mapped[list[PlaybookStep]] = relationship(
-        cascade="all, delete-orphan", lazy="selectin", order_by="PlaybookStep.position"
+    checks: Mapped[list[PlaybookCheck]] = relationship(
+        cascade="all, delete-orphan", lazy="selectin", order_by="PlaybookCheck.position"
     )
 
 
-class PlaybookStep(Base):
-    """One task a playbook creates. With no team, the task goes to whoever applies the playbook.
+class PlaybookCheck(Base):
+    """One line of a playbook: a task it creates, in a part of the attack. With no team, the task goes
+    to whoever applies the playbook. Within a part, the order is the order of the work."""
 
-    A step opens (its task is created) when everything in `after` has finished, when the record
-    has reached `phase`, and, if a decision's outcome names it, when that outcome is chosen. A step
-    with `outcomes` is a decision; each outcome may act on the record and open other steps,
-    including earlier ones, which run again."""
-
-    __tablename__ = "playbook_steps"
+    __tablename__ = "playbook_checks"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     playbook_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("playbooks.id", ondelete="CASCADE"), index=True)
     position: Mapped[int] = mapped_column(Integer)
+    part: Mapped[str] = mapped_column(String(32), default="any")  # a key of ostraka.anatomy.PARTS
     title: Mapped[str] = mapped_column(String(200))
-    description: Mapped[str] = mapped_column(Text, default="")
     team_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"))
-    due_minutes: Mapped[int | None] = mapped_column(Integer)  # after the playbook is applied
-    checklist: Mapped[list[str]] = mapped_column(ARRAY(String(300)), default=list)
-    after: Mapped[list[int]] = mapped_column(ARRAY(Integer), default=list)  # positions of earlier steps
-    phase: Mapped[str | None] = mapped_column(String(16))
-    # [{"label", "action": none|close|phase|promote, "phase", "opens": [positions]}]
-    outcomes: Mapped[list[dict]] = mapped_column(JSONB, default=list)
 
 
 class IncidentPlaybook(Base):
-    """A playbook applied to an incident: a copy of its steps as they were, each with its state
-    (waiting, open, done or skipped), its task and any outcome. Editing the playbook later doesn't
-    change a run already under way."""
+    """A playbook applied to a record, and which of its parts have been applied so far. Applying more
+    parts later adds their checks; editing the playbook doesn't change tasks already made."""
 
     __tablename__ = "incident_playbooks"
     __table_args__ = (UniqueConstraint("incident_id", "playbook_id"),)
@@ -200,7 +189,7 @@ class IncidentPlaybook(Base):
     playbook_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("playbooks.id", ondelete="CASCADE"))
     applied_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
-    steps: Mapped[list[dict]] = mapped_column(JSONB, default=list)
+    parts: Mapped[list[str]] = mapped_column(ARRAY(String(32)), default=list)
 
 
 class Notification(Base):

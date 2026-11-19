@@ -907,24 +907,6 @@ select.person-role {
 
 /* ---- playbooks ---- */
 
-.steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--space-3);
-}
-.steps .record {
-  background: var(--raised);
-}
-/* A playbook step in the editor, edged in its team's colour as in the drawing */
-.steps .playbook-step {
-  border-left: 5px solid var(--team);
-  background: color-mix(in srgb, var(--team) 6%, var(--raised));
-}
-.steps .playbook-step .label {
-  color: color-mix(in srgb, var(--team) 70%, var(--ink));
-}
 .playbook-summary {
   display: flex;
   flex-wrap: wrap;
@@ -1027,33 +1009,6 @@ select.person-role {
 .dep-done > span:not(.hint) {
   text-decoration: line-through;
   color: var(--muted);
-}
-
-/* ---- Playbook decisions ---------------------------------------------------------------------- */
-.outcomes {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border: 1px dashed var(--accent);
-  border-radius: var(--radius-sm);
-}
-.outcome-row {
-  display: grid;
-  gap: var(--space-2);
-}
-
-/* ---- Decisions ------------------------------------------------------------------------------- */
-.decision {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border: 1px dashed var(--accent);
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
-}
-.decided {
-  margin: 0;
-  color: var(--ochre);
 }
 
 /* ---- assessments ---------------------------------------------------------------------------- */

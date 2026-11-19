@@ -4,8 +4,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { keys } from '../api/incidents';
-import { suggested } from '../api/work';
+import { defaultParts, suggested } from '../api/work';
 import type { Playbook } from '../api/work';
+
 import type { Incident, IncidentSummary } from '../api/incidents';
 import type { Me, Team } from '../api/types';
 import { huntPhases, phases, phasesOf, severities, titleMax, tlpLevels } from '../brand';
@@ -17,6 +18,9 @@ import { Loading } from '../components/sherd/Ostrakon';
 import { Notice, formatDate, messageOf } from '../components/ui';
 import { splitTags } from './incident/shared';
 import './incident/incident.css';
+
+// How many tasks a playbook starts a record with: the checks in its parts without an only if
+const startsWith = (p: Playbook) => p.checks.filter((c) => defaultParts(p).has(c.part)).length;
 
 function DeclareForm({ me, kind, onClose }: { me: Me; kind: RecordKind; onClose: () => void }) {
   const hunt = kind === 'hunt';
@@ -153,7 +157,7 @@ function DeclareForm({ me, kind, onClose }: { me: Me; kind: RecordKind; onClose:
                     onChange={(e) => setPicked({ ...picked, [p.id]: e.target.checked })}
                   />
                   <span>
-                    {p.name} <span className="hint">({p.steps.length} tasks)</span>
+                    {p.name} <span className="hint">({startsWith(p)} tasks)</span>
                     {matching.has(p.id) && <span className="chip chip-accent">suggested by tag</span>}
                   </span>
                 </label>

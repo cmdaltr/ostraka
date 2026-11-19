@@ -53,8 +53,6 @@ export interface Task {
   hidden_links: number;
   playbook_id: string | null;
   // A decision: finished by choosing one of these
-  outcomes: string[];
-  outcome: string | null;
   created_by: PersonRef | null;
   created_at: string;
   updated_at: string;
@@ -68,43 +66,14 @@ export interface MyTask extends Task {
   queued: boolean;
 }
 
-export type OutcomeAction = 'none' | 'close' | 'phase' | 'promote';
+// A playbook's checks hang on the parts of the attack (api/flow.ts anatomyParts) or on none ('any')
+export const ANY = 'any';
 
-// One way a decision can go: what it does to the record, and the steps it opens (an earlier one runs again)
-export interface Outcome {
-  label: string;
-  action: OutcomeAction;
-  phase: string | null;
-  opens: number[];
-}
-
-export interface PlaybookStep {
+export interface PlaybookCheck {
   id?: string;
-  title: string;
-  description: string;
-  team: PersonRef | null;
-  due_minutes: number | null;
-  checklist: string[];
-  after: number[];
-  phase: string | null;
-  outcomes: Outcome[];
-}
-
-export type StepState = 'waiting' | 'open' | 'done' | 'skipped';
-
-export interface WorkflowStep {
-  position: number;
+  part: string;
   title: string;
   team: PersonRef | null;
-  after: number[];
-  phase: string | null;
-  outcomes: Outcome[];
-  state: StepState;
-  conditional: boolean;
-  task_id: string | null;
-  task_ref: string | null;
-  outcome: string | null;
-  runs: number;
 }
 
 export interface Playbook {
@@ -114,17 +83,31 @@ export interface Playbook {
   trigger_tags: string[];
   applies_to: RecordKind;
   is_active: boolean;
-  steps: PlaybookStep[];
+  conditions: Record<string, string>; // part: only if…
+  checks: PlaybookCheck[];
   updated_at: string;
   version: number;
 }
 
+// A playbook on a record: the parts taken, and those it has checks for that haven't been
 export interface AppliedPlaybook {
   playbook_id: string;
   name: string;
   applied_by: PersonRef | null;
   applied_at: string;
-  steps: WorkflowStep[];
+  parts: string[];
+  remaining: string[];
+  conditions: Record<string, string>;
+}
+
+// The parts a playbook has checks in
+export function partsOf(playbook: Pick<Playbook, 'checks'>): Set<string> {
+  return new Set(playbook.checks.map((c) => c.part));
+}
+
+// What applying takes unless someone chooses: every part with checks and no "only if"
+export function defaultParts(playbook: Pick<Playbook, 'checks' | 'conditions'>): Set<string> {
+  return new Set([...partsOf(playbook)].filter((p) => !playbook.conditions[p]));
 }
 
 export type NotificationKind =
@@ -172,23 +155,4 @@ export function dueWords(due: string | null, now = Date.now()): string {
   const span = (m: number) => (m < 60 ? `${m} min` : m < 48 * 60 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} days`);
   if (minutes >= 0) return minutes === 0 ? 'Due now' : `Due in ${span(minutes)}`;
   return `${span(-minutes)} overdue`;
-}
-
-// Where each step sits in a swimlane drawing: its lane (team) and its column (how many steps lead to it)
-export function layout(steps: Pick<WorkflowStep, 'after' | 'outcomes' | 'team'>[]): { lane: number; column: number }[] {
-  const openedBy = new Map<number, number[]>();
-  steps.forEach((s, i) =>
-    s.outcomes.forEach((o) => o.opens.filter((p) => p > i).forEach((p) => openedBy.set(p, [...(openedBy.get(p) ?? []), i]))),
-  );
-  const column: number[] = [];
-  steps.forEach((s, i) => {
-    const before = [...s.after, ...(openedBy.get(i) ?? [])];
-    column[i] = before.length ? Math.max(...before.map((b) => column[b] + 1)) : 0;
-  });
-  const lanes: string[] = [];
-  return steps.map((s, i) => {
-    const name = s.team?.name ?? '';
-    if (!lanes.includes(name)) lanes.push(name);
-    return { lane: lanes.indexOf(name), column: column[i] };
-  });
 }

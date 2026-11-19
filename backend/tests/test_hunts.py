@@ -1,14 +1,10 @@
 """Phase 3a against Postgres: hunts beside incidents, links between records, promotion, subtasks,
 tasks waiting on tasks, playbooks for one kind of record, and the seed playbooks."""
 
-import importlib.util
-from pathlib import Path
-
 import pytest
-from alembic.operations import Operations
-from alembic.runtime.migration import MigrationContext
-from sqlalchemy import select, text
+from sqlalchemy import select
 
+from ostraka import playbook
 from ostraka.models import Playbook, Role
 from tests.test_incidents import declare, team_id
 from tests.test_work import add_task, notes
@@ -282,7 +278,7 @@ async def test_a_playbook_applies_only_to_its_kind_of_record(client, people, db)
         json={
             "name": "Threat hunt",
             "applies_to": "hunt",
-            "steps": [{"title": "Write the hypothesis", "team_id": await team_id(db, "SOC")}],
+            "checks": [{"title": "Write the hypothesis", "team_id": await team_id(db, "SOC")}],
         },
         headers=p["lead"].headers,
     )
@@ -297,18 +293,8 @@ async def test_a_playbook_applies_only_to_its_kind_of_record(client, people, db)
     assert r.status_code == 201 and r.json()[0]["title"] == "Write the hypothesis"
 
 
-async def test_the_seed_playbooks(db):
-    path = Path(__file__).resolve().parents[1] / "migrations/versions/0005_hunts_and_links.py"
-    spec = importlib.util.spec_from_file_location("seed_revision", path)
-    revision = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(revision)
-
-    def seed(connection):
-        with Operations.context(MigrationContext.configure(connection)):
-            revision._seed()
-
-    await (await db.connection()).run_sync(seed)
-    await db.commit()
+async def test_the_seed_playbooks(db, seed_playbooks):
+    """0025's seeds: every check on a part of the anatomy, the ways in and actions where they belong."""
     seeded = {pb.name: pb for pb in (await db.scalars(select(Playbook))).all()}
     assert set(seeded) == {
         "Incident response",
@@ -320,45 +306,8 @@ async def test_the_seed_playbooks(db):
     }
     assert seeded["Threat hunt"].applies_to.value == "hunt"
     assert all(pb.applies_to.value == "incident" for name, pb in seeded.items() if name != "Threat hunt")
-
-
-async def test_hunts_move_to_scope_report_and_learn_and_back(db, seed_playbooks, client, people):
-    """0020: a hunt in Collect or Conclude, and the hunt playbook's steps and decisions, take the new names;
-    going back undoes it. (seed_playbooks has already run the upgrade on the seeded playbooks.)"""
-    path = Path(__file__).resolve().parents[1] / "migrations/versions/0020_hunt_phases.py"
-    spec = importlib.util.spec_from_file_location("hunt_phases", path)
-    revision = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(revision)
-    p = await people()
-    collecting, concluded = await hunt(client, p["soc"]), await hunt(client, p["soc"], title="Done")
-    connection = await db.connection()
-    put = text("UPDATE incidents SET phase = :phase WHERE id = :id")
-    await connection.execute(put, {"phase": "collect", "id": collecting["id"]})
-    await connection.execute(put, {"phase": "conclude", "id": concluded["id"]})
-
-    def move(names):
-        def run(sync):
-            with Operations.context(MigrationContext.configure(sync)):
-                revision._move(names)
-
-        return run
-
-    async def phases():
-        rows = await connection.exec_driver_sql(
-            "SELECT title, phase FROM incidents WHERE kind = 'hunt' ORDER BY title"
-        )
-        steps = await connection.exec_driver_sql(
-            "SELECT s.title, s.phase, s.outcomes FROM playbook_steps s "
-            "JOIN playbooks p ON p.id = s.playbook_id WHERE p.name = 'Threat hunt' ORDER BY s.position"
-        )
-        return dict(rows.all()), {t: (ph, o) for t, ph, o in steps.all()}
-
-    await connection.run_sync(move(revision.UP))
-    records, steps = await phases()
-    assert records["Done"] == "report" and set(records.values()) == {"scope", "report"}
-    assert steps["Choose data sources and time range"][0] == "scope"
-
-    await connection.run_sync(move(revision.DOWN))
-    records, steps = await phases()
-    assert set(records.values()) == {"collect", "conclude"}
-    assert steps["Choose data sources and time range"][0] == "collect"
+    assert all(c.part in playbook.PARTS for pb in seeded.values() for c in pb.checks)
+    phishing = seeded["Phishing and BEC"]
+    assert playbook.parts_of(phishing)[:2] == ["phishing", "credentials"]
+    assert "credentials" not in playbook.default_parts(phishing)
+    assert all(c.part == "any" for c in seeded["Threat hunt"].checks)

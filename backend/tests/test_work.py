@@ -441,62 +441,79 @@ PHISHING = {
     "name": "Phishing",
     "description": "First hours of a credential phish",
     "trigger_tags": ["phishing"],
-    "steps": [
-        {
-            "title": "Pull the message and its headers",
-            "due_minutes": 30,
-            "checklist": ["Headers", "Attachments"],
-        },
-        {"title": "Search for other recipients", "team_id": None, "due_minutes": 60},
-        {"title": "Revoke sessions for the user", "team_id": "IDENTITY", "due_minutes": 60},
-        {"title": "Check the mailbox rules", "team_id": "IDENTITY"},
+    "conditions": {"credentials": "someone entered credentials", "any": "never a call"},
+    "checks": [
+        {"part": "phishing", "title": "Pull the message and its headers"},
+        {"part": "phishing", "title": "Search for other recipients", "team_id": None},
+        {"part": "credentials", "title": "Revoke sessions for the user", "team_id": "IDENTITY"},
+        {"part": "hides", "title": "Check the mailbox rules", "team_id": "IDENTITY"},
+        {"part": "any", "title": "Tell the user's line manager"},
     ],
 }
 
 
-async def test_playbooks_are_written_by_leads_and_applied_once_on_declaring(
-    db, client, people, outbox, settle
-):
+async def test_playbooks_are_written_by_leads_and_applied_part_by_part(db, client, people, outbox, settle):
     p = await people()
     await connect_channel(client, db, p["admin"], "Incident Response")
     identity = await team_id(db, "Incident Response")
     playbook = {
         **PHISHING,
-        "steps": [{**s, "team_id": identity if s.get("team_id") else None} for s in PHISHING["steps"]],
+        "checks": [{**c, "team_id": identity if c.get("team_id") else None} for c in PHISHING["checks"]],
     }
     assert (await client.post("/api/playbooks", json=playbook, headers=p["soc"].headers)).status_code == 403
+    bad = {**playbook, "checks": [{"part": "prepares", "title": "Not a part of the anatomy"}]}
+    assert (await client.post("/api/playbooks", json=bad, headers=p["lead"].headers)).status_code == 422
     made = await client.post("/api/playbooks", json=playbook, headers=p["lead"].headers)
     assert made.status_code == 201, made.text
     made = made.json()
-    assert [s["team"]["name"] if s["team"] else None for s in made["steps"]] == [
+    assert made["conditions"] == {"credentials": "someone entered credentials"}  # "any" is never a call
+    assert [c["team"]["name"] if c["team"] else None for c in made["checks"]] == [
         None,
         None,
         "Incident Response",
         "Incident Response",
+        None,
     ]
 
+    # Declaring takes every part without an only if: the phishing, the hiding and the line manager
     incident = await declare(client, p["soc"], tags=["phishing"], playbook_ids=[made["id"]])
     tasks = (await client.get(f"/api/incidents/{incident['id']}/tasks", headers=p["soc"].headers)).json()
-    assert len(tasks) == 4 and all(t["playbook_id"] == made["id"] for t in tasks)
-    assert tasks[0]["assignee"]["name"] == "Sam Soc" and tasks[0]["due_at"] is not None
-    assert tasks[3]["due_at"] is None and tasks[3]["team"]["name"] == "Incident Response"
+    assert [(t["title"], t["stage"]) for t in tasks] == [
+        ("Pull the message and its headers", "phishing"),
+        ("Search for other recipients", "phishing"),
+        ("Check the mailbox rules", "hides"),
+        ("Tell the user's line manager", None),
+    ]
+    assert all(t["playbook_id"] == made["id"] for t in tasks)
+    assert tasks[0]["assignee"]["name"] == "Sam Soc" and tasks[2]["team"]["name"] == "Incident Response"
     detail = (await client.get(f"/api/incidents/{incident['id']}", headers=p["soc"].headers)).json()
-    assert "Incident Response" in [t["name"] for t in detail["teams"]]  # the commander brought Identity in
-    await settle()
-    assert len(outbox.teams()) == 1  # one card for Identity's two tasks, not two
-    assert (
-        "2 steps of Phishing ready for Incident Response"
-        in outbox.teams()[0]["attachments"][0]["content"]["body"][0]["text"]
-    )
-
-    again = await client.post(
-        f"/api/incidents/{incident['id']}/playbooks/{made['id']}", headers=p["soc"].headers
-    )
-    assert again.status_code == 409
+    assert "Incident Response" in [t["name"] for t in detail["teams"]]  # the playbook brought it in
     applied = (
         await client.get(f"/api/incidents/{incident['id']}/playbooks", headers=p["soc"].headers)
     ).json()
-    assert [(a["name"], a["applied_by"]["name"]) for a in applied] == [("Phishing", "Sam Soc")]
+    assert [(a["name"], a["applied_by"]["name"], a["parts"], a["remaining"]) for a in applied] == [
+        ("Phishing", "Sam Soc", ["phishing", "hides", "any"], ["credentials"])
+    ]
+
+    # Later, someone did enter credentials: the rest is taken, once
+    path = f"/api/incidents/{incident['id']}/playbooks/{made['id']}"
+    nothing = await client.post(path, json={"parts": ["hides"]}, headers=p["soc"].headers)
+    assert nothing.status_code == 409
+    absent = await client.post(path, json={"parts": ["destroys"]}, headers=p["soc"].headers)
+    assert absent.status_code == 422 and "no checks for Encrypts or destroys" in absent.json()["detail"]
+    more = await client.post(path, json={"parts": ["credentials"]}, headers=p["soc"].headers)
+    assert more.status_code == 201 and [t["title"] for t in more.json()] == ["Revoke sessions for the user"]
+    assert more.json()[0]["stage"] == "credentials"
+    applied = (
+        await client.get(f"/api/incidents/{incident['id']}/playbooks", headers=p["soc"].headers)
+    ).json()
+    assert applied[0]["parts"] == ["phishing", "credentials", "hides", "any"]
+    assert applied[0]["remaining"] == []
+    assert (await client.post(path, headers=p["soc"].headers)).status_code == 409
+    await settle()
+    cards = [c["attachments"][0]["content"]["body"][0]["text"] for c in outbox.teams()]
+    assert len(cards) == 2  # one card per application, each for the team's tasks in it
+    assert "Ready for Incident Response" in cards[0] and "Check the mailbox rules" in cards[0]
 
     changed = await client.patch(
         f"/api/playbooks/{made['id']}", json={"version": 1, "is_active": False}, headers=p["lead"].headers
@@ -511,7 +528,7 @@ async def test_playbooks_are_written_by_leads_and_applied_once_on_declaring(
 
 async def test_playbook_tag_and_profile_changes_go_in_the_security_log(db, client, people):
     p = await people()
-    playbook = {**PHISHING, "steps": [{**s, "team_id": None} for s in PHISHING["steps"]]}
+    playbook = {**PHISHING, "checks": [{**c, "team_id": None} for c in PHISHING["checks"]]}
     made = (await client.post("/api/playbooks", json=playbook, headers=p["lead"].headers)).json()
     duplicate = await client.post("/api/playbooks", json=playbook, headers=p["lead"].headers)
     assert duplicate.status_code == 409  # a clash is still a 409, not lost to the log

@@ -153,6 +153,10 @@ class Suggestion:
     groups: int  # how many of the peer groups use it
 
 
+# Why a step nothing else expects is drawn: a playbook (or someone) put tasks on it
+TASKS_WHY = "Tasks on this record check for it."
+
+
 @dataclass
 class StageOut:
     key: str
@@ -297,12 +301,13 @@ def build(facts: Facts) -> Flow:
         if call is not None and call.call is StageCall.DISMISSED:
             dismissed.append((stage, call))
             continue
+        checked = any(t.stage == stage.key for t in facts.tasks)
         if stage.key in seen_in or stage.key in links_in or stage.key in items:
             layer, why = "seen", ""
         elif stage.column == "way" and got_in:
-            if call is None:
+            if call is None and not checked:
                 continue
-            layer, why = "added", ""
+            layer, why = ("added", "") if call is not None else ("expected", TASKS_WHY)
         elif group is not None and reach[stage.key]:
             layer, why = "expected", f"{group[1]} ({group[0]}) is known to do this."
         elif peers and reach[stage.key] / len(peers) >= EXPECT_SHARE:
@@ -313,6 +318,8 @@ def build(facts: Facts) -> Flow:
             )
         elif call is not None:
             layer, why = "added", ""
+        elif checked:
+            layer, why = "expected", TASKS_WHY
         else:
             continue
         tasks = [t for t in facts.tasks if t.stage == stage.key]

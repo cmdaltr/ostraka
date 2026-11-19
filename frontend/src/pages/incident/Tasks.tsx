@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import { columnNames, flowSteps } from '../../api/flow';
-import type { FlowColumn } from '../../api/flow';
+import type { Flow, FlowColumn } from '../../api/flow';
 import type { Incident } from '../../api/incidents';
-import { dueWords, finished, taskStatusNames } from '../../api/work';
-import type { AppliedPlaybook, Outcome, Playbook, Task, TaskLink, TaskStatus } from '../../api/work';
+import { ANY, defaultParts, dueWords, finished, partsOf, taskStatusNames } from '../../api/work';
+import type { AppliedPlaybook, Playbook, Task, TaskLink, TaskStatus } from '../../api/work';
 import type { Me, Person, Team } from '../../api/types';
-import { severities, titleMax } from '../../brand';
+import { PlaybookAnatomy, checksIn } from '../../components/PlaybookAnatomy';
 import { Notice, formatDate } from '../../components/ui';
-import { Workflow } from '../../components/Workflow';
 import { Watching, useRecordPresence } from '../../live/presence';
 import { Rich, fromLocalInput, toLocalInput, useSave, useSection } from './shared';
+import '../playbooks.css';
 
 const statuses: TaskStatus[] = ['open', 'in_progress', 'blocked', 'done', 'cancelled'];
 
@@ -286,90 +286,15 @@ function Dependencies({ incident, task }: { incident: Incident; task: Task }) {
   );
 }
 
-// A decision: choose how it went. An outcome that promotes the hunt asks what the incident is called first.
-function Decide({ incident, task, outcomes }: { incident: Incident; task: Task; outcomes: Outcome[] }) {
-  const save = useSave(incident, ['tasks', 'playbooks', 'record-links', 'activity']);
-  const queryClient = useQueryClient();
-  const [promoting, setPromoting] = useState<string | null>(null);
-  const [note, setNote] = useState('');
-  const action = (label: string) => outcomes.find((o) => o.label === label)?.action ?? 'none';
-  const choose = async (outcome: string, promote?: Record<string, unknown>) => {
-    const done = await save.run(() =>
-      api(`/api/incidents/${incident.id}/tasks/${task.id}/decide`, {
-        method: 'POST',
-        json: { version: task.version, outcome, note, promote },
-      }),
-    );
-    if (done !== undefined) {
-      setPromoting(null);
-      queryClient.invalidateQueries({ queryKey: ['incidents'] });
-    }
-  };
-  return (
-    <div className="decision" role="group" aria-label={`Decide ${task.ref}`}>
-      <span className="label">How did it go?</span>
-      <input
-        className="input"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Why (optional, goes on the activity log)"
-        aria-label={`Why, for ${task.ref}`}
-        maxLength={5000}
-      />
-      <div className="actions">
-        {task.outcomes.map((label) => (
-          <button
-            key={label}
-            className="btn"
-            type="button"
-            onClick={() => (action(label) === 'promote' ? setPromoting(label) : choose(label))}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {promoting && (
-        <form
-          className="inline-form"
-          aria-label="The incident it becomes"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const form = new FormData(e.currentTarget);
-            choose(promoting, { title: form.get('title'), severity: form.get('severity'), summary: form.get('summary') ?? '' });
-          }}
-        >
-          <input className="input" name="title" required minLength={3} maxLength={titleMax} placeholder="Incident title" aria-label="Incident title" autoFocus />
-          <select name="severity" defaultValue="high" aria-label="Incident severity">
-            {severities.map((sv) => (
-              <option key={sv} value={sv}>
-                {sv}
-              </option>
-            ))}
-          </select>
-          <button className="btn btn-primary" type="submit">
-            Promote
-          </button>
-          <button className="btn btn-quiet" type="button" onClick={() => setPromoting(null)}>
-            Cancel
-          </button>
-        </form>
-      )}
-      {save.error && <Notice kind="error">{save.error}</Notice>}
-    </div>
-  );
-}
-
 function TaskCard({
   incident,
   task,
   subtasks = [],
-  outcomes = [],
   me,
 }: {
   incident: Incident;
   task: Task;
   subtasks?: Task[];
-  outcomes?: Outcome[];
   me: Me;
 }) {
   const save = useSave(incident, ['tasks', 'playbooks']);
@@ -416,14 +341,6 @@ function TaskCard({
       )}
       <Checklist incident={incident} task={task} />
       <Dependencies incident={incident} task={task} />
-      {task.outcome && (
-        <p className="decided">
-          <strong>Decided:</strong> {task.outcome}
-        </p>
-      )}
-      {task.outcomes.length > 0 && !finished(task.status) && incident.can_edit && (
-        <Decide incident={incident} task={task} outcomes={outcomes} />
-      )}
 
       {incident.can_edit && (
         <div className="actions">
@@ -432,7 +349,7 @@ function TaskCard({
               Claim
             </button>
           )}
-          {!finished(task.status) && !task.outcomes.length && (mine || !task.assignee || incident.can_manage) && (
+          {!finished(task.status) && (mine || !task.assignee || incident.can_manage) && (
             <button className="btn btn-quiet" type="button" onClick={() => patch({ status: 'done' })}>
               Mark done
             </button>
@@ -443,13 +360,11 @@ function TaskCard({
             value={task.status}
             onChange={(e) => (e.target.value === 'blocked' ? setBlocking(true) : patch({ status: e.target.value }))}
           >
-            {statuses
-              .filter((s) => s !== 'done' || !task.outcomes.length || task.status === 'done')
-              .map((s) => (
-                <option key={s} value={s}>
-                  {taskStatusNames[s]}
-                </option>
-              ))}
+            {statuses.map((s) => (
+              <option key={s} value={s}>
+                {taskStatusNames[s]}
+              </option>
+            ))}
           </select>
           <input
             className="input inline"
@@ -591,57 +506,182 @@ function TaskCard({
   );
 }
 
+// Applying a playbook: its parts drawn on the attack's anatomy, every part shown, the ones it has checks for
+// chosen or not (red ochre), those with an "only if" left out until someone picks them
+function ApplyPanel({
+  incident,
+  playbook,
+  taken,
+  onDone,
+}: {
+  incident: Incident;
+  playbook: Playbook;
+  taken: Set<string>;
+  onDone: () => void;
+}) {
+  const save = useSave(incident, ['tasks', 'playbooks', 'flow', 'activity']);
+  const flow = useSection<Flow>(incident, 'flow');
+  const open = [...partsOf(playbook)].filter((p) => !taken.has(p));
+  const [picked, setPicked] = useState<Set<string>>(() => new Set(open.filter((p) => defaultParts(playbook).has(p))));
+  const toggle = (key: string) => {
+    if (!open.includes(key)) return;
+    const next = new Set(picked);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setPicked(next);
+  };
+  const seen = new Set((flow.data?.stages ?? []).filter((st) => st.layer === 'seen').map((st) => st.key));
+  const count = (parts: string[]) => parts.reduce((n, p) => n + checksIn(playbook, p), 0);
+  const chosen = open.filter((p) => picked.has(p));
+  const attack = chosen.filter((p) => p !== ANY);
+  const left = open.filter((p) => !picked.has(p) && p !== ANY);
+  const loose = checksIn(playbook, ANY);
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+  async function apply() {
+    const done = await save.run(() =>
+      api(`/api/incidents/${incident.id}/playbooks/${playbook.id}`, { method: 'POST', json: { parts: chosen } }),
+    );
+    if (done !== undefined) onDone();
+  }
+
+  return (
+    <section className="panel pb-apply" aria-label={`Apply ${playbook.name}`}>
+      <header>
+        <h2>
+          Apply {playbook.name} to {incident.ref}
+        </h2>
+        <p className="hint">
+          Select the parts that fit this record; what you select is in red ochre. Parts with an “only if” start unselected, and
+          dashed parts have no checks in this playbook. Each check becomes a task on that part of the record’s attack flow.
+        </p>
+      </header>
+      <div className="actions" role="group" aria-label="Select parts">
+        <button className="btn btn-quiet" type="button" onClick={() => setPicked(new Set(open))} disabled={chosen.length === open.length}>
+          Select all
+        </button>
+        <button className="btn btn-quiet" type="button" onClick={() => setPicked(new Set())} disabled={!chosen.length}>
+          Select none
+        </button>
+      </div>
+      <PlaybookAnatomy
+        playbook={playbook}
+        mode="apply"
+        chosen={(key) => picked.has(key)}
+        choose={toggle}
+        taken={taken}
+        seen={seen}
+        label={`${playbook.name}: the parts to apply`}
+      />
+      {loose > 0 && open.includes(ANY) && (
+        <label className="check">
+          <input type="checkbox" checked={picked.has(ANY)} onChange={() => toggle(ANY)} />
+          <span>The {plural(loose, 'check')} not tied to a step</span>
+        </label>
+      )}
+      <p>
+        {chosen.length ? (
+          <>
+            Adds <strong>{plural(count(chosen), 'task')}</strong>
+            {attack.length > 0 && <> for {plural(attack.length, 'part')} of the attack</>}
+            {picked.has(ANY) && <>{attack.length ? ', including' : ':'} the {plural(loose, 'check')} not tied to a step</>}.
+          </>
+        ) : (
+          'Select at least one part.'
+        )}
+      </p>
+      {left.length > 0 && (
+        <div>
+          <p className="hint">Left out for now, to apply later from here:</p>
+          <ul className="pb-left">
+            {left.map((p) => (
+              <li key={p}>
+                {flowSteps.find(([k]) => k === p)?.[1] ?? p}
+                {playbook.conditions[p] && <span className="hint"> (only if {playbook.conditions[p]})</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {save.error && <Notice kind="error">{save.error}</Notice>}
+      <div className="actions">
+        <button className="btn btn-primary" type="button" disabled={!chosen.length} onClick={apply}>
+          Apply
+        </button>
+        <button className="btn btn-quiet" type="button" onClick={onDone}>
+          Cancel
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function ApplyPlaybook({ incident }: { incident: Incident }) {
-  const save = useSave(incident, ['tasks', 'playbooks']);
   const playbooks = useQuery({ queryKey: ['playbooks'], queryFn: () => api<Playbook[]>('/api/playbooks') });
   const applied = useSection<AppliedPlaybook[]>(incident, 'playbooks');
-  const done = new Set(applied.data?.map((a) => a.playbook_id));
-  const available = playbooks.data?.filter((p) => p.is_active && p.applies_to === incident.kind && !done.has(p.id)) ?? [];
-  const waiting = applied.data?.flatMap((a) => a.steps).filter((st) => st.state === 'waiting').length ?? 0;
+  const [applying, setApplying] = useState<string | null>(null);
+  const runOf = (id: string) => applied.data?.find((a) => a.playbook_id === id);
+  // a playbook not applied yet, or applied with parts still to take
+  const available =
+    playbooks.data?.filter((p) => p.is_active && p.applies_to === incident.kind && (!runOf(p.id) || runOf(p.id)!.remaining.length)) ?? [];
+  const playbook = playbooks.data?.find((p) => p.id === applying);
+  const name = (key: string) => (key === ANY ? 'not tied to a step' : (flowSteps.find(([k]) => k === key)?.[1] ?? key));
   return (
     <>
       {applied.data && applied.data.length > 0 && (
-        <p className="hint">
+        <p className="hint pb-applied">
           Applied:{' '}
           {applied.data.map((a, i) => (
             <span key={a.playbook_id}>
-              {i > 0 && ', '}
+              {i > 0 && '; '}
               <strong>{a.name}</strong> by {a.applied_by?.name ?? 'someone'}, {formatDate(a.applied_at)}
+              {a.remaining.length > 0 && (
+                <>
+                  {' '}
+                  ({a.remaining.length} part{a.remaining.length === 1 ? '' : 's'} left: {a.remaining.map(name).join(', ')}
+                  {incident.can_edit && (
+                    <>
+                      {' · '}
+                      <button className="link-button" type="button" onClick={() => setApplying(a.playbook_id)}>
+                        apply more
+                      </button>
+                    </>
+                  )}
+                  )
+                </>
+              )}
             </span>
           ))}
-          {waiting > 0 && ` · ${waiting} more step${waiting === 1 ? '' : 's'} to come`}
         </p>
       )}
       {incident.can_edit && available.length > 0 && (
-        <select
-          className="input inline"
-          aria-label="Apply a playbook"
-          value=""
-          onChange={(e) => save.run(() => api(`/api/incidents/${incident.id}/playbooks/${e.target.value}`, { method: 'POST' }))}
-        >
+        <select className="input inline" aria-label="Apply a playbook" value="" onChange={(e) => setApplying(e.target.value)}>
           <option value="">Apply a playbook…</option>
           {available.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name} ({p.steps.length} tasks)
+              {p.name}
+              {runOf(p.id) ? ' (the rest)' : ''}
             </option>
           ))}
         </select>
       )}
-      {save.error && <Notice kind="error">{save.error}</Notice>}
+      {playbook && (
+        <ApplyPanel
+          key={playbook.id}
+          incident={incident}
+          playbook={playbook}
+          taken={new Set(runOf(playbook.id)?.parts ?? [])}
+          onDone={() => setApplying(null)}
+        />
+      )}
     </>
   );
 }
 
 export function Tasks({ incident, me }: { incident: Incident; me: Me }) {
   const tasks = useSection<Task[]>(incident, 'tasks');
-  const applied = useSection<AppliedPlaybook[]>(incident, 'playbooks');
   const [adding, setAdding] = useState(false);
   const [show, setShow] = useState<'open' | 'finished'>('open');
-  const [view, setView] = useState<'list' | 'workflow'>('list');
-  // A decision's outcomes, with what each does, come from its playbook step
-  const outcomesOf = new Map(
-    (applied.data ?? []).flatMap((a) => a.steps.filter((st) => st.task_id).map((st) => [st.task_id as string, st.outcomes] as const)),
-  );
   const all = sortTasks(tasks.data ?? []);
   const shown = all.filter((t) => (show === 'open') !== finished(t.status));
   // Subtasks sit under their parent, all of them, whichever tab the parent is in
@@ -653,16 +693,6 @@ export function Tasks({ incident, me }: { incident: Incident; me: Me }) {
   return (
     <>
       <div className="section-bar">
-        {applied.data && applied.data.length > 0 && (
-          <div className="segmented" role="group" aria-label="View">
-            <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
-              List
-            </button>
-            <button type="button" aria-pressed={view === 'workflow'} onClick={() => setView('workflow')}>
-              Workflow
-            </button>
-          </div>
-        )}
         <div className="segmented" role="group" aria-label="Show tasks">
           <button type="button" aria-pressed={show === 'open'} onClick={() => setShow('open')}>
             To do <span className="count num">{all.filter((t) => !finished(t.status)).length}</span>
@@ -682,29 +712,16 @@ export function Tasks({ incident, me }: { incident: Incident; me: Me }) {
         </div>
       </div>
       {adding && <AddTask incident={incident} onDone={() => setAdding(false)} />}
-      {view === 'workflow' &&
-        applied.data?.map((a) => (
-          <section key={a.playbook_id} className="panel" aria-label={`${a.name} workflow`}>
-            <header>
-              <h2>{a.name}</h2>
-            </header>
-            <Workflow
-              incidentRef={incident.ref}
-              steps={a.steps.map((st) => ({ ...st, taskRef: st.task_ref }))}
-            />
-          </section>
-        ))}
       {tasks.data && shown.length === 0 && (
         <p className="hint">{show === 'open' ? 'Nothing left to do.' : 'Nothing finished yet.'}</p>
       )}
-      <ul className="records" aria-label="Tasks" hidden={view === 'workflow'}>
+      <ul className="records" aria-label="Tasks">
         {top.map((t) => (
           <TaskCard
             key={t.id}
             incident={incident}
             task={t}
             subtasks={childrenOf(t.id)}
-            outcomes={outcomesOf.get(t.id)}
             me={me}
           />
         ))}

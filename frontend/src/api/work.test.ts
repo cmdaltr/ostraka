@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sortTasks } from '../pages/incident/Tasks';
-import { dueWords, suggested } from './work';
+import { defaultParts, dueWords, partsOf, suggested } from './work';
 import type { Playbook, Task } from './work';
 
 const now = Date.parse('2026-11-10T12:00:00Z');
@@ -21,6 +21,21 @@ describe('playbook suggestions', () => {
     const books = [book('a', ['phishing']), book('b', ['ransomware']), book('c', ['phishing'], false)];
     expect(suggested(books, ['Phishing', 'bec'])).toEqual(['a']);
     expect(suggested(books, [])).toEqual([]);
+  });
+});
+
+describe('playbook parts', () => {
+  const book = {
+    conditions: { credentials: 'someone entered credentials' },
+    checks: [
+      { part: 'phishing', title: 'Pull the message', team: null },
+      { part: 'credentials', title: 'Reset the password', team: null },
+      { part: 'any', title: 'Tell the line manager', team: null },
+    ],
+  };
+  it('takes every part with checks unless it has an only if', () => {
+    expect([...partsOf(book)]).toEqual(['phishing', 'credentials', 'any']);
+    expect([...defaultParts(book)]).toEqual(['phishing', 'any']);
   });
 });
 

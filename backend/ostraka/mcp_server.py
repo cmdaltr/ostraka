@@ -303,8 +303,8 @@ TOOLS = [
     ),
     Tool(
         "tasks",
-        "A record's tasks, and its playbooks' workflows: which steps are waiting, open, done or "
-        "skipped, and which outcome each decision took.",
+        "A record's tasks, and the playbooks applied to it: which parts of the attack each has taken, "
+        "and which it has checks for that haven't been taken yet.",
         {"ref": REF},
         ("ref",),
         tasks,

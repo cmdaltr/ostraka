@@ -141,6 +141,22 @@ def test_open_work_keeps_a_step_from_being_covered():
     assert s.coverage == "covered" and s.tasks_done == 1
 
 
+def test_a_playbooks_checks_draw_their_step_but_doing_them_is_not_an_answer():
+    # A phish is known, so the other ways in aren't expected, but a playbook checking sign-ins draws one
+    facts = flow.Facts(
+        findings=[finding("FND-1", FindingStatus.CONFIRMED, "T1566.001")],
+        tasks=[
+            flow.TaskFact("TSK-3", "Review sign-ins", "credentials", done=False),
+            flow.TaskFact("TSK-4", "Check backups are offline", "destroys", done=True),
+        ],
+    )
+    f = flow.build(facts)
+    assert stage(f, "credentials").layer == "expected" and stage(f, "credentials").why == flow.TASKS_WHY
+    assert stage(f, "credentials").coverage == "focused"
+    # Its checks done, the step still needs a finding confirmed, or checked and nothing found, naming where
+    assert stage(f, "destroys").layer == "expected" and stage(f, "destroys").coverage == "open"
+
+
 def test_an_analyst_clears_adds_or_dismisses_a_step():
     facts = flow.Facts(
         findings=[finding("FND-1", FindingStatus.CONFIRMED, "T1566.001")],

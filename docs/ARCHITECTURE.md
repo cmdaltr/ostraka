@@ -15,7 +15,7 @@ Every request reaches the backend through one origin. A reverse proxy in front t
 | Incidents | `ostraka/incidents/` | Access rules, the hash-chained activity log, IOC masking per viewer, #references |
 | MCP server | `ostraka/mcp_server.py` | MCP at `/mcp`: each tool calls the API in-process as the token's owner |
 | Live hub | `ostraka/live.py` | WebSocket fan-out over Redis pub/sub. A message says what changed, never the content; clients refetch through the API, which masks per viewer |
-| Work and workflow | `ostraka/work.py`, `ostraka/workflow.py` | Task ownership, team queues, subtasks and blocking; playbook steps that wait, open at a phase or follow a decision |
+| Work and playbooks | `ostraka/work.py`, `ostraka/playbook.py` | Task ownership, team queues, subtasks and blocking; playbooks' checks on the attack's anatomy, applied part by part |
 | Notify | `ostraka/notify/` | Notifications written in the transaction and sent after the commit, through `notify.outward` |
 | Scheduler | `ostraka/scheduler.py` | Reminders and escalation, one process per tick by Postgres advisory lock |
 | Importer | `ostraka/importer.py` | `ostraka import`: records loaded through the API, replayed in time order |

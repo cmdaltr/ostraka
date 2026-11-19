@@ -182,7 +182,7 @@ async def build(
     was_tasks = before.get("tasks", {})
     for t in await _of(db, Task, touched["task"]):
         if t.status is TaskStatus.DONE and _in(t.completed_at, since, until):
-            changes.append(standard.Change("task_done", t.ref, t.title, t.outcome or ""))
+            changes.append(standard.Change("task_done", t.ref, t.title))
         elif t.status is TaskStatus.BLOCKED and was_tasks.get(str(t.id)) != TaskStatus.BLOCKED.value:
             changes.append(standard.Change("task_blocked", t.ref, t.title, t.blocked_reason))
 

@@ -20,8 +20,6 @@ function task(overrides: Record<string, unknown> = {}): Record<string, any> {
     blocks: [],
     hidden_links: 0,
     playbook_id: null,
-    outcomes: [],
-    outcome: null,
     created_by: dana,
     created_at: '2026-11-10T09:00:00Z',
     updated_at: '2026-11-10T09:00:00Z',
@@ -39,9 +37,10 @@ const phishing = {
   trigger_tags: ['phishing'],
   applies_to: 'incident',
   is_active: true,
-  steps: [
-    { id: 's-1', title: 'Pull the message', description: '', team: null, due_minutes: 30, checklist: [], after: [], phase: null, outcomes: [] },
-    { id: 's-2', title: 'Revoke sessions', description: '', team: teams[1], due_minutes: 60, checklist: ['All devices'], after: [], phase: null, outcomes: [] },
+  conditions: {},
+  checks: [
+    { id: 's-1', part: 'phishing', title: 'Pull the message', team: null },
+    { id: 's-2', part: 'credentials', title: 'Revoke sessions', team: teams[1] },
   ],
   updated_at: '2026-11-10T09:00:00Z',
   version: 1,
@@ -188,78 +187,6 @@ test('declaring with a matching tag pre-ticks the playbook, and unticking sticks
   await expect(page).toHaveURL(/OST-26-001/);
   const sent = api.requests.find((r) => r.method === 'POST' && r.path === '/api/incidents')!.body;
   expect(sent).toMatchObject({ tags: ['phishing'], playbook_ids: ['pb-1'] });
-});
-
-test('team leads write playbooks step by step', async ({ page }) => {
-  await stubLive(page);
-  const api = await stubApi(page, me({ role: 'team_lead' }), (method, path) => {
-    if (method === 'POST' && path === '/api/playbooks') return { status: 201, json: phishing };
-  });
-  await page.goto('/playbooks');
-  await page.getByRole('button', { name: 'New playbook' }).click();
-  await page.locator('#playbook-name').fill('Phishing');
-  await page.locator('#playbook-tags').fill('phishing, credential-theft');
-  await page.getByLabel('Task 1 title').fill('Pull the message');
-  await page.getByLabel('Task 1 due after').fill('30');
-  await page.getByRole('button', { name: 'Add a task' }).click();
-  await page.getByLabel('Task 2 title').fill('Revoke sessions');
-  await page.getByLabel('Task 2 team').selectOption(teams[1].id);
-  await page.getByRole('button', { name: 'Create playbook' }).click();
-  await expect(page.getByRole('form', { name: 'New playbook' })).toHaveCount(0);
-  const sent = api.requests.find((r) => r.method === 'POST' && r.path === '/api/playbooks')!.body;
-  expect(sent).toMatchObject({
-    name: 'Phishing',
-    trigger_tags: ['phishing', 'credential-theft'],
-    applies_to: 'incident',
-    is_active: true,
-    steps: [
-      { title: 'Pull the message', team_id: null, due_minutes: 30 },
-      { title: 'Revoke sessions', team_id: teams[1].id, due_minutes: null },
-    ],
-  });
-});
-
-test('a playbook draws each team’s lane and steps in its own colour', async ({ page }) => {
-  await stubLive(page);
-  const twoTeams = {
-    ...phishing,
-    steps: [
-      { ...phishing.steps[0], team: teams[0] },
-      { ...phishing.steps[1], after: [0] },
-      { ...phishing.steps[1], title: 'Tell the user', team: null, after: [1] },
-    ],
-  };
-  await stubApi(page, me({ role: 'team_lead' }), (_method, path) => (path === '/api/playbooks' ? { json: [twoTeams] } : undefined));
-  await page.goto('/playbooks');
-  await expect(page.locator('.playbook-summary')).toHaveText(/3 tasks.*2 teams/);
-  const colour = (el: Element) => (el as HTMLElement).style.getPropertyValue('--team');
-  const lanes = await page.locator('.workflow-lane').evaluateAll((els) => els.map((e) => (e as HTMLElement).style.getPropertyValue('--team')));
-  expect(lanes).toHaveLength(3);
-  expect(new Set(lanes).size).toBe(3);
-  expect(lanes[2]).toBe('var(--ochre)');
-  // a step wears its lane's colour
-  const step = await page.getByRole('listitem', { name: /^Step 2: Revoke sessions/ }).evaluate(colour);
-  expect(step).toBe(lanes[1]);
-});
-
-test('clicking a playbook step opens its detail, and an example draws every playbook part-way through', async ({ page }) => {
-  await stubLive(page);
-  await stubApi(page, me({ role: 'team_lead' }), (_method, path) => (path === '/api/playbooks' ? { json: [phishing] } : undefined));
-  await page.goto('/playbooks');
-  await page.getByRole('button', { name: 'Revoke sessions' }).click();
-  const detail = page.getByRole('region', { name: 'Step 2: Revoke sessions' });
-  await expect(detail).toContainText('DFIR’s queue');
-  await expect(detail).toContainText('1 h after it opens');
-  await expect(detail).toContainText('All devices');
-  await expect(page.getByRole('button', { name: 'Revoke sessions' })).toHaveAttribute('aria-expanded', 'true');
-  await detail.getByRole('button', { name: 'Close' }).click();
-  await expect(detail).toHaveCount(0);
-
-  await page.getByLabel('Show an example').check();
-  await expect(page.getByRole('listitem', { name: 'Step 1: Pull the message, done' })).toBeVisible();
-  await expect(page.getByRole('listitem', { name: /^Step 2: Revoke sessions, (open|waiting)$/ })).toBeVisible();
-  await page.getByLabel('Show an example').uncheck();
-  await expect(page.getByRole('listitem', { name: 'Step 1: Pull the message' })).toBeVisible();
 });
 
 test('responders see no playbook or channel controls', async ({ page }) => {

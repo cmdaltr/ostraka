@@ -175,14 +175,14 @@
           "at": "+3m",
           "do": "playbook",
           "name": "Data exposure",
-          "keys": [
-            "kd0",
-            "kd1",
-            "kd2",
-            "kd3",
-            "kd4",
-            "kd5"
-          ]
+          "keys": {
+            "kd0": "Confirm what data, and whose",
+            "kd1": "Contain the exposure",
+            "kd2": "Preserve evidence",
+            "kd3": "Assess the risk to the people affected",
+            "kd4": "Report to the ICO if required, or record why not",
+            "kd5": "Tell the people affected, if the risk to them is high"
+          }
         },
         {
           "at": "+10m",
@@ -191,17 +191,7 @@
           "task": "kd1"
         },
         {
-          "at": "+6m",
-          "by": "oliver",
-          "do": "tick",
-          "task": "kd1",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+7m",
           "by": "oliver",
           "do": "task_update",
           "task": "kd1",
@@ -439,18 +429,7 @@
           "finding": "f_access"
         },
         {
-          "at": "+2m",
-          "by": "jun",
-          "do": "tick",
-          "task": "kd0",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+3m",
           "by": "jun",
           "do": "task_update",
           "task": "kd0",
@@ -705,17 +684,7 @@
           "task": "t_cache"
         },
         {
-          "at": "-11d 11:00",
-          "by": "hannah",
-          "do": "tick",
-          "task": "kd3",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "-11d 11:01",
           "by": "hannah",
           "do": "task_update",
           "task": "kd3",
@@ -732,10 +701,17 @@
         {
           "at": "+1m",
           "by": "hannah",
-          "do": "decide",
+          "do": "comment",
+          "body": "Only a search engine's crawler opened the link and nothing was downloaded: no risk to the drivers' rights and freedoms."
+        },
+        {
+          "at": "+1m",
+          "by": "hannah",
+          "do": "task_update",
           "task": "kd4",
-          "outcome": "Not reportable: record why",
-          "note": "Only a search engine's crawler opened the link and nothing was downloaded: no risk to the drivers' rights and freedoms."
+          "with": {
+            "status": "done"
+          }
         },
         {
           "at": "-11d 11:05",
@@ -990,28 +966,18 @@
           "at": "+1m",
           "do": "playbook",
           "name": "Threat hunt",
-          "keys": [
-            "kh0",
-            "kh1",
-            "kh2",
-            "kh3",
-            "kh4",
-            "kh5",
-            "kh6"
-          ]
+          "keys": {
+            "kh0": "Write the hypothesis",
+            "kh1": "Choose data sources and time range",
+            "kh2": "Run the searches (Shikari)",
+            "kh3": "Analyse the results",
+            "kh4": "Conclude: promote it, close it, or refine the hypothesis",
+            "kh5": "Write up the detection for Shikari's library",
+            "kh6": "Share what was found with Intelligence"
+          }
         },
         {
-          "at": "+10m",
-          "do": "tick",
-          "task": "kh0",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+11m",
           "do": "task_update",
           "task": "kh0",
           "with": {
@@ -1032,17 +998,7 @@
           "task": "kh1"
         },
         {
-          "at": "+20m",
-          "by": "ana",
-          "do": "tick",
-          "task": "kh1",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+21m",
           "by": "ana",
           "do": "task_update",
           "task": "kh1",
@@ -1064,17 +1020,7 @@
           "task": "kh2"
         },
         {
-          "at": "-8d 09:40",
-          "by": "ana",
-          "do": "tick",
-          "task": "kh2",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "-8d 09:41",
           "by": "ana",
           "do": "task_update",
           "task": "kh2",
@@ -1444,16 +1390,7 @@
           "body": "Agreed. I'll close the analysis this afternoon and promote it; @{tom} will want the DC."
         },
         {
-          "at": "-7d 14:05",
-          "do": "tick",
-          "task": "kh3",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "-7d 14:06",
           "do": "task_update",
           "task": "kh3",
           "with": {
@@ -1469,15 +1406,25 @@
         },
         {
           "at": "-7d 15:00",
-          "do": "decide",
-          "task": "kh4",
-          "outcome": "Confirmed: promote to an incident",
-          "note": "One workstation, one burst, and a DC logon to follow. Handing to IR.",
+          "do": "comment",
+          "body": "One workstation, one burst, and a DC logon to follow. Handing to IR."
+        },
+        {
+          "at": "+1m",
+          "do": "promote",
           "key": "acct",
           "with": {
             "title": "svc_sqlbackup misuse",
             "severity": "high",
             "summary": "Found by #{kerb}: FIN-WS-0142 roasted 14 service accounts. svc_sqlbackup has since logged on to DC02 interactively, which it never does."
+          }
+        },
+        {
+          "at": "+1m",
+          "do": "task_update",
+          "task": "kh4",
+          "with": {
+            "status": "done"
           }
         },
         {
@@ -1493,17 +1440,7 @@
           "task": "kh6"
         },
         {
-          "at": "+40m",
-          "by": "mei",
-          "do": "tick",
-          "task": "kh6",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+41m",
           "by": "mei",
           "do": "task_update",
           "task": "kh6",
@@ -1512,18 +1449,7 @@
           }
         },
         {
-          "at": "+30m",
-          "by": "ana",
-          "do": "tick",
-          "task": "kh5",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+31m",
           "by": "ana",
           "do": "task_update",
           "task": "kh5",
@@ -1594,13 +1520,13 @@
           "at": "-7d 15:05",
           "do": "playbook",
           "name": "Account compromise",
-          "keys": [
-            "ka0",
-            "ka1",
-            "ka2",
-            "ka3",
-            "ka4"
-          ]
+          "keys": {
+            "ka0": "Disable or reset the account",
+            "ka1": "Review sign-ins and MFA changes",
+            "ka2": "Look for persistence",
+            "ka3": "Check what the account touched",
+            "ka4": "Search for the same infrastructure elsewhere"
+          }
         },
         {
           "at": "+3m",
@@ -1615,17 +1541,7 @@
           "task": "ka0"
         },
         {
-          "at": "+6m",
-          "by": "priya",
-          "do": "tick",
-          "task": "ka0",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+7m",
           "by": "priya",
           "do": "task_update",
           "task": "ka0",
@@ -1758,17 +1674,7 @@
           "task": "ka1"
         },
         {
-          "at": "+20m",
-          "by": "priya",
-          "do": "tick",
-          "task": "ka1",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+21m",
           "by": "priya",
           "do": "task_update",
           "task": "ka1",
@@ -2148,17 +2054,6 @@
           }
         },
         {
-          "at": "-5d 12:00",
-          "by": "priya",
-          "do": "tick",
-          "task": "ka2",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
           "at": "-4d 10:30",
           "by": "lucia",
           "do": "claim",
@@ -2172,15 +2067,6 @@
           "with": {
             "status": "in_progress"
           }
-        },
-        {
-          "at": "-4d 11:35",
-          "by": "lucia",
-          "do": "tick",
-          "task": "ka3",
-          "items": [
-            0
-          ]
         },
         {
           "at": "-4d 11:40",
@@ -2204,17 +2090,7 @@
           "body": "What svc_sqlbackup touched: no mailbox, so no mail. Files: it read \\\\FS01\\payroll on the morning of the encryption, which #{rw} already covers. Admin actions: only the two on #{f_newacct}."
         },
         {
-          "at": "+10m",
-          "by": "lucia",
-          "do": "tick",
-          "task": "ka3",
-          "items": [
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+11m",
           "by": "lucia",
           "do": "task_update",
           "task": "ka3",
@@ -2346,17 +2222,17 @@
           "at": "+3m",
           "do": "playbook",
           "name": "Ransomware",
-          "keys": [
-            "kr0",
-            "kr1",
-            "kr2",
-            "kr3",
-            "kr4",
-            "kr5",
-            "kr6",
-            "kr7",
-            "kr8"
-          ]
+          "keys": {
+            "kr0": "Isolate affected hosts",
+            "kr1": "Preserve memory and disk",
+            "kr2": "Identify patient zero and the strain",
+            "kr3": "Check backups are intact and offline",
+            "kr4": "Scope encryption and exfiltration",
+            "kr5": "Start the regulator and insurer clocks",
+            "kr6": "Agree the recovery plan with Leadership",
+            "kr7": "Staff and customer communications",
+            "kr8": "Profile the group and watch its leak site"
+          }
         },
         {
           "at": "+2m",
@@ -2433,18 +2309,7 @@
           }
         },
         {
-          "at": "+8m",
-          "by": "ellis",
-          "do": "tick",
-          "task": "kr0",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+9m",
           "by": "ellis",
           "do": "task_update",
           "task": "kr0",
@@ -2566,17 +2431,7 @@
           "task": "kr1"
         },
         {
-          "at": "+50m",
-          "by": "jun",
-          "do": "tick",
-          "task": "kr1",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+51m",
           "by": "jun",
           "do": "task_update",
           "task": "kr1",
@@ -2733,18 +2588,7 @@
           "note": "Three devices ran the encryptor; this one first, by 61 minutes."
         },
         {
-          "at": "+2m",
-          "by": "jun",
-          "do": "tick",
-          "task": "kr2",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+3m",
           "by": "jun",
           "do": "task_update",
           "task": "kr2",
@@ -2794,16 +2638,7 @@
           "task": "kr8"
         },
         {
-          "at": "+15m",
-          "by": "rhea",
-          "do": "tick",
-          "task": "kr8",
-          "items": [
-            0
-          ]
-        },
-        {
-          "at": "+20m",
+          "at": "+35m",
           "by": "rhea",
           "do": "finding",
           "key": "f_intel",
@@ -2842,18 +2677,7 @@
           "task": "kr5"
         },
         {
-          "at": "+40m",
-          "by": "hannah",
-          "do": "tick",
-          "task": "kr5",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+41m",
           "by": "hannah",
           "do": "task_update",
           "task": "kr5",
@@ -2868,17 +2692,7 @@
           "task": "kr3"
         },
         {
-          "at": "+1h",
-          "by": "oliver",
-          "do": "tick",
-          "task": "kr3",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+5m",
+          "at": "+65m",
           "by": "oliver",
           "do": "task_update",
           "task": "kr3",
@@ -3658,15 +3472,6 @@
           }
         },
         {
-          "at": "+2h",
-          "by": "jun",
-          "do": "tick",
-          "task": "kr4",
-          "items": [
-            0
-          ]
-        },
-        {
           "at": "-4d 15:40",
           "by": "nina",
           "do": "clock_met",
@@ -3699,15 +3504,6 @@
           "by": "jun",
           "do": "handover",
           "add": "#{kr4} is half done: encryption scope is settled (FS01, FS02, FIN-WS-0142; FS03 blocked by ASR). Exfiltration volume is the open question; the proxy logs are with the network team."
-        },
-        {
-          "at": "-3d 10:00",
-          "by": "jun",
-          "do": "tick",
-          "task": "kr4",
-          "items": [
-            1
-          ]
         },
         {
           "at": "-3d 12:00",
@@ -4111,15 +3907,15 @@
           "at": "+2m",
           "do": "playbook",
           "name": "Phishing and BEC",
-          "keys": [
-            "kb0",
-            "kb1",
-            "kb2",
-            "kb3",
-            "kb4",
-            "kb5",
-            "kb6"
-          ]
+          "keys": {
+            "kb0": "Pull the reported message and its headers",
+            "kb1": "Find every recipient",
+            "kb2": "Purge the message from mailboxes",
+            "kb3": "Check for credential entry and sign-ins",
+            "kb4": "Inspect mailbox rules, forwarding and app consents",
+            "kb5": "Block the sender and infrastructure",
+            "kb6": "Check for payment or data requests"
+          }
         },
         {
           "at": "+5m",
@@ -4171,17 +3967,7 @@
           "task": "kb0"
         },
         {
-          "at": "+15m",
-          "do": "tick",
-          "task": "kb0",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+16m",
           "do": "task_update",
           "task": "kb0",
           "with": {
@@ -4202,17 +3988,7 @@
           "task": "kb1"
         },
         {
-          "at": "+20m",
-          "by": "ellis",
-          "do": "tick",
-          "task": "kb1",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+21m",
           "by": "ellis",
           "do": "task_update",
           "task": "kb1",
@@ -4311,18 +4087,7 @@
           }
         },
         {
-          "at": "+2m",
-          "by": "priya",
-          "do": "tick",
-          "task": "kb3",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+3m",
           "by": "priya",
           "do": "task_update",
           "task": "kb3",
@@ -4390,19 +4155,7 @@
           "note": "Rule removed and the session revoked at 12:31."
         },
         {
-          "at": "+1m",
-          "by": "priya",
-          "do": "tick",
-          "task": "kb4",
-          "items": [
-            0,
-            1,
-            2,
-            3
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+2m",
           "by": "priya",
           "do": "task_update",
           "task": "kb4",
@@ -4485,16 +4238,7 @@
           }
         },
         {
-          "at": "+5m",
-          "do": "tick",
-          "task": "kb6",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+6m",
           "do": "task_update",
           "task": "kb6",
           "with": {
@@ -4972,26 +4716,16 @@
           "at": "+2m",
           "do": "playbook",
           "name": "Threat hunt",
-          "keys": [
-            "kc0",
-            "kc1",
-            "kc2",
-            "kc3",
-            "kc4"
-          ]
+          "keys": {
+            "kc0": "Write the hypothesis",
+            "kc1": "Choose data sources and time range",
+            "kc2": "Run the searches (Shikari)",
+            "kc3": "Analyse the results",
+            "kc4": "Conclude: promote it, close it, or refine the hypothesis"
+          }
         },
         {
-          "at": "+10m",
-          "do": "tick",
-          "task": "kc0",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+11m",
           "do": "task_update",
           "task": "kc0",
           "with": {
@@ -5012,17 +4746,7 @@
           "by": "bilal"
         },
         {
-          "at": "+30m",
-          "do": "tick",
-          "task": "kc1",
-          "items": [
-            0,
-            1
-          ],
-          "by": "bilal"
-        },
-        {
-          "at": "+1m",
+          "at": "+31m",
           "do": "task_update",
           "task": "kc1",
           "with": {
@@ -5206,17 +4930,7 @@
           }
         },
         {
-          "at": "+20m",
-          "by": "bilal",
-          "do": "tick",
-          "task": "kc2",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+21m",
           "by": "bilal",
           "do": "task_update",
           "task": "kc2",
@@ -5549,17 +5263,7 @@
           }
         },
         {
-          "at": "+10m",
-          "by": "dev",
-          "do": "tick",
-          "task": "kc3",
-          "items": [
-            0,
-            1
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+11m",
           "by": "dev",
           "do": "task_update",
           "task": "kc3",
@@ -5606,15 +5310,15 @@
           "by": "ana",
           "do": "playbook",
           "name": "Threat hunt",
-          "keys": [
-            "kt0",
-            "kt1",
-            "kt2",
-            "kt3",
-            "kt4",
-            "kt5",
-            "kt6"
-          ]
+          "keys": {
+            "kt0": "Write the hypothesis",
+            "kt1": "Choose data sources and time range",
+            "kt2": "Run the searches (Shikari)",
+            "kt3": "Analyse the results",
+            "kt4": "Conclude: promote it, close it, or refine the hypothesis",
+            "kt5": "Write up the detection for Shikari's library",
+            "kt6": "Share what was found with Intelligence"
+          }
         },
         {
           "at": "+2m",
@@ -5675,18 +5379,7 @@
           "body": "Two more names in the partner's reporting: 'EdgeUpdateTaskMachineUA2' and 'OneDriveStandaloneUpdate Task-S-1-5-18', both pointing into C:\\Users\\Public or C:\\ProgramData. Graded B2, as before."
         },
         {
-          "at": "+10m",
-          "by": "ana",
-          "do": "tick",
-          "task": "kt0",
-          "items": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+11m",
           "by": "ana",
           "do": "task_update",
           "task": "kt0",
@@ -5716,16 +5409,7 @@
           "body": "Sources: Defender's DeviceEvents ScheduledTaskCreated (30 days) covers every workstation. Security 4698 isn't collected from workstations, so nothing older than 30 days. @{ana} I'll note that as a visibility gap for Shikari."
         },
         {
-          "at": "+5m",
-          "by": "bilal",
-          "do": "tick",
-          "task": "kt1",
-          "items": [
-            0
-          ]
-        },
-        {
-          "at": "+1m",
+          "at": "+6m",
           "by": "bilal",
           "do": "task_update",
           "task": "kt1",

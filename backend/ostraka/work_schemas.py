@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from ostraka.incident_schemas import Person, PromoteIn, TeamRef, Versioned, _tags
+from ostraka.incident_schemas import Person, TeamRef, Versioned, _tags
 from ostraka.models import NotificationKind, RecordKind, Severity, TaskStatus, Tlp
 
 CHECKLIST_MAX = 50
@@ -137,8 +136,6 @@ class TaskOut(BaseModel):
     blocks: list[TaskLink]
     hidden_links: int  # dependencies in incidents you can't see
     playbook_id: uuid.UUID | None
-    outcomes: list[str] = Field(default_factory=list, description="A decision: finished by choosing one")
-    outcome: str | None = None
     created_by: Person | None
     created_at: datetime
     updated_at: datetime
@@ -172,58 +169,28 @@ class NudgeIn(BaseModel):
 # ---- playbooks ------------------------------------------------------------------------------------
 
 
-class OutcomeIn(BaseModel):
-    """One way a decision can go: what it does to the record, and which steps it opens."""
-
-    label: str = Field(min_length=1, max_length=120)
-    action: Literal["none", "close", "phase", "promote"] = "none"
-    phase: str | None = Field(default=None, max_length=16, description="For action phase")
-    opens: list[int] = Field(default_factory=list, description="Step positions; an earlier one runs again")
-
-
-class PlaybookStepIn(BaseModel):
+class PlaybookCheckIn(BaseModel):
+    part: str = Field(
+        default="any", max_length=32, description="A part of the attack (ostraka.playbook.PARTS)"
+    )
     title: str = Field(min_length=3, max_length=200)
-    description: str = Field(default="", max_length=20_000)
     team_id: uuid.UUID | None = None
-    due_minutes: int | None = Field(default=None, ge=0, le=60 * 24 * 90)
-    checklist: list[str] = Field(default_factory=list)
-    after: list[int] = Field(default_factory=list, description="Earlier steps, by position, to finish first")
-    phase: str | None = Field(default=None, max_length=16, description="Opens when the record reaches it")
-    outcomes: list[OutcomeIn] = Field(default_factory=list, max_length=6)
-
-    @field_validator("checklist")
-    @classmethod
-    def _clean_checklist(cls, v: list[str]) -> list[str]:
-        return _checklist(v)
 
 
-class PlaybookStepOut(BaseModel):
+class PlaybookCheckOut(BaseModel):
     id: uuid.UUID
-    title: str
-    description: str
-    team: TeamRef | None
-    due_minutes: int | None
-    checklist: list[str]
-    after: list[int] = Field(default_factory=list)
-    phase: str | None = None
-    outcomes: list[OutcomeIn] = Field(default_factory=list)
-
-
-class WorkflowStepOut(BaseModel):
-    """A step of a playbook applied to a record, and where it's got to."""
-
-    position: int
+    part: str
     title: str
     team: TeamRef | None
-    after: list[int]
-    phase: str | None
-    outcomes: list[OutcomeIn]
-    state: Literal["waiting", "open", "done", "skipped"]
-    conditional: bool  # opens only if a decision's outcome names it
-    task_id: uuid.UUID | None
-    task_ref: str | None
-    outcome: str | None
-    runs: int
+
+
+def _conditions(v: dict[str, str] | None) -> dict[str, str] | None:
+    """Only if…: words for a part, trimmed; an empty one is no condition."""
+    if v is None:
+        return None
+    if any(len(words) > 200 for words in v.values()):
+        raise ValueError("An “only if” is at most 200 characters.")
+    return {part: words.strip() for part, words in v.items() if words.strip()}
 
 
 class PlaybookIn(BaseModel):
@@ -232,12 +199,18 @@ class PlaybookIn(BaseModel):
     trigger_tags: list[str] = Field(default_factory=list)
     applies_to: RecordKind = RecordKind.INCIDENT
     is_active: bool = True
-    steps: list[PlaybookStepIn] = Field(min_length=1, max_length=50)
+    conditions: dict[str, str] = Field(default_factory=dict, description="Part: only if…")
+    checks: list[PlaybookCheckIn] = Field(min_length=1, max_length=100)
 
     @field_validator("trigger_tags")
     @classmethod
     def _clean_tags(cls, v: list[str]) -> list[str]:
         return _tags(v)
+
+    @field_validator("conditions")
+    @classmethod
+    def _clean_conditions(cls, v: dict[str, str]) -> dict[str, str]:
+        return _conditions(v) or {}
 
 
 class PlaybookPatch(Versioned):
@@ -246,12 +219,18 @@ class PlaybookPatch(Versioned):
     trigger_tags: list[str] | None = None
     applies_to: RecordKind | None = None
     is_active: bool | None = None
-    steps: list[PlaybookStepIn] | None = Field(default=None, min_length=1, max_length=50)
+    conditions: dict[str, str] | None = None
+    checks: list[PlaybookCheckIn] | None = Field(default=None, min_length=1, max_length=100)
 
     @field_validator("trigger_tags")
     @classmethod
     def _clean_tags(cls, v: list[str] | None) -> list[str] | None:
         return _tags(v) if v is not None else None
+
+    @field_validator("conditions")
+    @classmethod
+    def _clean_conditions(cls, v: dict[str, str] | None) -> dict[str, str] | None:
+        return _conditions(v)
 
 
 class PlaybookOut(BaseModel):
@@ -261,23 +240,28 @@ class PlaybookOut(BaseModel):
     trigger_tags: list[str]
     applies_to: RecordKind
     is_active: bool
-    steps: list[PlaybookStepOut]
+    conditions: dict[str, str]
+    checks: list[PlaybookCheckOut]
     updated_at: datetime
     version: int
 
 
+class ApplyIn(BaseModel):
+    parts: list[str] | None = Field(
+        default=None, max_length=40, description="The parts to take; omitted, every part without an only if"
+    )
+
+
 class AppliedPlaybookOut(BaseModel):
+    """A playbook on a record: the parts taken, and those it has checks for that haven't been."""
+
     playbook_id: uuid.UUID
     name: str
     applied_by: Person | None
     applied_at: datetime
-    steps: list[WorkflowStepOut] = Field(default_factory=list)
-
-
-class DecideIn(Versioned):
-    outcome: str = Field(min_length=1, max_length=120)
-    note: str = Field(default="", max_length=5000)
-    promote: PromoteIn | None = Field(default=None, description="The incident, for an outcome that promotes")
+    parts: list[str]
+    remaining: list[str]
+    conditions: dict[str, str]
 
 
 # ---- notifications --------------------------------------------------------------------------------

@@ -10,8 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ostraka import flow, notify, work, workflow
-from ostraka.api import links
+from ostraka import flow, notify, work
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
 from ostraka.incident_schemas import MaybeVersioned
@@ -21,7 +20,6 @@ from ostraka.models import (
     FINISHED,
     ChecklistItem,
     Incident,
-    IncidentPlaybook,
     IncidentStatus,
     Notification,
     NotificationKind,
@@ -37,7 +35,6 @@ from ostraka.work_schemas import (
     BlockerIn,
     ChecklistItemIn,
     ChecklistItemPatch,
-    DecideIn,
     IncidentBrief,
     MyTaskOut,
     NudgeIn,
@@ -175,10 +172,6 @@ async def update_task(
         task.due_at = body.due_at
         work.reset_reminders(task)
         described.append(f"due {body.due_at:%d %b %H:%M} UTC" if body.due_at else "removed the due date")
-    if body.status is TaskStatus.DONE and task.outcomes and task.status is not TaskStatus.DONE:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, f"{task.ref} is a decision: choose one of its outcomes to finish it."
-        )
     if body.status is not None and body.status is not task.status:
         before = task.status
         task.status = body.status
@@ -211,55 +204,7 @@ async def update_task(
             await work.announce(db, incident, task, user)
         if finishing:
             await work.release_dependents(db, task, user)
-            await workflow.task_finished(db, incident, task, user)
         await activity.finish(db, user)
-    return await work.task_out(db, task, user)
-
-
-@router.post("/{task_id}/decide", response_model=TaskOut)
-async def decide(
-    incident_id: uuid.UUID,
-    task_id: uuid.UUID,
-    body: DecideIn,
-    user: User = Depends(current_user),
-    db: AsyncSession = Depends(get_session),
-) -> TaskOut:
-    """Finish a decision by choosing an outcome. The outcome may close the record, move its phase or
-    promote a hunt, and opens the playbook steps it names."""
-    incident = await access.load(db, user, incident_id, edit=True)
-    task = await _task(db, incident, task_id)
-    views.check_version(task.version, body.version, "task")
-    if not task.outcomes:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"{task.ref} isn't a decision.")
-    if task.status in FINISHED:
-        raise HTTPException(status.HTTP_409_CONFLICT, f"{task.ref} has already been decided.")
-    outcome = await workflow.decide(db, incident, task, body.outcome, user)
-    words = [f"{user.name} decided {task.ref}: {body.outcome}"]
-    if outcome["action"] == "promote":
-        if body.promote is None:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
-                "Name the incident and its severity to promote the hunt.",
-            )
-        promoted = await links.promote_hunt(db, user, incident, body.promote)
-        words.append(f"promoted to {promoted.ref}")
-    elif did := await workflow.act(db, incident, outcome, user):
-        words.append(did)
-    await activity.record(
-        db,
-        incident,
-        user,
-        "task_decided",
-        "; ".join(words) + (f". {body.note.strip()}" if body.note.strip() else ""),
-        entity_type="task",
-        entity_id=task.id,
-    )
-    await work.release_dependents(db, task, user)
-    if task.run_id:
-        run = await db.get(IncidentPlaybook, task.run_id)
-        await workflow.advance(db, incident, run, user)
-    await activity.finish(db, user)
-    await db.refresh(task, ["team", "assignee"])
     return await work.task_out(db, task, user)
 
 

@@ -1,0 +1,107 @@
+/* Playbooks on the attack's anatomy (pages/Playbooks.tsx, and applying one in incident/Tasks.tsx). The
+   drawing is incident.css's flow-*; this is the part being edited, its checks, and the Apply panel */
+.pb-totals {
+  margin: var(--space-2) 0 0;
+}
+.pb-totals .link-button[aria-pressed='true'] {
+  color: var(--ochre);
+  font-weight: 650;
+}
+.pb-part {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ochre);
+  border-radius: var(--radius-md);
+  background: var(--raised);
+}
+.pb-part-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.pb-part-head h3,
+.pb-part-head p {
+  margin: 0;
+}
+.pb-pickers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pb-pickers button {
+  padding: 4px 10px;
+  border: 1px dashed var(--muted);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.pb-pickers button.has {
+  border-style: solid;
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.pb-pickers button[aria-pressed='true'] {
+  border-color: var(--ochre);
+  background: color-mix(in srgb, var(--ochre) 14%, var(--surface));
+  color: var(--ink);
+  font-weight: 650;
+}
+.pb-condition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+}
+.pb-condition .field {
+  flex: 1 1 260px;
+}
+.pb-condition .hint {
+  flex-basis: 100%;
+  margin: 0;
+}
+/* A check: its line, its team (the line edged in the team's colour) and its moves */
+.pb-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.pb-checks li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 200px) auto;
+  gap: var(--space-2);
+  align-items: center;
+  padding-left: var(--space-2);
+  border-left: 4px solid var(--team);
+}
+.pb-moves {
+  display: flex;
+  gap: 2px;
+}
+@media (max-width: 640px) {
+  .pb-checks li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .pb-checks li select {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+.pb-apply {
+  display: grid;
+  gap: var(--space-3);
+}
+.pb-apply p,
+.pb-left {
+  margin: 0;
+}
+.pb-applied .link-button {
+  font-size: inherit;
+}

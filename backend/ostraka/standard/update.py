@@ -36,7 +36,7 @@ class Change:
     kind: str  # one of KINDS
     ref: str  # FND-12, AST-3, TSK-9, or "" for the incident itself
     title: str = ""
-    detail: str = ""  # an asset's status, a phase, "high → critical", a task's outcome or why it's blocked
+    detail: str = ""  # an asset's status, a phase, "high → critical", or why a task is blocked
 
 
 @dataclass(frozen=True)
@@ -99,8 +99,7 @@ def change_text(change: Change) -> str:
         case "severity":
             return f"Severity changed: {change.detail}."
         case "task_done":
-            outcome = f": decided {_clean(change.detail)}" if change.detail else ""
-            return f"Done: {ref} {title}{outcome}."
+            return f"Done: {ref} {title}."
         case "task_blocked":
             why = f": {_clean(change.detail)}" if change.detail else ""
             return f"Blocked: {ref} {title}{why}."

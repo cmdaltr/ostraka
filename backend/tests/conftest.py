@@ -73,7 +73,7 @@ async def db(migrated):
         await session.execute(
             text(
                 "TRUNCATE notifications, push_subscriptions, checklist_items, tasks, incident_playbooks, "
-                "playbook_steps, playbooks, activity_events, mentions, comments, verifications, "
+                "playbook_checks, playbooks, activity_events, mentions, comments, verifications, "
                 "finding_observables, findings, "
                 "sightings, asset_links, assets, incident_observables, observables, incident_members, "
                 "incident_teams, incidents, incident_counters, tag_definitions, licences, report_brands, "
@@ -278,43 +278,16 @@ def _revision(name: str):
 
 @pytest.fixture
 async def seed_playbooks(db):
-    """The seed playbooks as a migrated database has them: 0005's steps, on 0006's teams, rewritten as
-    0007's workflows, with 0020's hunt phases. (The `db` fixture empties the playbooks the migrations
-    made.)"""
+    """The seed playbooks as a migrated database has them: 0025's, on the anatomy. (The `db` fixture
+    empties the playbooks the migrations made.)"""
     from alembic.operations import Operations
     from alembic.runtime.migration import MigrationContext
 
-    seeds, teams, workflows, hunt_phases = (
-        _revision("0005_hunts_and_links.py"),
-        _revision("0006_team_codes.py"),
-        _revision("0007_workflows.py"),
-        _revision("0020_hunt_phases.py"),
-    )
-    moved = {**teams.RENAMED, **teams.MERGED}
-    seeds.SEEDS = [
-        (
-            name,
-            kind,
-            tags,
-            description,
-            [
-                (
-                    title,
-                    "Threat Hunting" if kind == "hunt" and team == "SOC" else moved.get(team, team),
-                    due,
-                    items,
-                )
-                for title, team, due, items in steps
-            ],
-        )
-        for name, kind, tags, description, steps in seeds.SEEDS
-    ]
+    seeds = _revision("0025_playbooks_on_the_anatomy.py")
 
     def seed(connection):
         with Operations.context(MigrationContext.configure(connection)):
             seeds._seed()
-            workflows._rewrite()
-            hunt_phases.upgrade()
 
     await (await db.connection()).run_sync(seed)
     await db.commit()

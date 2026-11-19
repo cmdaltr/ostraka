@@ -1,6 +1,6 @@
-"""Playbooks: the workflow a record follows. Anyone can read them; admins and team leads write them.
-Applying one to an incident or hunt starts it there, once; `ostraka.workflow` opens each step's task
-when it's ready."""
+"""Playbooks: checks on the attack's anatomy. Anyone can read them; admins and team leads write them.
+Applying one to an incident or hunt takes the parts that fit (`ostraka.playbook`); more can be taken
+later."""
 
 from __future__ import annotations
 
@@ -11,19 +11,18 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ostraka import audit, work, workflow
+from ostraka import audit, work
+from ostraka import playbook as playbooks
 from ostraka.auth import policy, sessions
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
 from ostraka.incident_schemas import TeamRef
 from ostraka.incidents import access, activity, views
 from ostraka.models import (
-    PHASES_OF,
     Incident,
     IncidentPlaybook,
     Playbook,
-    PlaybookStep,
-    RecordKind,
+    PlaybookCheck,
     Task,
     Team,
     User,
@@ -31,14 +30,13 @@ from ostraka.models import (
 )
 from ostraka.work_schemas import (
     AppliedPlaybookOut,
-    OutcomeIn,
+    ApplyIn,
+    PlaybookCheckIn,
+    PlaybookCheckOut,
     PlaybookIn,
     PlaybookOut,
     PlaybookPatch,
-    PlaybookStepIn,
-    PlaybookStepOut,
     TaskOut,
-    WorkflowStepOut,
 )
 
 router = APIRouter(prefix="/api/playbooks", tags=["playbooks"])
@@ -46,7 +44,7 @@ incident_router = APIRouter(prefix="/api/incidents/{incident_id}/playbooks", tag
 
 
 async def _out(db: AsyncSession, playbook: Playbook) -> PlaybookOut:
-    team_ids = {s.team_id for s in playbook.steps if s.team_id}
+    team_ids = {c.team_id for c in playbook.checks if c.team_id}
     teams = (
         {t.id: t for t in (await db.scalars(select(Team).where(Team.id.in_(team_ids)))).all()}
         if team_ids
@@ -59,19 +57,15 @@ async def _out(db: AsyncSession, playbook: Playbook) -> PlaybookOut:
         trigger_tags=playbook.trigger_tags,
         applies_to=playbook.applies_to,
         is_active=playbook.is_active,
-        steps=[
-            PlaybookStepOut(
-                id=s.id,
-                title=s.title,
-                description=s.description,
-                team=TeamRef(id=s.team_id, name=teams[s.team_id].name) if s.team_id in teams else None,
-                due_minutes=s.due_minutes,
-                checklist=s.checklist,
-                after=s.after,
-                phase=s.phase,
-                outcomes=[OutcomeIn(**o) for o in s.outcomes],
+        conditions=playbook.conditions,
+        checks=[
+            PlaybookCheckOut(
+                id=c.id,
+                part=c.part,
+                title=c.title,
+                team=TeamRef(id=c.team_id, name=teams[c.team_id].name) if c.team_id in teams else None,
             )
-            for s in playbook.steps
+            for c in playbook.checks
         ],
         updated_at=playbook.updated_at,
         version=playbook.version,
@@ -83,27 +77,26 @@ def _require_author(user: User) -> None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only admins and team leads can change playbooks.")
 
 
-async def _steps(db: AsyncSession, steps: list[PlaybookStepIn], kind: RecordKind) -> list[PlaybookStep]:
-    workflow.check(steps, [p.value for p in PHASES_OF[kind]])
-    team_ids = {s.team_id for s in steps if s.team_id}
+async def _checks(db: AsyncSession, checks: list[PlaybookCheckIn]) -> list[PlaybookCheck]:
+    playbooks.check_parts(c.part for c in checks)
+    team_ids = {c.team_id for c in checks if c.team_id}
     if team_ids:
         found = set((await db.scalars(select(Team.id).where(Team.id.in_(team_ids)))).all())
         if team_ids - found:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "A step names a team that doesn't exist.")
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "A check names a team that doesn't exist.")
     return [
-        PlaybookStep(
-            position=i,
-            title=s.title.strip(),
-            description=s.description.strip(),
-            team_id=s.team_id,
-            due_minutes=s.due_minutes,
-            checklist=s.checklist,
-            after=sorted(set(s.after)),
-            phase=s.phase,
-            outcomes=[o.model_dump() for o in s.outcomes],
-        )
-        for i, s in enumerate(steps)
+        PlaybookCheck(position=i, part=c.part, title=c.title.strip(), team_id=c.team_id)
+        for i, c in enumerate(checks)
     ]
+
+
+def _conditions(
+    conditions: dict[str, str], checks: list[PlaybookCheckIn] | list[PlaybookCheck]
+) -> dict[str, str]:
+    """Only if…, for parts that have checks. "Not tied to a step" never has one: it's never a call."""
+    playbooks.check_parts(conditions)
+    present = {c.part for c in checks}
+    return {p: w for p, w in conditions.items() if p in present and p != playbooks.ANY}
 
 
 async def _save(db: AsyncSession) -> None:
@@ -144,8 +137,9 @@ async def create_playbook(
         trigger_tags=body.trigger_tags,
         applies_to=body.applies_to,
         is_active=body.is_active,
+        conditions=_conditions(body.conditions, body.checks),
         created_by=user.id,
-        steps=await _steps(db, body.steps, body.applies_to),
+        checks=await _checks(db, body.checks),
     )
     db.add(playbook)
     audit.record(
@@ -155,10 +149,10 @@ async def create_playbook(
         ip=sessions.client_ip(request),
         playbook=str(playbook.id),
         name=playbook.name,
-        steps=len(body.steps),
+        checks=len(body.checks),
     )
     await _save(db)
-    await db.refresh(playbook, ["steps"])
+    await db.refresh(playbook, ["checks"])
     return await _out(db, playbook)
 
 
@@ -174,12 +168,17 @@ async def update_playbook(
     _require_author(user)
     playbook = await _playbook(db, playbook_id)
     views.check_version(playbook.version, body.version, "playbook")
-    changes = body.model_dump(exclude_unset=True, exclude={"version", "steps"})
+    changes = body.model_dump(exclude_unset=True, exclude={"version", "checks", "conditions"})
     for field, value in changes.items():
         if value is not None:
             setattr(playbook, field, value.strip() if isinstance(value, str) else value)
-    if body.steps is not None:
-        playbook.steps = await _steps(db, body.steps, body.applies_to or playbook.applies_to)
+    if body.checks is not None:
+        playbook.checks = await _checks(db, body.checks)
+    if body.conditions is not None or body.checks is not None:
+        conditions = playbook.conditions if body.conditions is None else body.conditions
+        playbook.conditions = _conditions(
+            conditions, body.checks if body.checks is not None else playbook.checks
+        )
     playbook.version += 1
     playbook.updated_at = utcnow()
     audit.record(
@@ -189,10 +188,16 @@ async def update_playbook(
         ip=sessions.client_ip(request),
         playbook=str(playbook.id),
         name=playbook.name,
-        fields=sorted([*changes, *(["steps"] if body.steps is not None else [])]),
+        fields=sorted(
+            [
+                *changes,
+                *(["checks"] if body.checks is not None else []),
+                *(["conditions"] if body.conditions is not None else []),
+            ]
+        ),
     )
     await _save(db)
-    await db.refresh(playbook, ["steps"])
+    await db.refresh(playbook, ["checks"])
     return await _out(db, playbook)
 
 
@@ -217,41 +222,11 @@ async def delete_playbook(
     await db.commit()
 
 
-async def apply(db: AsyncSession, incident: Incident, playbook: Playbook, user: User) -> list[Task]:
-    """Start the playbook on the record and open the steps that are ready now. Steps without a team go
-    to whoever applies it. Written with the caller's commit."""
-    if not playbook.is_active:
-        raise HTTPException(status.HTTP_409_CONFLICT, f"{playbook.name} is retired.")
-    if playbook.applies_to is not incident.kind:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            f"{playbook.name} is for {playbook.applies_to.value}s, not {incident.kind.value}s.",
-        )
-    already = await db.scalar(
-        select(IncidentPlaybook.id).where(
-            IncidentPlaybook.incident_id == incident.id, IncidentPlaybook.playbook_id == playbook.id
-        )
-    )
-    if already:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, f"{playbook.name} is already applied to {incident.ref}."
-        )
-    run = IncidentPlaybook(
-        incident_id=incident.id, playbook_id=playbook.id, applied_by=user.id, steps=workflow.plan(playbook)
-    )
-    db.add(run)
-    await db.flush()
-    await activity.record(
-        db,
-        incident,
-        user,
-        "playbook_applied",
-        f"{user.name} applied {playbook.name}: {len(playbook.steps)} "
-        f"step{'' if len(playbook.steps) == 1 else 's'}",
-        entity_type="task",
-        playbook_id=playbook.id,
-    )
-    return await workflow.advance(db, incident, run, user)
+async def apply(
+    db: AsyncSession, incident: Incident, playbook: Playbook, user: User, parts: list[str] | None = None
+) -> list[Task]:
+    """Take the parts on the record (`ostraka.playbook.apply`). Written with the caller's commit."""
+    return await playbooks.apply(db, incident, playbook, parts, user)
 
 
 @incident_router.get("", response_model=list[AppliedPlaybookOut])
@@ -261,59 +236,37 @@ async def applied(
     incident = await access.load(db, user, incident_id)
     rows = (
         await db.execute(
-            select(IncidentPlaybook, Playbook.name)
+            select(IncidentPlaybook, Playbook)
             .join(Playbook, Playbook.id == IncidentPlaybook.playbook_id)
             .where(IncidentPlaybook.incident_id == incident.id)
             .order_by(IncidentPlaybook.applied_at)
         )
     ).all()
     lookup = await views.names(db, [r.applied_by for r, _ in rows])
-    team_ids = {uuid.UUID(s["team_id"]) for r, _ in rows for s in r.steps if s["team_id"]}
-    teams = {str(t.id): t for t in (await db.scalars(select(Team).where(Team.id.in_(team_ids)))).all()}
-    task_ids = {uuid.UUID(s["task_id"]) for r, _ in rows for s in r.steps if s["task_id"]}
-    refs = {str(t.id): t.ref for t in (await db.scalars(select(Task).where(Task.id.in_(task_ids)))).all()}
-    out = []
-    for r, name in rows:
-        conditional = workflow.gated(r.steps)
-        steps = [
-            WorkflowStepOut(
-                position=s["position"],
-                title=s["title"],
-                team=TeamRef(id=teams[s["team_id"]].id, name=teams[s["team_id"]].name)
-                if s["team_id"] in teams
-                else None,
-                after=s["after"],
-                phase=s["phase"],
-                outcomes=[OutcomeIn(**o) for o in s["outcomes"]],
-                state=s["state"],
-                conditional=s["position"] in conditional,
-                task_id=s["task_id"],
-                task_ref=refs.get(s["task_id"]),
-                outcome=s["outcome"],
-                runs=s["runs"],
-            )
-            for s in r.steps
-        ]
-        out.append(
-            AppliedPlaybookOut(
-                playbook_id=r.playbook_id,
-                name=name,
-                applied_by=views.person(lookup, r.applied_by),
-                applied_at=r.applied_at,
-                steps=steps,
-            )
+    return [
+        AppliedPlaybookOut(
+            playbook_id=r.playbook_id,
+            name=pb.name,
+            applied_by=views.person(lookup, r.applied_by),
+            applied_at=r.applied_at,
+            parts=r.parts,
+            remaining=[p for p in playbooks.parts_of(pb) if p not in r.parts],
+            conditions=pb.conditions,
         )
-    return out
+        for r, pb in rows
+    ]
 
 
 @incident_router.post("/{playbook_id}", response_model=list[TaskOut], status_code=status.HTTP_201_CREATED)
 async def apply_playbook(
     incident_id: uuid.UUID,
     playbook_id: uuid.UUID,
+    body: ApplyIn | None = None,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_session),
 ) -> list[TaskOut]:
+    """Take parts of the playbook on the record: those named, or every part without an only if."""
     incident = await access.load(db, user, incident_id, edit=True)
-    tasks = await apply(db, incident, await _playbook(db, playbook_id), user)
+    tasks = await apply(db, incident, await _playbook(db, playbook_id), user, body.parts if body else None)
     await activity.finish(db, user)
     return [await work.task_out(db, t, user) for t in tasks]

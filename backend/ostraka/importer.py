@@ -33,11 +33,12 @@ mention, "@{team:Northwind SOC}" a team mention, and "#{f1}" the reference of wh
 
 Steps ("do"): update, member, team, playbook, observable, sighting, asset, asset_update, asset_link,
 finding, verify, confirm, refute, task, task_update, tick, claim, release, nudge, wait_on, comment,
-link, promote, decide, assess, hypothesis, evidence, rate, reject, lesson, handover, the regulator
+link, promote, assess, hypothesis, evidence, rate, reject, lesson, handover, the regulator
 clocks' clock, clock_met and clock_close (`ostraka.clocks.importing`), exhibit, cite_exhibit,
 custody_offer, custody_accept, custody_decline, custody_withdraw. Their fields are the API's, with
-keys in place of ids; see `_STEPS`. A playbook step's "keys" name its steps, and each becomes a task
-once its step opens.
+keys in place of ids; see `_STEPS`. A playbook step takes the playbook's "parts" (or every part without
+an "only if"), and its "keys" name the tasks it makes by their check's title. (Decisions went with the
+playbook workflows on 18 November 2026: a file that decides no longer loads.)
 
 Exhibits and custody (added 11 November 2026; files without them load as before):
 
@@ -359,39 +360,16 @@ class _Run:
         await self.call("POST", f"{self.base(step)}/teams", {"team_id": self.team(step.body["team"])})
 
     async def playbook(self, step: _Step) -> None:
+        """Apply a playbook, with its "parts" or its default ones. Its "keys" name tasks it makes by their
+        check's title: {"kd0": "Confirm what data, and whose"}."""
         playbook = self._playbook(step.body["name"])
-        await self.call("POST", f"{self.base(step)}/playbooks/{playbook}")
-        # Its steps can be named by key, in order: "keys": ["t1", "t2", ...]. A step's task only exists
-        # once the step opens, so a key becomes a task when the replay gets there (`_open_steps`).
-        for position, key in enumerate(step.body.get("keys", [])):
-            if key:
-                self.made[key] = _Made(
-                    "step",
-                    "",
-                    "",
-                    step.record,
-                    {"playbook_id": playbook, "position": position, "by": step.by},
-                )
-
-    async def _open_steps(self, step: _Step) -> None:
-        """Playbook steps this step names, whose tasks now exist, become tasks."""
-        text = json.dumps(step.body)
-        waiting: dict[str, list[str]] = {}
-        for key, made in self.made.items():
-            if made.kind == "step" and (f'"{key}"' in text or f"#{{{key}}}" in text):
-                waiting.setdefault(made.record, []).append(key)
-        for record, keys in waiting.items():
-            runs = await self.call(
-                "GET",
-                f"/api/incidents/{self.get(record, 'record').id}/playbooks",
-                by=self.made[keys[0]].data["by"],
-            )
-            by_playbook = {r["playbook_id"]: r["steps"] for r in runs}
-            for key in keys:
-                made = self.made[key]
-                step = by_playbook[made.data["playbook_id"]][made.data["position"]]
-                if step["task_id"]:
-                    self.made[key] = _Made("task", step["task_id"], step["task_ref"], record, {})
+        body = {"parts": step.body["parts"]} if "parts" in step.body else None
+        made = await self.call("POST", f"{self.base(step)}/playbooks/{playbook}", body)
+        by_title = {t["title"]: t for t in made}
+        for key, title in step.body.get("keys", {}).items():
+            if title not in by_title:
+                raise ImportProblem(f"Record {step.record}: {step.body['name']} made no task {title!r}.")
+            self.keep(key, "task", step.record, by_title[title])
 
     # ---- assessments, ACH and lessons ---------------------------------------------------------------
 
@@ -517,21 +495,6 @@ class _Run:
         body = dict(step.body.get("with", {}))
         verb = {"custody_accept": "accept", "custody_decline": "decline", "custody_withdraw": "withdraw"}
         await self.call("POST", f"{self._exhibit_path(step.body['exhibit'])}/{verb[step.do]}", body)
-
-    async def choose(self, step: _Step) -> None:
-        """Finish a decision with one of its outcomes; one that promotes names the new incident by "key"."""
-        current = await self.task(step.body["task"])
-        body: dict[str, Any] = {
-            "version": current["version"],
-            "outcome": step.body["outcome"],
-            "note": self.text(step.body.get("note", "")),
-        }
-        if promote := step.body.get("with"):
-            body["promote"] = {**promote, "summary": self.text(promote.get("summary", ""))}
-        await self.call("POST", f"{self._task_path(step.body['task'])}/decide", body)
-        if key := step.body.get("key"):
-            links = await self.call("GET", f"{self.base(step)}/links")
-            await self._promoted(key, links["promoted_to"][-1]["id"])
 
     async def observable(self, step: _Step) -> None:
         body = dict(step.body["with"])
@@ -717,7 +680,6 @@ class _Run:
     async def go(self, steps: list[_Step]) -> Outcome:
         for step in steps:
             self.step = step
-            await self._open_steps(step)
             handler = _STEPS[step.do] if step.do != "declare" else _Run.declare
             await handler(self, step)
             self.outcome.steps += 1
@@ -749,7 +711,6 @@ _STEPS: dict[str, Callable[[_Run, _Step], Awaitable[None]]] = {
     "comment": _Run.comment,
     "link": _Run.link,
     "promote": _Run.promote,
-    "decide": _Run.choose,
     "assess": _Run.assess,
     "hypothesis": _Run.hypothesis,
     "evidence": _Run.evidence,

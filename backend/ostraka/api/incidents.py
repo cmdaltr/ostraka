@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ostraka import codenames, licence, notify, workflow
+from ostraka import codenames, licence, notify
 from ostraka.api import playbooks
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
@@ -237,11 +237,9 @@ async def update_incident(
         brand_id = changes.pop("brand_id")
         if brand_id != incident.brand_id:
             described.append(await _choose_brand(db, user, incident, brand_id))
-    phase_moved = False
     for field, value in changes.items():
         if value is None or getattr(incident, field) == value:
             continue
-        phase_moved = phase_moved or field == "phase"
         before = getattr(incident, field)
         setattr(incident, field, value)
         if field in ("title", "summary", "tags"):
@@ -264,8 +262,6 @@ async def update_incident(
             f"{user.name} {'; '.join(described)}",
             changes={k: str(v) for k, v in changes.items() if k not in ("summary",)},
         )
-        if phase_moved:
-            await workflow.phase_changed(db, incident, user)
         await activity.finish(db, user)
     return await views.detail(db, user, incident)
 

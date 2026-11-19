@@ -41,8 +41,6 @@ function task(overrides: Record<string, unknown> = {}): Record<string, any> {
     blocks: [],
     hidden_links: 0,
     playbook_id: null,
-    outcomes: [],
-    outcome: null,
     created_by: dana,
     created_at: '2026-11-10T09:00:00Z',
     updated_at: '2026-11-10T09:00:00Z',
@@ -63,8 +61,8 @@ test('hunts sit beside incidents: filtered, started with their own wording, and 
     if (path === '/api/playbooks')
       return {
         json: [
-          { id: 'pb-i', name: 'Ransomware', description: '', trigger_tags: [], applies_to: 'incident', is_active: true, steps: [], updated_at: '', version: 1 },
-          { id: 'pb-h', name: 'Threat hunt', description: '', trigger_tags: ['persistence'], applies_to: 'hunt', is_active: true, steps: [], updated_at: '', version: 1 },
+          { id: 'pb-i', name: 'Ransomware', description: '', trigger_tags: [], applies_to: 'incident', is_active: true, conditions: {}, checks: [], updated_at: '', version: 1 },
+          { id: 'pb-h', name: 'Threat hunt', description: '', trigger_tags: ['persistence'], applies_to: 'hunt', is_active: true, conditions: {}, checks: [], updated_at: '', version: 1 },
         ],
       };
   });

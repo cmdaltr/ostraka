@@ -77,7 +77,7 @@
   --graph-evidence: #4d7c0f;
   --graph-finding: #3d4fd6;
   --graph-technique: #7a2e8f;
-  /* Teams in a playbook's swimlanes, by a hash of the team (teamColour), the same in every palette:
+  /* Teams on a playbook's checks, by a hash of the team (teamColour), the same in every palette:
      Egyptian blue, malachite, yellow ochre, Tyrian purple, verdigris, raw umber, charcoal, madder */
   --team-1: #2456a6;
   --team-2: #2e7d5b;
