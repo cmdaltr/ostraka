@@ -64,13 +64,38 @@ test('opening on sign-in takes two seconds to mend however soon the server answe
   await expect(page.locator('.loading-revealed')).toBeAttached();
 });
 
-test('opening signed in is as quick as the server', async ({ page }) => {
+/** Notes every sherd label that ever appears, however briefly. */
+async function noteSherds(page: Page) {
+  await page.addInitScript(() => {
+    const seen = new Set<string>();
+    (window as unknown as { sherds: Set<string> }).sherds = seen;
+    new MutationObserver(() => {
+      for (const el of document.querySelectorAll('[role="status"]')) seen.add(el.textContent ?? '');
+    }).observe(document, { childList: true, subtree: true, characterData: true });
+  });
+  return () => page.evaluate(() => [...(window as unknown as { sherds: Set<string> }).sherds]);
+}
+
+test('opening signed in is as quick as the server, and a quick server shows no sherd', async ({ page }) => {
   await stubLive(page);
   await stubApi(page);
+  const seen = await noteSherds(page);
   const began = Date.now();
   await page.goto('/');
   await expect(page.getByText('Phishing leads to a foothold on FIN-WS-07')).toBeVisible();
   expect(Date.now() - began).toBeLessThan(3000);
+  expect(await seen()).toEqual([]);
+});
+
+test('a page that loads quickly just appears, with no sherd', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page);
+  const seen = await noteSherds(page);
+  await page.goto('/work');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await page.getByRole('link', { name: 'Incidents' }).click();
+  await expect(page.getByText('Phishing leads to a foothold on FIN-WS-07')).toBeVisible();
+  expect(await seen()).toEqual([]);
 });
 
 test('arriving at the list from elsewhere assembles, glows once mended, then shows the list', async ({ page }) => {

@@ -102,6 +102,18 @@ export function Assembling({
 
 /** Long enough to see it mended and the glow at its brightest (sherd.css). */
 const HOLD_MS = 750;
+/** Loading quicker than this shows no sherd at all: the page simply appears. */
+export const WAIT_MS = 500;
+
+/** Whether `WAIT_MS` has passed since the component mounted. */
+function useLate(): boolean {
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLate(true), WAIT_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
+  return late;
+}
 
 // While the opening sherd covers the app, the first page's own loading waits beneath it without a
 // sherd of its own, and the opening mends once nothing beneath is still loading: one sherd, not two
@@ -120,8 +132,8 @@ function setPending(by: number) {
   watchers.forEach((watcher) => watcher());
 }
 
-/** Content that has to load: the sherd assembles until `ready`, mends and glows, then the content
- * takes its place. Content that's ready at once (from the cache) shows straight away, and so does
+/** Content that has to load: after `WAIT_MS` the sherd assembles until `ready`, mends and glows, then
+ * the content takes its place. Content ready sooner shows straight away with no sherd, and so does
  * content loading under the opening sherd, which stands in for this one. */
 export function Loading({
   ready,
@@ -137,6 +149,7 @@ export function Loading({
   const [covered] = useState(() => covering);
   const [waited] = useState(!ready);
   const [shown, setShown] = useState(ready);
+  const late = useLate();
   useEffect(() => {
     if (!covered || ready) return;
     setPending(1);
@@ -144,15 +157,15 @@ export function Loading({
   }, [covered, ready]);
   useEffect(() => {
     if (!ready || shown) return;
-    if (!waited || covered || reducedMotion()) {
+    if (!waited || !late || covered || reducedMotion()) {
       setShown(true);
       return;
     }
     const hold = window.setTimeout(() => setShown(true), HOLD_MS);
     return () => window.clearTimeout(hold);
-  }, [ready, shown, waited, covered]);
+  }, [ready, shown, waited, late, covered]);
   if (shown) return <>{children}</>;
-  if (covered) return null;
+  if (covered || !late) return null;
   return (
     <div className="loading-page">
       <Assembling done={ready} label={label} width={width} />
@@ -162,8 +175,9 @@ export function Loading({
 
 /** Opening the app: the sherd covers the window while `ready` is awaited, then while the first page
  * loads beneath it, then mends, stays for `hold` and, over the last `fade` of it, fades into the page.
- * With `duration` the pieces take that long to come home however soon everything's ready. With
- * reduced motion the page shows as soon as it's ready. */
+ * With `duration` the pieces take that long to come home however soon everything's ready. Without
+ * it, an app ready with its first page inside `WAIT_MS` just appears, with no sherd. With reduced
+ * motion the page shows as soon as it's ready. */
 export function Opening({
   ready,
   label,
@@ -188,6 +202,8 @@ export function Opening({
   const [beneath, setBeneath] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [shown, setShown] = useState(false);
+  const [skipped, setSkipped] = useState(false);
+  const late = useLate();
   const loadingBeneath = useSyncExternalStore(watch, pendingNow);
   // Read by the page's own Loading as it first renders, beneath this
   if (ready && !shown && !still) covering = true;
@@ -205,6 +221,15 @@ export function Opening({
     if (ready) setBeneath(true);
   }, [ready]);
   const assembled = ready && (still || (beneath && loadingBeneath === 0 && (!duration || arrived)));
+  // A moment's grace first, for a first page that redirects before it starts loading
+  useEffect(() => {
+    if (!assembled || duration || late || shown) return;
+    const timer = window.setTimeout(() => {
+      setSkipped(true);
+      setShown(true);
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [assembled, duration, late, shown]);
   useEffect(() => {
     if (!assembled || shown) return;
     if (still) {
@@ -219,7 +244,7 @@ export function Opening({
     };
   }, [assembled, shown, still, hold, fade]);
   const style = { '--loading-fade': `${fade}ms` } as CSSProperties;
-  const revealed = fade && !still ? 'loading-content loading-revealed' : 'loading-content';
+  const revealed = fade && !still && !skipped ? 'loading-content loading-revealed' : 'loading-content';
   // Keyed, so the page isn't mounted afresh when it's revealed, nor the sherd when the page arrives.
   // Once shown, the page stays, whatever `ready` does later
   return (
@@ -229,7 +254,7 @@ export function Opening({
           {children}
         </div>
       )}
-      {!shown && (
+      {!shown && (late || (ready && duration > 0)) && (
         <div
           key="sherd"
           className={`loading-page loading-opening${leaving && fade ? ' loading-leaving' : ''}`}
