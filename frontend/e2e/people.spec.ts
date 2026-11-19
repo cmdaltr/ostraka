@@ -158,7 +158,15 @@ test('accepting an invitation: password, authenticator, then backup codes that m
   await page.locator('#code').fill('654321');
   await page.getByRole('button', { name: 'Confirm' }).click();
 
-  await expect(page.getByRole('list', { name: 'Backup codes' }).getByRole('listitem')).toHaveCount(10);
+  const shown = page.getByRole('list', { name: 'Backup codes' }).getByRole('listitem');
+  await expect(shown).toHaveCount(10);
+  // Shown once: the list, with a button to copy it, not a second copy of the codes
+  const first = (await shown.first().textContent()) ?? '';
+  await expect(page.getByText(first, { exact: false })).toHaveCount(1);
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.getByRole('button', { name: 'Copy codes' }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe((await shown.allTextContents()).join('\n'));
+  await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
   const continueButton = page.getByRole('button', { name: 'Continue' });
   await expect(continueButton).toBeDisabled();
   await page.getByText('I’ve saved these codes').click();

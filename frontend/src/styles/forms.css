@@ -224,6 +224,9 @@ select.input,
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
 }
+.codes-copy {
+  justify-self: start;
+}
 
 .table-wrap {
   overflow-x: auto;

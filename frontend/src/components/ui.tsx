@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ApiError } from '../api/client';
 
@@ -38,6 +38,16 @@ export function CopyBox({ value, label }: { value: string; label: string }) {
 
 export function BackupCodes({ codes, onDone }: { codes: string[]; onDone: () => void }) {
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const list = useRef<HTMLOListElement>(null);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(codes.join('\n'));
+      setCopied(true);
+    } catch {
+      if (list.current) window.getSelection()?.selectAllChildren(list.current);
+    }
+  };
   return (
     <div className="panel">
       <header>
@@ -47,12 +57,14 @@ export function BackupCodes({ codes, onDone }: { codes: string[]; onDone: () => 
           manager. Ostraka won’t show them again.
         </p>
       </header>
-      <ol className="codes" aria-label="Backup codes">
+      <ol className="codes" aria-label="Backup codes" ref={list}>
         {codes.map((c) => (
           <li key={c}>{c}</li>
         ))}
       </ol>
-      <CopyBox value={codes.join('\n')} label="All backup codes" />
+      <button className="btn btn-quiet codes-copy" type="button" onClick={copy}>
+        {copied ? 'Copied' : 'Copy codes'}
+      </button>
       <label className="check">
         <input id="codes-saved" type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} />
         <span>I’ve saved these codes</span>
