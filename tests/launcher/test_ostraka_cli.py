@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
+VERSION = re.search(r'^__version__ = "(.+)"', (REPO / "backend/ostraka/__init__.py").read_text(), re.M)[1]
 TOOLS = (
     "sed tail head grep tr od openssl mv rm chmod cat dirname basename readlink sleep env sh mkdir"
 ).split()
@@ -65,8 +66,8 @@ printf '%s\n' "$*" >> "$FAKE_LOG.curl"
 n=$(cat "$FAKE_LOG.count" 2>/dev/null || echo 0)
 echo $((n + 1)) > "$FAKE_LOG.count"
 [ "$n" -lt "${FAKE_HEALTH_AFTER:-0}" ] && exit 7
-printf '{"status": "ok", "version": "%s"}' "${FAKE_RUNNING_VERSION:-0.1.0}"
-"""
+printf '{"status": "ok", "version": "%s"}' "${FAKE_RUNNING_VERSION:-@VERSION@}"
+""".replace("@VERSION@", VERSION)  # a running backend is this tree's version unless a test says otherwise
 
 FAKE_UNAME = '#!/bin/sh\necho "${FAKE_UNAME:-Linux}"\n'
 
@@ -327,7 +328,7 @@ def test_status_exit_codes_and_json(launcher, env, code, running, docker):
     assert report == {
         "running": running,
         "url": url,
-        "version": "0.1.0",
+        "version": VERSION,
         "docker": docker,
         "has_admin": has_admin,
     }
@@ -346,8 +347,8 @@ def test_status_json_when_docker_is_missing(tmp_path):
 
 
 def test_status_reports_the_running_version(launcher):
-    out = launcher.run("status", "--json", FAKE_RUNNING_VERSION="0.2.0")
-    assert json.loads(out.stdout)["version"] == "0.2.0"
+    out = launcher.run("status", "--json", FAKE_RUNNING_VERSION="9.9.9")
+    assert json.loads(out.stdout)["version"] == "9.9.9"
 
 
 # ---- the small ones -----------------------------------------------------------------------------
@@ -358,7 +359,7 @@ def test_url_and_version(launcher):
     assert launcher.run("url", OSTRAKA_PORT="25001").stdout == "http://127.0.0.1:25001\n"
     (launcher.root / ".env").write_text("OSTRAKA_PORT=25002\n")
     assert launcher.run("url").stdout == "http://127.0.0.1:25002\n"
-    assert launcher.run("version").stdout == "0.1.0\n"
+    assert launcher.run("version").stdout == f"{VERSION}\n"
     assert launcher.docker_calls() == []  # neither needs Docker
 
 
@@ -514,4 +515,4 @@ def test_runs_through_a_symlink(launcher, tmp_path):
         text=True,
         check=False,
     )
-    assert out.stdout == "0.1.0\n"
+    assert out.stdout == f"{VERSION}\n"

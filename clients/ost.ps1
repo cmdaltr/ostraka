@@ -33,7 +33,7 @@
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
-$OstVersion = '0.1.0'
+$OstVersion = '0.2.0'
 $RefPattern = '^(OST|HNT)-[0-9]{2}([0-9]{2})?-[0-9]{3,}$'
 $TokenPattern = '^ost_[A-Za-z0-9_-]+$'
 $Severities = @('critical', 'high', 'medium', 'low')

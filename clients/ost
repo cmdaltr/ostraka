@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-OST_VERSION="0.1.0"
+OST_VERSION="0.2.0"
 REF_RE='^(OST|HNT)-[0-9]{2}([0-9]{2})?-[0-9]{3,}$'
 TOKEN_RE='^ost_[A-Za-z0-9_-]+$'
 SEVERITIES="critical high medium low"
