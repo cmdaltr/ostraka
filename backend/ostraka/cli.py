@@ -25,14 +25,25 @@ import sys
 from pathlib import Path
 
 from email_validator import EmailNotValidError, validate_email
-from sqlalchemy import select, update
+from sqlalchemy import and_, select
 
 from ostraka import accounts, audit, importer, licence
+from ostraka.config import get_settings
 from ostraka.db import sessions
 from ostraka.models import Invitation, Role, User, utcnow
 
 # bootstrap-admin's exit when there's an admin already: the launchers stop asking for one only on this
 ADMIN_EXISTS = 5
+
+
+def _warn_without_public_url() -> None:
+    """Each time a link is printed: on stderr, so `--link-only` still prints only the link."""
+    if not get_settings().public_url.strip():
+        print(  # noqa: T201
+            f"Warning: OSTRAKA_PUBLIC_URL isn't set, so this link uses {get_settings().public_origin}. "
+            "Set it in .env to the address people open Ostraka at.",
+            file=sys.stderr,
+        )
 
 
 async def _bootstrap_admin(email: str, force: bool, link_only: bool = False) -> int:
@@ -47,21 +58,15 @@ async def _bootstrap_admin(email: str, force: bool, link_only: bool = False) -> 
             return 1
         # Only the newest bootstrap link works, whatever email the earlier ones were for: otherwise each
         # run would leave another live admin invitation behind
-        await db.execute(
-            update(Invitation)
-            .where(
-                Invitation.invited_by.is_(None),
-                Invitation.role == Role.ADMIN,
-                Invitation.accepted_at.is_(None),
-                Invitation.revoked_at.is_(None),
-            )
-            .values(revoked_at=utcnow())
+        await accounts.revoke_open_links(
+            db, and_(Invitation.invited_by.is_(None), Invitation.role == Role.ADMIN), actor_id=None
         )
         _, link = await accounts.create_invitation(
             db, email=email, role=Role.ADMIN, team_id=None, invited_by=None
         )
         audit.record(db, "admin_bootstrapped", email=email)
         await db.commit()
+    _warn_without_public_url()
     if link_only:
         print(link)  # noqa: T201
     else:
@@ -94,6 +99,7 @@ async def _reset_access(email: str) -> int:
         _, link, revoked = await accounts.reset_access(db, user, invited_by=None)
         audit.record(db, "access_reset_issued", subject_id=user.id, via="cli", tokens_revoked=revoked)
         await db.commit()
+    _warn_without_public_url()
     print(  # noqa: T201
         f"Reset for {email}: their sign-ins have ended and their API tokens are revoked. "
         f"The link works once, within 24 hours:\n\n  {link}\n"

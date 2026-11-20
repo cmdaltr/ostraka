@@ -126,7 +126,7 @@ def _masked(value: Any) -> Any:
 
 
 def link_url(path: str) -> str:
-    return get_settings().public_url.rstrip("/") + (path or "/")
+    return get_settings().public_origin + (path or "/")
 
 
 def incident_link(incident: Incident, section: str = "", record: str = "") -> str:
@@ -245,6 +245,14 @@ async def dispatch(db: AsyncSession) -> None:
     for user_id in users:
         await live.publish_user(user_id, {"type": "notification"})
     job = asyncio.create_task(_deliver(ids, posts, mails))
+    _background.add(job)
+    job.add_done_callback(_background.discard)
+
+
+def email_later(to: str, subject: str, text: str) -> None:
+    """Send one email in the background, after the commit, outside anyone's notification settings:
+    for account links, which go to the account's own address whatever it has muted."""
+    job = asyncio.create_task(channels.send_email(to, subject, text))
     _background.add(job)
     job.add_done_callback(_background.discard)
 

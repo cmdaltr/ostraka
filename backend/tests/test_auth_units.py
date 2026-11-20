@@ -43,6 +43,31 @@ def test_who_may_invite_whom(actor, role, team, allowed):
     assert (policy.can_invite(person(actor), role, team) is None) is allowed
 
 
+def test_a_link_works_only_while_whoever_issued_it_still_could():
+    lead, admin = person(Role.TEAM_LEAD), person(Role.ADMIN, None)
+    lead.is_active = admin.is_active = True
+    assert policy.link_refusal(lead, role=Role.RESPONDER, team_id=SOC, reset_of=None) is None
+    lead.role = Role.RESPONDER  # no longer a lead
+    assert policy.link_refusal(lead, role=Role.RESPONDER, team_id=SOC, reset_of=None) is not None
+    lead.role, lead.team_id = Role.TEAM_LEAD, DFIR  # moved to another team
+    assert policy.link_refusal(lead, role=Role.RESPONDER, team_id=SOC, reset_of=None) is not None
+
+    lost = person(Role.RESPONDER)
+    lost.is_active = True
+    assert policy.link_refusal(admin, role=Role.RESPONDER, team_id=SOC, reset_of=lost) is None
+    admin.is_active = False
+    assert "no longer has an account" in policy.link_refusal(
+        admin, role=Role.RESPONDER, team_id=SOC, reset_of=lost
+    )
+    admin.is_active, admin.role = True, Role.TEAM_LEAD  # resets are an admin's
+    assert policy.link_refusal(admin, role=Role.RESPONDER, team_id=SOC, reset_of=lost) is not None
+
+    # Forgot password: the person's own link, while their account is active
+    assert policy.link_refusal(lost, role=Role.RESPONDER, team_id=SOC, reset_of=lost) is None
+    lost.is_active = False
+    assert policy.link_refusal(lost, role=Role.RESPONDER, team_id=SOC, reset_of=lost) is not None
+
+
 def test_only_admins_change_accounts_and_never_their_own():
     admin, other = person(Role.ADMIN, None), person(Role.RESPONDER)
     assert policy.can_change_account(admin, other) is None

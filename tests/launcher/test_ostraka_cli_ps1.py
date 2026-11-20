@@ -208,6 +208,15 @@ def test_first_admin_prints_the_local_link(tmp_path, printed):
     assert out.stdout.strip() == "http://127.0.0.1:24747/invite#tok_1"
 
 
+def test_first_admin_keeps_the_backends_warning_off_stdout(tmp_path):
+    warning = "Warning: OSTRAKA_PUBLIC_URL isn't set, so this link uses http://localhost:24747."
+    out = Cli(tmp_path).run(
+        "first-admin", "a@example.org", FAKE_EXEC_OUT="http://localhost:24747/invite#tok_1", FAKE_EXEC_ERR=warning
+    )
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.strip() == "http://127.0.0.1:24747/invite#tok_1"
+
+
 def test_server_init_runs_the_windows_service_script(tmp_path):
     cli = Cli(tmp_path)
     missing = cli.run("server", "init")

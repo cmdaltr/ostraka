@@ -114,7 +114,9 @@ def encrypt(
 def vapid_header(endpoint: str, now: float | None = None) -> str:
     parts = urlsplit(endpoint)
     settings = get_settings()
-    subject = settings.public_url if settings.public_url.startswith("https://") else "mailto:ostraka@invalid"
+    subject = (
+        settings.public_origin if settings.public_origin.startswith("https://") else "mailto:ostraka@invalid"
+    )
     claims = {
         "aud": f"{parts.scheme}://{parts.netloc}",
         "exp": int((now or time.time()) + 12 * 3600),

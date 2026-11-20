@@ -131,8 +131,10 @@ class BackupCode(Base):
 class Invitation(Base):
     """A one-time link to join ostraka, or, with `user_id`, to re-enrol a locked-out account.
 
-    Accepting is two steps: name and password first (held here, hashed, with a fresh TOTP secret),
-    then a TOTP code proving the authenticator works. Only then does the account exist.
+    Accepting is two steps: name and password first (held here, hashed, with a TOTP secret made on
+    the first start and kept for later ones), then a TOTP code proving the authenticator works. Only
+    then does the account exist. A reset whose `invited_by` is its own `user_id` was asked for from
+    the sign-in page (Forgot password).
     """
 
     __tablename__ = "invitations"
@@ -153,6 +155,8 @@ class Invitation(Base):
     pending_name: Mapped[str | None] = mapped_column(String(120))
     pending_password_hash: Mapped[str | None] = mapped_column(String(255))
     pending_totp_secret: Mapped[str | None] = mapped_column(Text)
+    # Wrong authenticator codes on an invitation; it closes at accounts.WRONG_CODE_LIMIT
+    wrong_codes: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     team: Mapped[Team | None] = relationship(lazy="joined")
 

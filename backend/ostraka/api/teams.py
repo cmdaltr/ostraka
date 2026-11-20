@@ -122,7 +122,7 @@ async def test_channel(
         f"Ostraka is connected to {team.name}",
         f"{actor.name} sent this test. Tasks for {team.name}'s queue, and reminders about them, "
         "will appear here.",
-        get_settings().public_url,
+        get_settings().public_origin,
     )
     if not sent:
         raise HTTPException(

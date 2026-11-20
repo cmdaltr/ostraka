@@ -348,8 +348,10 @@ async def change_account(
         setattr(target, field, value)
     if changes:
         target.version += 1
+    revoked = {}
     if changes.get("is_active") is False:
         await sessions.revoke_all(db, target.id)
+        revoked["tokens_revoked"] = await accounts.revoke_api_tokens(db, target.id)
     audit.record(
         db,
         "account_changed",
@@ -357,6 +359,7 @@ async def change_account(
         subject_id=target.id,
         ip=sessions.client_ip(request),
         **{k: str(v) for k, v in changes.items()},
+        **revoked,
     )
     await db.commit()
     await db.refresh(target)
@@ -377,13 +380,16 @@ async def reset_access(
     if target.is_active and not accounts.holds_place(target):
         if problem := await accounts.seat_refusal(db, target.role):
             raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, problem)
-    invitation, link, revoked = await accounts.reset_access(db, target, invited_by=actor.id)
+    invitation, link, revoked = await accounts.reset_access(
+        db, target, invited_by=actor.id, base=accounts.link_base(request)
+    )
     audit.record(
         db,
         "access_reset_issued",
         actor_id=actor.id,
         subject_id=target.id,
         ip=sessions.client_ip(request),
+        via="admin",
         tokens_revoked=revoked,
     )
     await db.commit()

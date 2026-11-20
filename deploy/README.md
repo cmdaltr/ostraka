@@ -12,6 +12,8 @@ sudo ./deploy/linux/install.sh ostraka.example.org --admin you@example.org
 
 That copies the tree to `/opt/ostraka` (`--dir` for elsewhere: it must be new, empty or an earlier Ostraka tree; `--source` takes a tree, a `.tar.gz` of one or a git URL), writes `.env` (mode 600) with random `POSTGRES_PASSWORD` and `OSTRAKA_SECRET_KEY`, `OSTRAKA_PUBLIC_URL=https://ostraka.example.org` and `COMPOSE_PROJECT_NAME=ostraka`, starts the stack, waits for `/api/health`, and prints the first admin's invitation link. Running it again keeps the secrets: changing `OSTRAKA_SECRET_KEY` would make every stored TOTP secret unreadable. `deploy/linux/install.sh --help` lists the options; `ostraka server init` runs it with the same arguments.
 
+Links in invitations, resets and emails are built from `OSTRAKA_PUBLIC_URL`, so keep it the address people open. With email set up (the `OSTRAKA_SMTP_*` or `OSTRAKA_GRAPH_*` values in `.env`; see the main README), the sign-in page offers **Forgot password?**, which emails the account a one-time reset link; without email, it tells people to ask an admin.
+
 `COMPOSE_PROJECT_NAME` in `.env` keeps the stack one compose project, `ostraka`, whether setup, an admin's `docker compose` in the tree or the `ostraka` command runs it; one already in `.env` is kept, since the data volumes are named after it. Every service is `restart: unless-stopped`, so Docker brings the stack back after a reboot.
 
 Ostraka itself listens on `http://127.0.0.1:24747` only. HTTPS comes from a reverse proxy in front of it, either your own (below) or Caddy in the stack with `--caddy`.

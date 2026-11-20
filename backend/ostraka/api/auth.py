@@ -6,13 +6,15 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ostraka import audit, notify, profile
+from ostraka import accounts, audit, notify, profile
 from ostraka.auth import lockout, sessions, tokens, totp
 from ostraka.auth.deps import browser_only
 from ostraka.auth.secrets import decrypt, normalise_backup_code, token_hash, verify_password
+from ostraka.config import get_settings
 from ostraka.db import get_session
 from ostraka.models import BackupCode, NotificationKind, Session, User, utcnow
-from ostraka.schemas import LoginIn, LoginStep, MfaIn, TokenOut
+from ostraka.notify import channels
+from ostraka.schemas import ForgotAvailable, ForgotIn, ForgotOut, LoginIn, LoginStep, MfaIn, TokenOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -22,6 +24,14 @@ WRONG = (
     "after too many attempts."
 )
 WRONG_CODE = "That code didn't work. Check the time on your device, or use a backup code."
+# Forgot password says the same whether or not the address has an account
+FORGOT_SENT = "If that address has an account, a link is on its way. It works once, within {hours} hours."
+NO_EMAIL = "Ostraka can't send email here, so ask an administrator to reset your access."
+TOO_MANY = "Too many requests. Try again later."
+# Requests for a reset link, per address asked about and per address asking, in FORGOT_WINDOW
+FORGOT_PER_EMAIL = 3
+FORGOT_PER_IP = 10
+FORGOT_WINDOW = 3600
 
 
 async def _failed(db: AsyncSession, user: User, ip: str, action: str) -> None:
@@ -158,3 +168,56 @@ async def logout(
             audit.record(db, "logout", actor_id=session.user_id, ip=sessions.client_ip(request))
             await db.commit()
     sessions.clear_cookie(response)
+
+
+def _forgot_available() -> bool:
+    """Email has to be set up, and OSTRAKA_PUBLIC_URL too: an emailed link built from the request's
+    Host header would let anyone who asks send a victim a link to their own site."""
+    return channels.email_enabled() and bool(get_settings().public_url.strip())
+
+
+@router.get("/forgot", response_model=ForgotAvailable)
+async def forgot_available() -> dict:
+    """Whether the sign-in page offers Forgot password, or says to ask an admin."""
+    return {"available": _forgot_available()}
+
+
+@router.post("/forgot", response_model=ForgotOut, dependencies=[Depends(browser_only)])
+async def forgot(body: ForgotIn, request: Request, db: AsyncSession = Depends(get_session)) -> dict:
+    """Email a reset-access link to the account with this address, if there's one and it's active.
+    The answer is the same either way. Nothing ends now: sessions and tokens end, and the old
+    password stops working, only when the link is used (`api/invitations.accept_complete`)."""
+    if not _forgot_available():
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, NO_EMAIL)
+    ip = sessions.client_ip(request)
+    by_ip = await lockout.throttled("forgot-ip", ip, FORGOT_PER_IP, FORGOT_WINDOW)
+    by_email = await lockout.throttled(
+        "forgot-email", token_hash(body.email), FORGOT_PER_EMAIL, FORGOT_WINDOW
+    )
+    if by_ip or by_email:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, TOO_MANY)
+    hours = get_settings().invitation_hours
+    user = await db.scalar(select(User).where(User.email == body.email))
+    # Someone imported has no password to forget, and an open admin's reset is never replaced
+    issued = (
+        await accounts.self_service_reset(db, user)
+        if user is not None and user.is_active and accounts.holds_place(user)
+        else None
+    )
+    if issued is not None:
+        _, link = issued
+        audit.record(
+            db, "access_reset_issued", subject_id=user.id, ip=ip, via="self-service", tokens_revoked=0
+        )
+        await db.commit()
+        notify.email_later(
+            user.email,
+            "Reset your Ostraka access",
+            f"A reset of the Ostraka access for {user.email} was asked for from the sign-in page "
+            f"({ip or 'an unknown address'}).\n\n"
+            f"Open this link to choose a new password and set up a new authenticator. It works once, "
+            f"within {hours} hours:\n\n{link}\n\n"
+            "If you didn't ask, ignore this email: your password and authenticator keep working, and "
+            "nothing changes unless the link is used.",
+        )
+    return {"detail": FORGOT_SENT.format(hours=hours)}

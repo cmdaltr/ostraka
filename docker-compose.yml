@@ -40,7 +40,8 @@ services:
       OSTRAKA_SECRET_KEY: ${OSTRAKA_SECRET_KEY:?set OSTRAKA_SECRET_KEY in .env (make env)}
       OSTRAKA_DATABASE_URL: postgresql+asyncpg://ostraka:${POSTGRES_PASSWORD}@db:5432/ostraka
       OSTRAKA_REDIS_URL: redis://redis:6379/0
-      OSTRAKA_PUBLIC_URL: ${OSTRAKA_PUBLIC_URL:-http://localhost:24747}
+      # Empty when .env doesn't set it, so emailed links (Forgot password) are never built from a guess
+      OSTRAKA_PUBLIC_URL: ${OSTRAKA_PUBLIC_URL:-}
       OSTRAKA_AI_PROVIDER: ${OSTRAKA_AI_PROVIDER:-none}
       # 2 with a reverse proxy in front of web (Caddy, the homelab proxy); see .env.example
       OSTRAKA_PROXY_HOPS: ${OSTRAKA_PROXY_HOPS:-1}

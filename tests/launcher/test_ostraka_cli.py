@@ -388,6 +388,20 @@ def test_first_admin_prints_only_the_local_link(launcher, printed):
     assert asked in launcher.docker_calls()
 
 
+def test_first_admin_keeps_the_backends_warning_off_stdout(launcher):
+    # bootstrap-admin warns on stderr when OSTRAKA_PUBLIC_URL isn't set; the link is still all stdout holds
+    warning = "Warning: OSTRAKA_PUBLIC_URL isn't set, so this link uses http://localhost:24747."
+    out = launcher.run(
+        "first-admin",
+        "first@example.org",
+        FAKE_BACKEND_RUNNING="1",
+        FAKE_EXEC_OUT="http://localhost:24747/invite#tok_123",
+        FAKE_EXEC_ERR=warning,
+    )
+    assert out.returncode == 0, out.stderr
+    assert out.stdout == "http://127.0.0.1:24747/invite#tok_123\n"
+
+
 def test_first_admin_refuses_with_5_when_there_is_an_admin(launcher):
     out = launcher.run(
         "first-admin",

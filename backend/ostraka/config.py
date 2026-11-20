@@ -24,6 +24,8 @@ PLACEHOLDER_SECRETS = frozenset(
     }
 )
 MIN_SECRET_LENGTH = 32
+# Where links point when OSTRAKA_PUBLIC_URL isn't set and there's no request to take an address from
+LOCAL_URL = "http://localhost:24747"
 
 
 class Environment(StrEnum):
@@ -40,8 +42,10 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://ostraka@localhost:5432/ostraka"
     redis_url: str = "redis://localhost:6379/0"
     log_level: str = "INFO"
-    # Origin the browser uses, e.g. https://ostraka.example.org; used for links in emails and pushes
-    public_url: str = "http://localhost:24747"
+    # Origin the browser uses, e.g. https://ostraka.example.org; used for links in emails and pushes.
+    # Left empty, links the API hands back use the address the request came to, and everything else
+    # (emails, pushes, the CLI's links) uses LOCAL_URL
+    public_url: str = ""
     # Who reports are prepared for, on their cover ("Contoso Ltd"); left off when empty
     organisation: str = ""
     ai_provider: str = Field(default="none", pattern="^(none|ollama|anthropic)$")
@@ -88,6 +92,11 @@ class Settings(BaseSettings):
     overdue_repeat_hours: float = 4
     escalate_lead_hours: float = 4
     escalate_commander_hours: float = 24
+
+    @property
+    def public_origin(self) -> str:
+        """The public URL without a trailing slash, or LOCAL_URL when it isn't set."""
+        return self.public_url.strip().rstrip("/") or LOCAL_URL
 
     @model_validator(mode="after")
     def _refuse_weak_secret(self) -> Settings:

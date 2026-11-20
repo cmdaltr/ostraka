@@ -130,6 +130,50 @@ test('a wrong password shows the server’s message and stays on the first step'
   await expect(page.locator('#password')).toBeVisible();
 });
 
+test('forgot password asks for an email and gives the same answer whatever it is', async ({ page }) => {
+  await signedOut(page);
+  await page.route('**/api/auth/forgot', (r) => {
+    if (r.request().method() === 'GET') return r.fulfill({ json: { available: true } });
+    expect(r.request().headers()['x-ostraka']).toBe('1');
+    expect(r.request().postDataJSON()).toEqual({ email: 'sam@example.org' });
+    return r.fulfill({
+      json: { detail: 'If that address has an account, a link is on its way. It works once, within 24 hours.' },
+    });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Forgot password?' }).click();
+  await expect(page.getByRole('heading', { name: 'Forgot your password?' })).toBeVisible();
+  await page.locator('#forgot-email').fill('sam@example.org');
+  await page.getByRole('button', { name: 'Send me a link' }).click();
+  await expect(page.getByRole('status')).toContainText('If that address has an account, a link is on its way.');
+  await page.getByRole('button', { name: 'Back to sign in' }).click();
+  await expect(page.locator('#password')).toBeVisible();
+});
+
+test('forgot password without email set up says to ask an administrator', async ({ page }) => {
+  await signedOut(page);
+  let asked = false;
+  await page.route('**/api/auth/forgot', (r) => {
+    if (r.request().method() !== 'GET') asked = true;
+    return r.fulfill({ json: { available: false } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Forgot password?' }).click();
+  await expect(page.getByText('ask an administrator to reset your access')).toBeVisible();
+  await expect(page.locator('#forgot-email')).toHaveCount(0);
+  expect(asked).toBe(false);
+});
+
+test('an expired link says it has expired', async ({ page }) => {
+  await signedOut(page);
+  await page.route('**/api/invitations/accept', (r) =>
+    r.fulfill({ status: 410, json: { detail: 'This link has expired. Each one works for 24 hours; ask for a new one.' } }),
+  );
+  await page.goto('/invite#tok');
+  await expect(page.getByRole('alert')).toHaveText('This link has expired. Each one works for 24 hours; ask for a new one.');
+  await expect(page.locator('#password')).toHaveCount(0);
+});
+
 test('accepting an invitation: password, authenticator, then backup codes that must be saved', async ({ page }) => {
   await signedOut(page);
   const svg = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>').toString('base64');

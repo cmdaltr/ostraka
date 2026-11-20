@@ -94,6 +94,25 @@ def can_change_account(actor: User, target: User) -> str | None:
     return None
 
 
+def link_refusal(
+    inviter: User, *, role: Role, team_id: uuid.UUID | None, reset_of: User | None
+) -> str | None:
+    """Why a link `inviter` issued may no longer be used, or None. Checked when it's used as well as
+    when it's issued: someone deactivated, or no longer an admin or that team's lead, can't still let
+    people in. A reset someone asked for themselves (Forgot password) needs only their own account
+    to be active."""
+    if not inviter.is_active:
+        return "Whoever sent this link no longer has an account here. Ask an admin for a new one."
+    if reset_of is not None and inviter.id == reset_of.id:
+        return None
+    problem = (
+        can_change_account(inviter, reset_of) if reset_of is not None else can_invite(inviter, role, team_id)
+    )
+    if problem:
+        return "Whoever sent this link can no longer give that access. Ask an admin for a new one."
+    return None
+
+
 def can_manage_playbooks(actor: User) -> bool:
     """Write, change or retire playbooks: admins and team leads."""
     return actor.role in (Role.ADMIN, Role.TEAM_LEAD)

@@ -44,7 +44,7 @@ def set_cookie(response: Response, refresh: str) -> None:
         path=COOKIE_PATH,
         httponly=True,
         samesite="strict",
-        secure=settings.env is not Environment.TEST and settings.public_url.startswith("https://"),
+        secure=settings.env is not Environment.TEST and settings.public_origin.startswith("https://"),
     )
 
 

@@ -11,7 +11,7 @@ Every request reaches the backend through one origin. A reverse proxy in front t
 | Part | Where | What it does |
 |---|---|---|
 | API routers | `backend/ostraka/api/` | Incidents and hunts, findings, observables, assets, tasks, playbooks, comments, people, teams, tokens, notifications |
-| Auth and policy | `ostraka/auth/` | Passwords (Argon2), mandatory TOTP and backup codes, short-lived JWTs held in memory, a rotating refresh cookie, API tokens (`ost_…`). Who may do what is in `policy.py`, as pure functions |
+| Auth and policy | `ostraka/auth/` | Passwords (Argon2), mandatory TOTP and backup codes, short-lived JWTs held in memory, a rotating refresh cookie, API tokens (`ost_…`), the sign-in lockout per account and address. Who may do what is in `policy.py`, as pure functions; invitations, access resets and Forgot password are in `ostraka/accounts.py`, shared with the CLI |
 | Incidents | `ostraka/incidents/` | Access rules, the hash-chained activity log, IOC masking per viewer, #references |
 | MCP server | `ostraka/mcp_server.py` | MCP at `/mcp`: each tool calls the API in-process as the token's owner |
 | Live hub | `ostraka/live.py` | WebSocket fan-out over Redis pub/sub. A message says what changed, never the content; clients refetch through the API, which masks per viewer |
@@ -21,7 +21,7 @@ Every request reaches the backend through one origin. A reverse proxy in front t
 | Importer | `ostraka/importer.py` | `ostraka import`: records loaded through the API, replayed in time order |
 | Frontend | `frontend/src/` | React, TypeScript, TanStack Query. `api/client.ts` is the only way to call the API; colours come only from `styles/tokens.css` |
 
-Postgres holds everything; its schema changes only through Alembic (`backend/migrations/`), and every revision must upgrade, downgrade and upgrade again. Redis carries live updates and the short-lived WebSocket tickets, and nothing else.
+Postgres holds everything; its schema changes only through Alembic (`backend/migrations/`), and every revision must upgrade, downgrade and upgrade again. Redis carries live updates, the short-lived WebSocket tickets and the counters behind the sign-in lockout and the Forgot password limits, and nothing else.
 
 ## Records, phases and findings
 

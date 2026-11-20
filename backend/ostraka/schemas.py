@@ -196,6 +196,23 @@ class LoginIn(BaseModel):
     password: str = Field(max_length=256)
 
 
+class ForgotIn(BaseModel):
+    email: EmailStr
+
+    @field_validator("email")
+    @classmethod
+    def _lower(cls, v: str) -> str:
+        return v.lower()
+
+
+class ForgotOut(BaseModel):
+    detail: str
+
+
+class ForgotAvailable(BaseModel):
+    available: bool = Field(description="False when email isn't set up: ask an admin to reset your access")
+
+
 class MfaIn(BaseModel):
     ticket: str
     code: str = Field(min_length=6, max_length=16, description="A 6-digit TOTP code or a backup code")

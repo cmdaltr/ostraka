@@ -8,6 +8,7 @@ import { BrandMark } from '../components/BrandMark';
 import { SiteLinks } from '../components/SiteLinks';
 import { Progress } from '../components/sherd/Progress';
 import { Notice, messageOf } from '../components/ui';
+import { ForgotPassword } from './ForgotPassword';
 
 export function SignIn() {
   const session = useSession();
@@ -15,6 +16,7 @@ export function SignIn() {
   const [useBackup, setUseBackup] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [forgot, setForgot] = useState(false);
   const reason = session.status === 'signed-out' ? session.reason : undefined;
 
   async function submitPassword(event: FormEvent<HTMLFormElement>) {
@@ -54,10 +56,12 @@ export function SignIn() {
     <main className="auth-page">
       <div className="auth-card">
         <BrandMark />
-        {reason && !ticket && <Notice>{reason}</Notice>}
-        {error && <Notice kind="error">{error}</Notice>}
+        {reason && !ticket && !forgot && <Notice>{reason}</Notice>}
+        {error && !forgot && <Notice kind="error">{error}</Notice>}
 
-        {!ticket ? (
+        {forgot ? (
+          <ForgotPassword onBack={() => setForgot(false)} />
+        ) : !ticket ? (
           <form className="panel" onSubmit={submitPassword}>
             {/* the form speaks for itself; the heading is for screen readers */}
             <h1 className="visually-hidden">Sign in to {brand.name}</h1>
@@ -73,6 +77,9 @@ export function SignIn() {
               <Progress phase={busy ? 'busy' : 'idle'} label="Checking your password" busy="Checking…">
                 Continue
               </Progress>
+            </button>
+            <button className="link-button" type="button" onClick={() => setForgot(true)}>
+              Forgot password?
             </button>
             <p className="hint auth-note">
               Ostraka accounts are by invitation. Ask your team lead or an admin.

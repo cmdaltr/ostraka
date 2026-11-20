@@ -86,7 +86,8 @@ async def test_invitation_creates_an_account_with_mfa_and_backup_codes(db, clien
     )
     assert r.status_code == 201, r.text
     link = r.json()["link"]
-    assert link.startswith("http://localhost:24747/invite#")
+    # OSTRAKA_PUBLIC_URL unset: the address the request came to
+    assert link.startswith("http://ostraka.test/invite#")
 
     preview = await client.post("/api/invitations/accept", json={"token": token_of(link)})
     assert preview.json()["email"] == "new.person@example.org"

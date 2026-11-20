@@ -129,3 +129,13 @@ async def clear(user_id: uuid.UUID, ip: str | None = None) -> None:
                 await counters.clear(key)
     except Exception as exc:  # noqa: BLE001
         log.warning("lockout: can't clear (%s)", exc)
+
+
+async def throttled(kind: str, key: str, limit: int, seconds: int) -> bool:
+    """Count one more request of `kind` from `key` (an address, or a hash of an email); True once
+    there have been more than `limit` within `seconds`. Fails open, as the lockout does."""
+    try:
+        return await _counters().incr(f"{PREFIX}:throttle:{kind}:{key}", seconds) > limit
+    except Exception as exc:  # noqa: BLE001
+        log.warning("lockout: can't throttle %s (%s); not throttling", kind, exc)
+        return False
