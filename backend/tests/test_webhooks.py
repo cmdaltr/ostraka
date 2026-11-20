@@ -109,7 +109,9 @@ async def test_a_restricted_incident_sends_ref_and_code_name_only(db, client, pe
     bodies = [body for body, _, _ in sent(outbox)]
     assert [b["event"] for b in bodies] == ["incident.created", "task.assigned"]
     assert all(b["data"] == {"ref": red["ref"], "codename": red["codename"]} for b in bodies)
-    assert "board" not in json.dumps(bodies).lower()
+    # Nothing of the title or the task; the code name is taken out first, since "Cupboard" is one of its words
+    rest = json.dumps(bodies).lower().replace(red["codename"].lower(), "")
+    assert "board" not in rest and "mfa" not in rest
 
 
 async def test_webhooks_go_after_the_commit_and_never_for_a_rolled_back_change(

@@ -9,7 +9,9 @@ so a password guessed from many addresses opens nothing by itself.
 The address is `sessions.client_ip`, read from the trusted proxies only, so a client can't change
 it with a header. Counts live in Redis (in-process with `OSTRAKA_REDIS_URL=memory://`, as in tests)
 and expire on their own. If Redis can't be reached, sign-in carries on unthrottled rather than
-shutting everyone out, and says so in the log.
+shutting everyone out, and says so in the log. Request throttles (Forgot password) count in this
+process instead: they shut nobody out of their account, and failing open would make an outage an
+unlimited way to have Ostraka send email.
 """
 
 from __future__ import annotations
@@ -76,6 +78,8 @@ class _Redis:
 
 
 _store: _Memory | _Redis | None = None
+# Throttle counts while Redis can't be reached
+_fallback = _Memory()
 
 
 def _counters() -> _Memory | _Redis:
@@ -133,9 +137,10 @@ async def clear(user_id: uuid.UUID, ip: str | None = None) -> None:
 
 async def throttled(kind: str, key: str, limit: int, seconds: int) -> bool:
     """Count one more request of `kind` from `key` (an address, or a hash of an email); True once
-    there have been more than `limit` within `seconds`. Fails open, as the lockout does."""
+    there have been more than `limit` within `seconds`. Without Redis, counts in this process."""
+    name = f"{PREFIX}:throttle:{kind}:{key}"
     try:
-        return await _counters().incr(f"{PREFIX}:throttle:{kind}:{key}", seconds) > limit
+        return await _counters().incr(name, seconds) > limit
     except Exception as exc:  # noqa: BLE001
-        log.warning("lockout: can't throttle %s (%s); not throttling", kind, exc)
-        return False
+        log.warning("lockout: can't throttle %s in Redis (%s); counting in this process", kind, exc)
+        return await _fallback.incr(name, seconds) > limit

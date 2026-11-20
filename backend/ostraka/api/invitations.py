@@ -152,9 +152,17 @@ async def _open(db: AsyncSession, token: str) -> tuple[Invitation, User | None]:
     return invitation, reset
 
 
+async def _not_locked(reset: User | None, request: Request) -> None:
+    """A reset is a way into an existing account: while it's locked from this address, every step of
+    the link says so, as sign-in does, not only the step that checks a code."""
+    if reset is not None and await lockout.locked(reset.id, sessions.client_ip(request)):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, LOCKED)
+
+
 @router.post("/accept", response_model=InvitationPreview)
-async def preview(body: InvitationToken, db: AsyncSession = Depends(get_session)) -> dict:
-    invitation, _ = await _open(db, body.token)
+async def preview(body: InvitationToken, request: Request, db: AsyncSession = Depends(get_session)) -> dict:
+    invitation, reset = await _open(db, body.token)
+    await _not_locked(reset, request)
     return {
         "email": invitation.email,
         "role": invitation.role,
@@ -165,11 +173,12 @@ async def preview(body: InvitationToken, db: AsyncSession = Depends(get_session)
 
 
 @router.post("/accept/start", response_model=AcceptEnrol)
-async def accept_start(body: AcceptStart, db: AsyncSession = Depends(get_session)) -> dict:
+async def accept_start(body: AcceptStart, request: Request, db: AsyncSession = Depends(get_session)) -> dict:
     """Name and password. Returns the authenticator secret to scan: made on the first start, and the
     same one on every later start of this link (a second tab, the link opened again), so whatever
     was scanned keeps working. A later start's name and password replace the earlier ones."""
-    invitation, _ = await _open(db, body.token)
+    invitation, reset = await _open(db, body.token)
+    await _not_locked(reset, request)
     if problem := password_problem(body.password, invitation.email, body.name):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, problem)
     if invitation.pending_totp_secret:
@@ -202,9 +211,8 @@ async def accept_complete(
     if not (password_hash and totp_secret and name):
         raise HTTPException(status.HTTP_409_CONFLICT, "Choose a password first.")
     ip = sessions.client_ip(request)
-    # A reset is a way into an existing account, so its wrong codes count as sign-in failures do
-    if reset is not None and await lockout.locked(reset.id, ip):
-        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, LOCKED)
+    # Its wrong codes count as sign-in failures do
+    await _not_locked(reset, request)
     step = totp.matching_step(decrypt(totp_secret), body.code, 0)
     if step is None:
         message = "That code didn't match. Try the next one."

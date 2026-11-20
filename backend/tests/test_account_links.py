@@ -410,6 +410,25 @@ async def test_forgot_password_is_rate_limited_per_address_and_per_ip(
     assert r.status_code == 429
 
 
+async def test_forgot_password_stays_rate_limited_when_redis_is_down(
+    db, client, make_person, email_on, fresh_counters, monkeypatch
+):
+    """Sign-in fails open without Redis; Forgot password mustn't, or an outage sends email without limit."""
+    from ostraka.api import auth
+
+    class Down:
+        async def incr(self, key, seconds):
+            raise ConnectionError("redis is down")
+
+    monkeypatch.setattr(lockout, "_store", Down())
+    monkeypatch.setattr(lockout, "_fallback", lockout._Memory())
+    for _ in range(auth.FORGOT_PER_EMAIL):
+        r = await client.post("/api/auth/forgot", json={"email": "a@example.org"}, headers=BROWSER)
+        assert r.status_code == 200
+    r = await client.post("/api/auth/forgot", json={"email": "a@example.org"}, headers=BROWSER)
+    assert r.status_code == 429
+
+
 async def test_forgot_password_needs_email_and_the_header(db, client, monkeypatch, fresh_counters):
     assert (await client.get("/api/auth/forgot")).json() == {"available": False}
     r = await client.post("/api/auth/forgot", json={"email": "a@example.org"}, headers=BROWSER)

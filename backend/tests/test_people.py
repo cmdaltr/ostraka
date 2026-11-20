@@ -446,6 +446,13 @@ async def test_wrong_codes_on_a_reset_count_towards_the_lockout(db, client, make
     assert right.status_code == 429  # locked, even with the right code
     assert await events(db, "account_locked") == 1
     assert await events(db, "access_reset_failed") == 5
+    # Every step of the link says so while it lasts, as sign-in does
+    preview = await client.post("/api/invitations/accept", json={"token": token})
+    again = await client.post(
+        "/api/invitations/accept/start",
+        json={"token": token, "name": "Lost", "password": "a completely new passphrase"},
+    )
+    assert preview.status_code == again.status_code == 429
 
 
 async def test_an_invitation_token_is_never_in_an_api_address(db, client, make_person, sign_in):
