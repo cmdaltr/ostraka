@@ -22,14 +22,15 @@
   gap: var(--space-2);
   margin: var(--space-3) 0;
 }
-/* closed and active: plain; archived: ochre; cold store: the muted ink, as something put away */
+/* closed and active: plain; archived: ochre on its own tint, as the done chips are; cold store: the muted
+   ink, as something put away */
 .archive-active {
   color: var(--muted);
 }
 .archive-archived {
-  color: var(--ochre-ink);
-  background: var(--ochre-soft);
-  border-color: transparent;
+  color: var(--ochre);
+  background: color-mix(in srgb, var(--ochre) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--ochre) 35%, var(--line));
 }
 .archive-cold {
   color: var(--surface);
