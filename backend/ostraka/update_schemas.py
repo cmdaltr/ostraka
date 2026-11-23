@@ -43,7 +43,7 @@ class PlanIn(Versioned):
 
 
 class StakeholderIn(BaseModel):
-    """One of: a person in Ostraka, an outside email address, or a team's Teams channel."""
+    """One of: a person in Ostraka, an outside email address, or a team's chat channel (Teams or Slack)."""
 
     user_id: uuid.UUID | None = None
     email: EmailStr | None = None

@@ -16,9 +16,11 @@ The name is Greek: *ostraka* are the broken pieces of pottery the ancient world 
 
 It's built to sit beside [Rowanholt](https://github.com/cmdaltr/rowanholt), which handles evidence and analysis, and [Shikari](https://github.com/cmdaltr/shikari), which handles detection and hunting.
 
-> **Status:** being rebuilt. Phases 0 to 3a are in place: the foundations; accounts, teams, invitations, mandatory MFA and API tokens; the incident core (incidents and roles, observables, assets, findings that need a verification before they're confirmed, threaded comments, a hash-chained activity log, the timeline and live presence); the work (tasks for a team's queue or a person, checklists, playbooks, nudges, reminders that escalate to the team lead and then the incident commander, and notifications in Ostraka, by browser push, by email and in a team's Microsoft Teams channel); and hunts (HNT-YYYY-NNN, Hypothesis → Scope → Analyse → Report → Learn, promoted to an incident when they find something), links between records, subtasks, tasks that wait on other tasks, and playbooks drawn on the attack's anatomy, applied part by part, each check a task for its team. Built ahead of phase 4: assessments in the reporting standard's structured parts, analysis of competing hypotheses, lessons learned, and exports as a full technical report or a briefing in PDF and Word. Ostraka comes in Free, Pro and Services editions, set by a signed licence that an admin installs after accepting the commercial terms: Pro adds report branding and signed webhooks, and Services adds a brand per client and the right to run Ostraka for clients. Phase 3b, the desktop apps, packages and scripts, is being built.
+> **Status:** being rebuilt. Phases 0 to 3a are in place: the foundations; accounts, teams, invitations, mandatory MFA and API tokens; the incident core (incidents and roles, observables, assets, findings that need a verification before they're confirmed, threaded comments, a hash-chained activity log, the timeline and live presence); the work (tasks for a team's queue or a person, checklists, playbooks, nudges, reminders that escalate to the team lead and then the incident commander, and notifications in Ostraka, by browser push, by email and in a team's or an incident's Teams or Slack channel); and hunts (HNT-YYYY-NNN, Hypothesis → Scope → Analyse → Report → Learn, promoted to an incident when they find something), links between records, subtasks, tasks that wait on other tasks, and playbooks drawn on the attack's anatomy, applied part by part, each check a task for its team. Built ahead of phase 4: assessments in the reporting standard's structured parts, analysis of competing hypotheses, lessons learned, and exports as a full technical report or a briefing in PDF and Word. Ostraka comes in Free, Pro and Services editions, set by a signed licence that an admin installs after accepting the commercial terms: Pro adds report branding and signed webhooks, and Services adds a brand per client and the right to run Ostraka for clients. Phase 3b, the desktop apps, packages and scripts, is being built.
 
 ## Install
+
+Ostraka is one of three products that sit beside each other, with Rowanholt (evidence and analysis) and Shikari (detection and hunting): how they work together is in [docs/suite](docs/suite/README.md), and `scripts/install-suite.sh` (or `install-suite.ps1` on Windows) installs all three with one command.
 
 The desktop apps run Ostraka on your computer or connect to your team's server. Download the file for your machine from the releases page:
 
@@ -54,7 +56,17 @@ There is no default account and no self-registration. `first-admin` prints a one
 
 ### Notifications
 
-Everything appears under the bell in Ostraka. To also send email, set the `OSTRAKA_SMTP_*` values in `.env` (see `.env.example`). Browser push needs no setup: each person turns it on under **Profile → Notifications**, where they also choose which kinds reach them outside Ostraka and set quiet hours (read in their own time zone; work on a critical incident still comes through). It works wherever Ostraka is served over HTTPS (or on `127.0.0.1`). A team's lead connects its Microsoft Teams channel in **People**, with the URL from the channel's Workflows webhook ("Post to a channel when a webhook request is received").
+Everything appears under the bell in Ostraka. To also send email, set the `OSTRAKA_SMTP_*` values in `.env` (see `.env.example`). Browser push needs no setup: each person turns it on under **Profile → Notifications**, where they also choose which kinds reach them outside Ostraka and set quiet hours (read in their own time zone; work on a critical incident still comes through). It works wherever Ostraka is served over HTTPS (or on `127.0.0.1`). Chat channels can be in Microsoft Teams or Slack. Both work outbound only, so Ostraka needs no public address for them.
+
+- **A team's channel:** the team's lead (or an admin) connects it in **People**. It gets the team's queue: new tasks, reminders, escalations and stakeholder updates.
+- **An incident's channel:** whoever manages the incident connects it on the incident's **Overview**. It gets the record's turns: phase, severity and TLP changes, closing and reopening, confirmed findings, detection gaps, stakeholder updates, handovers and breached deadlines.
+
+Paste either kind of URL and Ostraka works out which it is:
+
+- **Teams:** in the channel, open Workflows and choose "Post to a channel when a webhook request is received".
+- **Slack:** create a Slack app, turn on Incoming Webhooks, add one for the channel, and paste its `https://hooks.slack.com/services/…` URL.
+
+Indicators are masked in every post. A TLP:RED or TLP:AMBER+STRICT record is named only by its reference and code name. **Send a test** checks the URL reaches the channel.
 
 #### Email through Microsoft Graph
 

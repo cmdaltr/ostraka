@@ -1,10 +1,11 @@
 """Notifications: who hears about what, and how it reaches them.
 
 `send()` writes a notification row per person within the caller's transaction; `team_channel()`
-queues a post to a team's Teams channel. Nothing leaves ostraka until `dispatch()` runs after the
-commit (`activity.finish` calls it), so a rolled-back change never notifies anyone.
+queues a post to a team's chat channel (Teams or Slack), and `incident_channel()` the posts an
+incident's own channel gets from its activity. Nothing leaves ostraka until `dispatch()` runs after
+the commit (`activity.finish` calls it), so a rolled-back change never notifies anyone.
 
-What leaves ostraka is cut down first. Indicators are masked in every email, push, Teams card and webhook,
+What leaves ostraka is cut down first. Indicators are masked in every email, push, chat post and webhook,
 and for TLP:RED and TLP:AMBER+STRICT incidents only the reference and the kind of event go out:
 the title and text stay inside ostraka.
 """
@@ -45,6 +46,7 @@ log = get_logger(__name__)
 _PENDING = "ostraka.pending_notifications"
 _PENDING_TEAMS = "ostraka.pending_team_posts"
 _PENDING_MAIL = "ostraka.pending_outside_mail"
+_PENDING_INCIDENT = "ostraka.pending_incident_posts"
 _background: set[asyncio.Task] = set()
 
 # Worth an email; everything else is in-app and push only
@@ -98,9 +100,14 @@ def restricted(incident: Incident | None) -> bool:
 
 def outward(kind: NotificationKind, title: str, body: str, incident: Incident | None) -> tuple[str, str]:
     """The title and text that may leave ostraka for this event."""
+    return outward_words(KIND_WORDS[kind], title, body, incident)
+
+
+def outward_words(words: str, title: str, body: str, incident: Incident | None) -> tuple[str, str]:
+    """`outward` for an event named in words rather than by a notification kind."""
     if restricted(incident):
         return (
-            f"{KIND_WORDS[kind]} in {incident.ref} {incident.codename}",
+            f"{words} in {incident.ref} {incident.codename}",
             f"{incident.ref} {incident.codename} is TLP:{incident.tlp.value.upper()}: "
             "open Ostraka to see the details.",
         )
@@ -123,6 +130,13 @@ def _masked(value: Any) -> Any:
     if isinstance(value, list | tuple):
         return [_masked(v) for v in value]
     return value
+
+
+def incident_post(incident: Incident, words: str, summary: str) -> tuple[str, str]:
+    """An incident channel's post: the event and the record it happened in, then what the activity log
+    says, masked; a restricted record's says only to open Ostraka."""
+    _, text = outward_words(words, "", summary, incident)
+    return f"{words} in {incident.ref} {incident.codename}", text
 
 
 def link_url(path: str) -> str:
@@ -193,13 +207,62 @@ def team_channel(
     link: str = "",
     incident: Incident | None = None,
 ) -> bool:
-    """Queue a post to the team's Teams channel. False when the team hasn't connected one."""
-    if not team.teams_webhook:
+    """Queue a post to the team's chat channel. False when the team hasn't connected one."""
+    if not team.channel_webhook:
         return False
     db.info.setdefault(_PENDING_TEAMS, []).append(
         _TeamPost(team.id, kind, title, body, link, incident.id if incident else None)
     )
     return True
+
+
+# What an incident's own channel hears about, read from its activity: the turns in the record that
+# responders not looking at Ostraka need to know, not every edit (the team channels carry the tasks)
+_CHANNEL_ACTIONS = {
+    "finding_confirmed": "A finding was confirmed",
+    "update_sent": "A stakeholder update was issued",
+    "detection_gap_opened": "A detection gap was opened",
+    "clock_breached": "A regulator deadline has passed",
+    "handover_posted": "A shift handover was posted",
+    "team_added": "A team was brought in",
+}
+
+
+def channel_words(action: str, data: dict[str, Any]) -> str | None:
+    """What an incident's channel says an activity event was, or None when it isn't posted. Pure."""
+    if action == "incident_updated":
+        changes = data.get("changes", {})
+        status = changes.get("status")
+        if status == "closed":
+            return "The record was closed"
+        if status == "open":
+            return "The record was reopened"
+        if "phase" in changes:
+            return "The phase changed"
+        if "severity" in changes:
+            return "The severity changed"
+        if "tlp" in changes:
+            return "The TLP changed"
+        return None
+    return _CHANNEL_ACTIONS.get(action)
+
+
+@dataclass(frozen=True)
+class _IncidentPost:
+    incident_id: uuid.UUID
+    words: str
+    summary: str
+
+
+def incident_channel(db: AsyncSession, events: Iterable[Any]) -> None:
+    """Queue the posts these activity events make in their incidents' own channels. Whether an
+    incident has a channel is read when they're sent, after the commit."""
+    for event in events:
+        words = channel_words(event.action, dict(event.data or {}))
+        if words:
+            db.info.setdefault(_PENDING_INCIDENT, []).append(
+                _IncidentPost(event.incident_id, words, event.summary)
+            )
 
 
 @dataclass(frozen=True)
@@ -235,7 +298,8 @@ async def dispatch(db: AsyncSession) -> None:
     ids: list[uuid.UUID] = db.info.pop(_PENDING, [])
     posts: list[_TeamPost] = db.info.pop(_PENDING_TEAMS, [])
     mails: list[_Mail] = db.info.pop(_PENDING_MAIL, [])
-    if not ids and not posts and not mails:
+    incident_posts: list[_IncidentPost] = db.info.pop(_PENDING_INCIDENT, [])
+    if not ids and not posts and not mails and not incident_posts:
         return
     users = (
         set((await db.scalars(select(Notification.user_id).where(Notification.id.in_(ids)))).all())
@@ -244,7 +308,7 @@ async def dispatch(db: AsyncSession) -> None:
     )
     for user_id in users:
         await live.publish_user(user_id, {"type": "notification"})
-    job = asyncio.create_task(_deliver(ids, posts, mails))
+    job = asyncio.create_task(_deliver(ids, posts, mails, incident_posts))
     _background.add(job)
     job.add_done_callback(_background.discard)
 
@@ -270,7 +334,12 @@ def busy_sending() -> bool:
     return bool(_background)
 
 
-async def _deliver(ids: list[uuid.UUID], posts: list[_TeamPost], mails: list[_Mail]) -> None:
+async def _deliver(
+    ids: list[uuid.UUID],
+    posts: list[_TeamPost],
+    mails: list[_Mail],
+    incident_posts: list[_IncidentPost] = (),
+) -> None:
     try:
         async with sessions()() as db:
             for notification_id in ids:
@@ -280,9 +349,16 @@ async def _deliver(ids: list[uuid.UUID], posts: list[_TeamPost], mails: list[_Ma
             for post in posts:
                 team = await db.get(Team, post.team_id)
                 incident = await db.get(Incident, post.incident_id) if post.incident_id else None
-                if team and team.teams_webhook:
+                if team and team.channel_webhook:
                     title, text = outward(post.kind, post.title, post.body, incident)
-                    await channels.send_teams(decrypt(team.teams_webhook), title, text, link_url(post.link))
+                    await channels.send_chat(decrypt(team.channel_webhook), title, text, link_url(post.link))
+            for item in incident_posts:
+                incident = await db.get(Incident, item.incident_id)
+                if incident is not None and incident.channel_webhook:
+                    title, text = incident_post(incident, item.words, item.summary)
+                    await channels.send_chat(
+                        decrypt(incident.channel_webhook), title, text, link_url(incident_link(incident))
+                    )
             for mail in mails:
                 incident = await db.get(Incident, mail.incident_id) if mail.incident_id else None
                 title, text = outward(mail.kind, mail.title, mail.body, incident)

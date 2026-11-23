@@ -300,3 +300,34 @@ test('declaring an incident and starting a hunt are in the header on every page'
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('form', { name: 'Start a hunt' })).toHaveCount(0);
 });
+
+test('an incident’s managers connect its Slack or Teams channel on the Overview', async ({ page }) => {
+  await stubLive(page);
+  let kind = '';
+  const api = await stubApi(page, me(), (method, path) => {
+    if (path === '/api/incidents/i-1' || path === '/api/incidents/by-ref/OST-26-001')
+      return { json: incident({ channel_kind: kind }) };
+    if (method === 'PUT' && path === '/api/incidents/i-1/channel') {
+      kind = 'slack';
+      return { json: incident({ channel_kind: kind }) };
+    }
+  });
+  await page.goto('/incidents/OST-26-001');
+  const panel = page.locator('section', { has: page.getByRole('heading', { name: 'Channel', exact: true }) });
+  await expect(panel).toContainText('Not connected');
+  await panel.getByLabel('Channel webhook URL for OST-26-001').fill('https://hooks.slack.com/services/T/B/X');
+  await panel.getByRole('button', { name: 'Connect' }).click();
+  await expect(panel).toContainText('Slack connected');
+  expect(api.requests.find((r) => r.method === 'PUT')!.body).toEqual({ url: 'https://hooks.slack.com/services/T/B/X' });
+});
+
+test('people who don’t manage an incident see no channel panel until one is connected', async ({ page }) => {
+  await stubLive(page);
+  await stubApi(page, me(), (_method, path) => {
+    if (path === '/api/incidents/i-1' || path === '/api/incidents/by-ref/OST-26-001')
+      return { json: incident({ can_manage: false }) };
+  });
+  await page.goto('/incidents/OST-26-001');
+  await expect(page.getByRole('heading', { name: 'Teams and people' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Channel', exact: true })).toHaveCount(0);
+});

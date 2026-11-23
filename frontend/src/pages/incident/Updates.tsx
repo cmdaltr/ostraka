@@ -259,7 +259,7 @@ function Draft({ incident, draft, data }: { incident: Incident; draft: Stakehold
       )}
       {data.restricted && (
         <Notice>
-          {incident.ref} is TLP:{incident.tlp.toUpperCase()}: email and Teams carry only the reference. People in Ostraka
+          {incident.ref} is TLP:{incident.tlp.toUpperCase()}: email, Teams and Slack carry only the reference. People in Ostraka
           read the update in full.
         </Notice>
       )}
@@ -388,7 +388,7 @@ function Stakeholders({ incident, data }: { incident: Incident; data: UpdatesDat
       <ul className="stakeholders">
         {data.stakeholders.map((s) => (
           <li key={s.id}>
-            <span className="chip">{s.kind === 'person' ? 'In Ostraka' : s.kind === 'teams' ? 'Teams' : 'Email'}</span>{' '}
+            <span className="chip">{s.kind === 'person' ? 'In Ostraka' : s.kind === 'teams' ? 'Team channel' : 'Email'}</span>{' '}
             {s.name}
             {s.kind === 'email' && s.email !== s.name && <span className="hint"> {s.email}</span>}
             {!s.can_receive && <span className="hint"> · {s.why_not}</span>}
@@ -414,7 +414,7 @@ function Stakeholders({ incident, data }: { incident: Incident; data: UpdatesDat
               <option value="email" disabled={!data.email_enabled}>
                 An email address{data.email_enabled ? '' : ' (email isn’t set up)'}
               </option>
-              <option value="teams">A team’s Teams channel</option>
+              <option value="teams">A team’s channel (Teams or Slack)</option>
             </select>
           </label>
           {kind === 'person' && (

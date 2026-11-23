@@ -119,7 +119,7 @@ def can_manage_playbooks(actor: User) -> bool:
 
 
 def can_set_team_channel(actor: User, team_id: uuid.UUID) -> bool:
-    """Connect or disconnect a team's Teams channel: admins, and that team's own lead."""
+    """Connect or disconnect a team's chat channel (Teams or Slack): admins, and that team's own lead."""
     return actor.role is Role.ADMIN or (actor.role is Role.TEAM_LEAD and actor.team_id == team_id)
 
 

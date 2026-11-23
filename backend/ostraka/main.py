@@ -14,6 +14,7 @@ from ostraka.api import (
     assessments,
     assets,
     auth,
+    chat,
     clocks,
     comments,
     detection_gaps,
@@ -119,6 +120,7 @@ def create_app() -> FastAPI:
         graph,
         pnyx,
         flow,
+        chat,
     ):
         app.include_router(module.router)
     for extra in (

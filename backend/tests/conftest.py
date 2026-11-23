@@ -83,7 +83,7 @@ async def db(migrated):
             )
         )
         await session.execute(text("DELETE FROM teams WHERE name <> ALL(:seed)"), {"seed": list(SEED_TEAMS)})
-        await session.execute(text("UPDATE teams SET teams_webhook = ''"))
+        await session.execute(text("UPDATE teams SET channel_webhook = ''"))
         await session.commit()
         yield session
 
@@ -219,7 +219,7 @@ def sign_in(client):
 
 
 class Outbox:
-    """Everything ostraka tried to send outside itself: HTTP posts (push, Teams) and emails."""
+    """Everything ostraka tried to send outside itself: HTTP posts (push, Teams, Slack) and emails."""
 
     def __init__(self) -> None:
         self.posts: list[tuple[str, bytes, dict[str, str]]] = []
@@ -231,8 +231,17 @@ class Outbox:
 
         return [json.loads(body) for url, body, _ in self.posts if "logic.azure.com" in url]
 
+    def slack(self) -> list[dict]:
+        import json
+
+        return [json.loads(body) for url, body, _ in self.posts if url.startswith("https://hooks.slack.com/")]
+
     def pushes(self) -> list[tuple[str, bytes, dict[str, str]]]:
-        return [p for p in self.posts if "logic.azure.com" not in p[0] and "microsoft" not in p[0]]
+        return [
+            p
+            for p in self.posts
+            if "logic.azure.com" not in p[0] and "microsoft" not in p[0] and "hooks.slack.com" not in p[0]
+        ]
 
     def graph_mail(self) -> list[dict]:
         import json

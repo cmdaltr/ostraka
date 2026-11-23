@@ -103,6 +103,7 @@ def event_json(event: ActivityEvent, actor_name: str | None = None) -> dict[str,
 async def finish(db: AsyncSession, actor: User | None = None) -> None:
     """Commit, then tell live viewers what changed and send any notifications and webhooks."""
     pending: list[ActivityEvent] = db.info.pop(_PENDING, [])
+    notify.incident_channel(db, pending)
     await db.commit()
     for event in pending:
         await live.publish_incident(

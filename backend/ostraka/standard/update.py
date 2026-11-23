@@ -236,7 +236,7 @@ def check(
 
 
 def render(lines: list[Line], texts: list[str] | None = None) -> str:
-    """Plain text for email and Teams: a heading per section, each change as a bullet."""
+    """Plain text for email and chat: a heading per section, each change as a bullet."""
     headings = {
         "assessment": "Assessment",
         "what": "What has changed",

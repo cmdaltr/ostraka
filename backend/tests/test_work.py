@@ -380,7 +380,7 @@ async def test_team_channels_take_only_workflow_webhooks_and_never_show_the_url(
     ).status_code == 403
     team = await connect_channel(client, db, p["lead"])
     assert team["has_channel"] is True and "sig=secret" not in str(team)
-    stored = await db.scalar(select(Team.teams_webhook).where(Team.name == "SOC"))
+    stored = await db.scalar(select(Team.channel_webhook).where(Team.name == "SOC"))
     assert "sig=secret" not in stored  # encrypted at rest
     assert (await client.post(f"/api/teams/{soc}/channel/test", headers=p["lead"].headers)).status_code == 204
     assert "connected to SOC" in outbox.teams()[-1]["attachments"][0]["content"]["body"][0]["text"]

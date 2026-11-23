@@ -172,6 +172,9 @@ class Incident(Base):
     sensitive: Mapped[bool] = mapped_column(Boolean, default=False)
     # The report brand its exports use (MSSP); none means the installation's default
     brand_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("report_brands.id", ondelete="SET NULL"))
+    # The incident's own chat channel (Teams Workflows or Slack webhook), encrypted, and which it is
+    channel_webhook: Mapped[str] = mapped_column(Text, default="")
+    channel_kind: Mapped[str] = mapped_column(String(8), default="")
 
     declared_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     declared_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

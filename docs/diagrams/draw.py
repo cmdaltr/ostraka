@@ -93,7 +93,7 @@ s.box(988, 620, 210, 80, "Redis 7", ["pub/sub for live updates", "WebSocket tick
 s.group(268, 560, 460, 255, "leaves Ostraka · masked by notify.outward")
 s.box(283, 595, 200, 76, "Email", ["SMTP or Microsoft Graph"], AMBER)
 s.box(513, 595, 200, 76, "Web Push", ["VAPID · encrypted payload"], AMBER)
-s.box(283, 690, 200, 76, "Microsoft Teams", ["a team's channel webhook"], AMBER)
+s.box(283, 690, 200, 76, "Teams or Slack", ["team and incident channels", "outbound webhooks only"], AMBER)
 s.box(513, 690, 200, 105, "AI provider", ["Ollama (local) or Anthropic", "rephrases finished drafts", "TLP:RED and AMBER+STRICT", "stay on Ollama"], AMBER)
 s.box(35, 600, 200, 70, "Rowanholt", ["evidence and analysis"], TEAL, dashed=True)
 s.box(35, 690, 200, 70, "Shikari", ["detection and hunting"], TEAL, dashed=True)
@@ -155,13 +155,13 @@ s.arrow([(740, 126), (775, 126)])
 outs = [("In ostraka", ["the bell, live over Redis", "(what changed, not content)"], TEAL),
         ("Browser push", ["Web Push, encrypted", "per subscription"], AMBER),
         ("Email", ["SMTP or Graph", "one sending mailbox"], AMBER),
-        ("Teams channel", ["the team's webhook", "an Adaptive Card"], AMBER)]
+        ("Teams or Slack", ["team and incident channels", "Adaptive Card or Block Kit"], AMBER)]
 for i, (t, l, c) in enumerate(outs):
     x = 30 + i * 300
     s.box(x, 250, 270, 80, t, l, c)
     s.arrow([(990, 182), (990, 215), (x + 135, 215), (x + 135, 250)], "", AMBER if c == AMBER else TEAL)
 s.group(20, 360, 1200, 145, "the scheduler · one process per tick, by advisory lock")
-steps = [("Task due", ["owner: a person, or", "the team's queue"]), ("Reminder", ["to the owner, or the", "team in ostraka and Teams"]),
+steps = [("Task due", ["owner: a person, or", "the team's queue"]), ("Reminder", ["to the owner, or the", "team in ostraka and its channel"]),
          ("Escalate", ["to the team lead"]), ("Escalate again", ["to the incident commander"])]
 for i, (t, l) in enumerate(steps):
     s.box(40 + i * 295, 400, 240, 85, t, l, RED if i >= 2 else TEAL)

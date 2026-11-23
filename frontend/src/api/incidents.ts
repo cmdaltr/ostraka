@@ -43,6 +43,7 @@ export interface Incident extends IncidentSummary {
   sensitive: boolean;
   can_export: boolean;
   brand_id: string | null;
+  channel_kind?: '' | 'teams' | 'slack';
   counts: { observables: number; assets: number; findings: number; comments: number; tasks: number };
 }
 

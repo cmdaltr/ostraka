@@ -25,7 +25,8 @@ class TeamOut(_Out):
     code: str | None = None
     aliases: list[str] = Field(default_factory=list)
     description: str
-    has_channel: bool = False  # a Teams channel is connected; the URL itself is never sent back
+    has_channel: bool = False  # a chat channel is connected; the URL itself is never sent back
+    channel_kind: str = ""  # teams or slack
     version: int = 1
 
 

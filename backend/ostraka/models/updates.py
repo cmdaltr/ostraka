@@ -60,7 +60,7 @@ class UpdatePlan(Base):
 
 class Stakeholder(Base):
     """Someone an incident's updates go to: a person in Ostraka, an email address outside it, or a
-    team's Microsoft Teams channel."""
+    team's chat channel (Teams or Slack)."""
 
     __tablename__ = "stakeholders"
     __table_args__ = (

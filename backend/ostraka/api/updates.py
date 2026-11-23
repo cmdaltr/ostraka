@@ -195,14 +195,14 @@ def stakeholder_out(incident: Incident, s: Stakeholder) -> StakeholderOut:
             why_not="" if ok else f"{s.user.name} can no longer see this incident.",
         )
     if s.team is not None:
-        ok = bool(s.team.teams_webhook)
+        ok = bool(s.team.channel_webhook)
         return StakeholderOut(
             id=s.id,
             kind="teams",
             name=s.team.name,
             email=None,
             can_receive=ok,
-            why_not="" if ok else f"{s.team.name} hasn't connected a Teams channel.",
+            why_not="" if ok else f"{s.team.name} hasn't connected a Teams or Slack channel.",
         )
     ok = channels.email_enabled()
     return StakeholderOut(
@@ -331,9 +331,14 @@ async def add_stakeholder(
         team = await db.get(Team, body.team_id)
         if team is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "No such team.")
-        if not team.teams_webhook:
-            raise HTTPException(status.HTTP_409_CONFLICT, f"{team.name} hasn't connected a Teams channel.")
-        stakeholder.team_id, described = team.id, f"{team.name}'s Teams channel"
+        if not team.channel_webhook:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, f"{team.name} hasn't connected a Teams or Slack channel."
+            )
+        stakeholder.team_id, described = (
+            team.id,
+            f"{team.name}'s {channels.KINDS.get(team.channel_kind, 'chat')} channel",
+        )
     else:
         if not channels.email_enabled():
             raise HTTPException(

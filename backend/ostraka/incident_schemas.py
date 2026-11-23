@@ -132,6 +132,7 @@ class IncidentOut(IncidentSummary):
     sensitive: bool
     can_export: bool
     brand_id: uuid.UUID | None
+    channel_kind: str = ""  # the incident's own chat channel: teams, slack or none
     counts: dict[str, int]
 
 

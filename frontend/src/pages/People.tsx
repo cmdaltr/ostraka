@@ -6,6 +6,7 @@ import { editionNames, getLicence, seatsText } from '../api/installation';
 import { availabilityNames, roleNames } from '../api/types';
 import type { Invitation, InvitationCreated, Me, Person, Role, Team } from '../api/types';
 import { CopyBox, Notice, formatDate, messageOf } from '../components/ui';
+import { ChannelForm, ChannelHelp, channelStatus } from '../components/ChatChannel';
 
 const allRoles: Role[] = ['responder', 'observer', 'team_lead', 'admin'];
 const leadRoles: Role[] = ['responder', 'observer'];
@@ -226,79 +227,29 @@ function AccountRow({
 }
 
 function ChannelRow({ team, onChanged }: { team: Team; onChanged: () => void }) {
-  const [url, setUrl] = useState('');
-  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
-  const call = (path: string, init: RequestInit & { json?: unknown }, ok: string) =>
-    api(path, init)
-      .then(() => {
-        setMessage({ kind: 'ok', text: ok });
-        setUrl('');
-        onChanged();
-      })
-      .catch((e) => setMessage({ kind: 'error', text: messageOf(e) }));
-  const base = `/api/teams/${team.id}/channel`;
   return (
     <tr>
       <td>
         <strong>{team.name}</strong>
         {team.code && <span className="chip mono">{team.code}</span>}
-        <div className="hint">{team.has_channel ? 'Connected' : 'Not connected'}</div>
+        <div className="hint">{channelStatus(team.channel_kind, team.has_channel)}</div>
       </td>
       <td>
-        <form
-          className="copy-box"
-          onSubmit={(e) => {
-            e.preventDefault();
-            call(base, { method: 'PUT', json: { url } }, 'Connected. Send a test to check it reaches the channel.');
-          }}
-        >
-          <input
-            className="input"
-            type="url"
-            required
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder={team.has_channel ? 'Paste a new URL to replace it' : 'https://….logic.azure.com/workflows/…'}
-            aria-label={`Workflows webhook URL for ${team.name}`}
-          />
-          <button className="btn btn-quiet" type="submit">
-            {team.has_channel ? 'Replace' : 'Connect'}
-          </button>
-        </form>
-        {message && <div className={`notice-${message.kind}`} style={{ fontSize: 12, marginTop: 4 }}>{message.text}</div>}
-      </td>
-      <td>
-        {team.has_channel && (
-          <div className="actions">
-            <button className="link-button" type="button" onClick={() => call(`${base}/test`, { method: 'POST' }, 'Test sent.')}>
-              Send a test
-            </button>
-            <button
-              className="link-button"
-              type="button"
-              onClick={() => call(base, { method: 'PUT', json: { url: '' } }, 'Disconnected.')}
-            >
-              Disconnect
-            </button>
-          </div>
-        )}
+        <ChannelForm base={`/api/teams/${team.id}/channel`} name={team.name} connected={!!team.has_channel} onChanged={onChanged} />
       </td>
     </tr>
   );
 }
 
-// A team's Teams channel gets its queue's new tasks and their reminders, as Adaptive Cards
+// A team's channel, in Teams or Slack, gets its queue's new tasks and their reminders
 function TeamChannels({ me, teams, onChanged }: { me: Me; teams: Team[]; onChanged: () => void }) {
   const mine = me.role === 'admin' ? teams : teams.filter((t) => t.id === me.team?.id);
   if (!mine.length) return null;
   return (
     <section className="panel">
       <header>
-        <h2>Microsoft Teams channels</h2>
-        <p>
-          In the channel, open Workflows and choose “Post to a channel when a webhook request is received”, then paste
-          the URL it gives you. Ostraka stores it encrypted and never shows it again.
-        </p>
+        <h2>Team channels in Teams or Slack</h2>
+        <ChannelHelp />
       </header>
       <div className="table-wrap">
         <table className="table">

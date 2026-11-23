@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { getLicence } from '../../api/installation';
 import type { Brand } from '../../api/installation';
@@ -13,6 +13,8 @@ import { initials } from '../../components/AppShell';
 import { PencilIcon } from '../../components/PencilIcon';
 import { PillSelect } from '../../components/PillSelect';
 import { CodenameField } from '../../components/CodenameField';
+import { ChannelForm, ChannelHelp, channelStatus } from '../../components/ChatChannel';
+import { keys } from '../../api/incidents';
 import { PhasePill, SeverityPill, TlpPill } from '../../components/Pills';
 import { Notice, formatDate } from '../../components/ui';
 import { Links } from './Links';
@@ -349,12 +351,42 @@ function People({ incident, me }: { incident: Incident; me: Me }) {
   );
 }
 
+// The record's own channel in Teams or Slack, for its turns: phase, severity and TLP, confirmed findings,
+// stakeholder updates, handovers and breached deadlines. Its managers connect it; everyone sees whether it is
+function Channel({ incident }: { incident: Incident }) {
+  const queryClient = useQueryClient();
+  const kind = incident.channel_kind ?? '';
+  if (!incident.can_manage && !kind) return null;
+  return (
+    <section className="panel" aria-labelledby="incident-channel">
+      <header className="links-head">
+        <h2 id="incident-channel">Channel</h2>
+        <p>
+          {channelStatus(kind, !!kind)}. Phase, severity and TLP changes, confirmed findings, stakeholder updates, handovers
+          and breached deadlines are posted there, indicators masked
+          {incident.tlp === 'red' || incident.tlp === 'amber+strict' ? `; as ${incident.ref} is restricted, only its reference and code name` : ''}.
+        </p>
+        {incident.can_manage && <ChannelHelp />}
+      </header>
+      {incident.can_manage && (
+        <ChannelForm
+          base={`/api/incidents/${incident.id}/channel`}
+          name={incident.ref}
+          connected={!!kind}
+          onChanged={() => queryClient.invalidateQueries({ queryKey: keys.incident(incident.id), exact: true })}
+        />
+      )}
+    </section>
+  );
+}
+
 export function Overview({ incident, me }: { incident: Incident; me: Me }) {
   return (
     <>
       <Details incident={incident} />
       <Links incident={incident} />
       <People incident={incident} me={me} />
+      <Channel incident={incident} />
     </>
   );
 }

@@ -1,5 +1,5 @@
 """Teams. Anyone signed in can list them; only admins create or rename them. Admins and a team's
-own lead connect its Microsoft Teams channel."""
+own lead connect its chat channel, in Microsoft Teams or Slack."""
 
 from __future__ import annotations
 
@@ -93,19 +93,22 @@ async def set_channel(
     actor: User = Depends(current_user),
     db: AsyncSession = Depends(get_session),
 ) -> Team:
-    """Connect the team's Teams channel with a Workflows webhook URL, or disconnect it with an empty one.
-    The URL is stored encrypted and never shown again, since anyone holding it can post to the channel."""
+    """Connect the team's channel with a Teams Workflows or Slack incoming webhook URL, or disconnect it
+    with an empty one. The URL is stored encrypted and never shown again, since anyone holding it can
+    post to the channel."""
     team = await _channel_team(db, actor, team_id)
     url = body.url.strip()
-    if url and (problem := channels.teams_webhook_problem(url)):
+    if url and (problem := channels.chat_webhook_problem(url)):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, problem)
-    team.teams_webhook = encrypt(url) if url else ""
+    team.channel_webhook = encrypt(url) if url else ""
+    team.channel_kind = channels.chat_kind(url) or ""
     audit.record(
         db,
         "team_channel_set" if url else "team_channel_cleared",
         actor_id=actor.id,
         ip=sessions.client_ip(request),
         team=team.name,
+        **({"kind": team.channel_kind} if url else {}),
     )
     return await _save(db, team)
 
@@ -115,10 +118,10 @@ async def test_channel(
     team_id: uuid.UUID, actor: User = Depends(current_user), db: AsyncSession = Depends(get_session)
 ) -> None:
     team = await _channel_team(db, actor, team_id)
-    if not team.teams_webhook:
+    if not team.channel_webhook:
         raise HTTPException(status.HTTP_409_CONFLICT, "This team has no channel connected.")
-    sent = await channels.send_teams(
-        decrypt(team.teams_webhook),
+    sent = await channels.send_chat(
+        decrypt(team.channel_webhook),
         f"Ostraka is connected to {team.name}",
         f"{actor.name} sent this test. Tasks for {team.name}'s queue, and reminders about them, "
         "will appear here.",
@@ -126,5 +129,7 @@ async def test_channel(
     )
     if not sent:
         raise HTTPException(
-            status.HTTP_502_BAD_GATEWAY, "Teams didn't accept the message. Check the webhook URL."
+            status.HTTP_502_BAD_GATEWAY,
+            f"{channels.KINDS.get(team.channel_kind, 'The channel')} didn't accept the message. "
+            "Check the webhook URL.",
         )

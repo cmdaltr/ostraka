@@ -194,7 +194,7 @@ test('responders see no playbook or channel controls', async ({ page }) => {
   await stubApi(page);
   await page.goto('/people');
   await expect(page.getByRole('heading', { name: 'Directory' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Microsoft Teams channels' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Team channels in Teams or Slack' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Playbooks' })).toHaveCount(0);
 });
 
@@ -202,21 +202,24 @@ test('a team lead connects their own team’s channel and nobody else’s', asyn
   await stubLive(page);
   let connected = false;
   const api = await stubApi(page, me({ role: 'team_lead' }), (method, path) => {
-    if (path === '/api/teams') return { json: teams.map((t) => ({ ...t, has_channel: t.id === 't-soc' && connected })) };
+    if (path === '/api/teams')
+      return {
+        json: teams.map((t) => ({ ...t, has_channel: t.id === 't-soc' && connected, channel_kind: t.id === 't-soc' && connected ? 'slack' : '' })),
+      };
     if (path === '/api/invitations') return { json: [] };
     if (method === 'PUT' && path === '/api/teams/t-soc/channel') {
       connected = true;
-      return { json: { ...teams[0], has_channel: true } };
+      return { json: { ...teams[0], has_channel: true, channel_kind: 'slack' } };
     }
   });
   await page.goto('/people');
-  const panel = page.locator('section', { has: page.getByRole('heading', { name: 'Microsoft Teams channels' }) });
+  const panel = page.locator('section', { has: page.getByRole('heading', { name: 'Team channels in Teams or Slack' }) });
   await expect(panel.getByRole('row')).toHaveCount(1); // SOC only
-  await panel.getByLabel('Workflows webhook URL for SOC').fill('https://prod-1.uksouth.logic.azure.com/workflows/x');
+  await panel.getByLabel('Channel webhook URL for SOC').fill('https://hooks.slack.com/services/T/B/X');
   await panel.getByRole('button', { name: 'Connect' }).click();
   await expect(panel).toContainText('Connected. Send a test');
   await expect(panel.getByRole('button', { name: 'Send a test' })).toBeVisible();
-  expect(api.requests.find((r) => r.method === 'PUT')!.body).toEqual({ url: 'https://prod-1.uksouth.logic.azure.com/workflows/x' });
+  expect(api.requests.find((r) => r.method === 'PUT')!.body).toEqual({ url: 'https://hooks.slack.com/services/T/B/X' });
 });
 
 test('notification settings save per account and explain what leaves Ostraka', async ({ page }) => {

@@ -58,8 +58,9 @@ class Team(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     code: Mapped[str | None] = mapped_column(String(8), unique=True)  # SOC, FOR, IR, IM, CTI, CTH, SLT
     aliases: Mapped[list[str]] = mapped_column(ARRAY(String(40)), default=list)  # other names: Intel., Int.
-    # The team channel's Workflows webhook URL, encrypted: anyone holding it can post to the channel
-    teams_webhook: Mapped[str] = mapped_column(Text, default="")
+    # The team channel's webhook URL (Teams Workflows or Slack), encrypted: anyone holding it can post there
+    channel_webhook: Mapped[str] = mapped_column(Text, default="")
+    channel_kind: Mapped[str] = mapped_column(String(8), default="")  # teams, slack, or "" for none
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     version: Mapped[int] = mapped_column(Integer, default=1)
 
@@ -67,7 +68,7 @@ class Team(Base):
 
     @property
     def has_channel(self) -> bool:
-        return bool(self.teams_webhook)
+        return bool(self.channel_webhook)
 
 
 class User(Base):

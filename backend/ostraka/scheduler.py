@@ -2,7 +2,7 @@
 
 Due soon: the owner. Overdue: the owner, again every few hours. Further overdue: the team lead, then
 the incident commander. An unclaimed team task's owner is its queue: the team's members in ostraka and
-its Teams channel. The intervals are settings (see `ostraka.config`).
+its chat channel. The intervals are settings (see `ostraka.config`).
 
 Several backend processes may run this loop; a Postgres advisory lock lets one of them work each tick.
 """

@@ -1,5 +1,9 @@
-"""The ways a notification leaves ostraka: email (SMTP or Microsoft Graph), browser push, and a team's
-Teams channel.
+"""The ways a notification leaves ostraka: email (SMTP or Microsoft Graph), browser push, and chat
+channels (a team's, or an incident's) in Microsoft Teams or Slack.
+
+Chat is outbound only: a Teams Workflows webhook or a Slack incoming webhook. Neither needs Teams or
+Slack to reach Ostraka, so it works on a private network. Which one a URL is decides the message's
+shape (an Adaptive Card or Block Kit); nothing else differs.
 
 Each sender is a plain function of what to send, so tests replace `fetch` and `smtp` and run
 everything else for real.
@@ -37,6 +41,46 @@ def teams_webhook_problem(url: str) -> str | None:
             "received). It starts with https:// and ends in logic.azure.com or powerplatform.com."
         )
     return None
+
+
+# Slack incoming webhooks (an app's "Incoming Webhooks", one channel each), commercial and GovSlack.
+# Workflow Builder's /workflows/ webhooks take their own variables, not messages, so they're refused.
+SLACK_HOSTS = ("hooks.slack.com", "hooks.slack-gov.com")
+TEAMS, SLACK = "teams", "slack"
+KINDS = {TEAMS: "Microsoft Teams", SLACK: "Slack"}
+
+
+def slack_webhook_problem(url: str) -> str | None:
+    parts = urlsplit(url.strip())
+    if (
+        parts.scheme != "https"
+        or (parts.hostname or "").lower() not in SLACK_HOSTS
+        or not parts.path.startswith("/services/")
+    ):
+        return (
+            "Use a Slack incoming webhook URL (a Slack app's Incoming Webhooks). It starts with "
+            "https://hooks.slack.com/services/."
+        )
+    return None
+
+
+def chat_kind(url: str) -> str | None:
+    """Which chat service a webhook URL belongs to, or None when it's neither's."""
+    if not teams_webhook_problem(url):
+        return TEAMS
+    if not slack_webhook_problem(url):
+        return SLACK
+    return None
+
+
+def chat_webhook_problem(url: str) -> str | None:
+    if chat_kind(url):
+        return None
+    return (
+        "Paste a Microsoft Teams Workflows webhook (Post to a channel when a webhook request is received; "
+        "it ends in logic.azure.com or powerplatform.com) or a Slack incoming webhook "
+        "(https://hooks.slack.com/services/…)."
+    )
 
 
 async def fetch(url: str, *, content: bytes, headers: dict[str, str]) -> tuple[int, bytes]:
@@ -220,3 +264,52 @@ async def send_teams(webhook: str, title: str, text: str, url: str) -> bool:
     if status >= 300:
         log.warning("teams webhook answered %s", status)
     return status < 300
+
+
+def _slack_escape(text: str) -> str:
+    # Slack reads &, < and > as markup (<url|label>, <!channel>), so text can't open a link or ping anyone
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def slack_message(title: str, text: str, url: str) -> dict:
+    title, text = _slack_escape(title), _slack_escape(text)
+    blocks: list[dict] = [{"type": "header", "text": {"type": "plain_text", "text": title[:150]}}]
+    if text:
+        blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": text[:2900]}})
+    blocks.append(
+        {
+            "type": "actions",
+            "elements": [
+                {"type": "button", "text": {"type": "plain_text", "text": "Open in Ostraka"}, "url": url}
+            ],
+        }
+    )
+    # `text` is what notifications and screen readers show
+    return {"text": f"{title}: {text}" if text else title, "blocks": blocks, "unfurl_links": False}
+
+
+async def send_slack(webhook: str, title: str, text: str, url: str) -> bool:
+    if slack_webhook_problem(webhook):
+        return False
+    try:
+        status = await post(
+            webhook,
+            content=json.dumps(slack_message(title, text, url)).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+    except Exception as exc:
+        log.warning("slack webhook failed: %s", exc)
+        return False
+    if status >= 300:
+        log.warning("slack webhook answered %s", status)
+    return status < 300
+
+
+async def send_chat(webhook: str, title: str, text: str, url: str) -> bool:
+    """Post to a Teams or Slack channel, whichever the URL is. False if it is neither or the post failed."""
+    kind = chat_kind(webhook)
+    if kind == TEAMS:
+        return await send_teams(webhook, title, text, url)
+    if kind == SLACK:
+        return await send_slack(webhook, title, text, url)
+    return False

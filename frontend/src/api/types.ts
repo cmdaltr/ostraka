@@ -18,6 +18,7 @@ export interface Team {
   aliases?: string[];
   description: string;
   has_channel?: boolean;
+  channel_kind?: '' | 'teams' | 'slack';
 }
 
 export interface Person {

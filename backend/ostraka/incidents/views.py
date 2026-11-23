@@ -114,6 +114,7 @@ async def detail(db: AsyncSession, user: User, incident: Incident) -> IncidentOu
         sensitive=incident.sensitive,
         can_export=await access.export_refusal(db, user, incident) is None,
         brand_id=incident.brand_id,
+        channel_kind=incident.channel_kind,
         counts=counts,
     )
 

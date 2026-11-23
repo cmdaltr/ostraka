@@ -39,6 +39,7 @@ from ostraka.models import (
     User,
     utcnow,
 )
+from ostraka.notify import channels
 from ostraka.standard import update as standard
 from ostraka.standard.assessment import Draft, sentences
 from ostraka.updates import rhythm
@@ -404,7 +405,8 @@ async def send(db: AsyncSession, incident: Incident, update: StakeholderUpdate, 
                 link=link,
                 incident=incident,
             )
-            sent.append({"to": f"{s.team.name} (Teams)", "channel": "teams", "sent": ok})
+            kind = s.team.channel_kind or channels.TEAMS
+            sent.append({"to": f"{s.team.name} ({channels.KINDS[kind]})", "channel": kind, "sent": ok})
         elif s.email:
             ok = notify.email_outside(
                 db, s.email, NotificationKind.STAKEHOLDER_UPDATE, title, body=body, incident=incident

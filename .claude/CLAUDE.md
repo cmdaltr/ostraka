@@ -45,7 +45,7 @@ On the homelab: `homelab add ostraka <repo> --port 24747 --upstream 24747 --env 
   - Cobalt is the default theme, with Ostrakon and Ledger available under preferences. Fonts are fixed: Inter and JetBrains Mono.
   - Phases are Detect → Scope → Contain → Eradicate → Recover → Report → Learn (Report added 17 November 2026). Hunts run Hypothesis → Scope → Analyse → Report → Learn (Collect and Conclude replaced, migration 0020).
   - The AI provider can be Ollama or Anthropic, with the TLP guard.
-  - Nudges go in-app with browser push, by email, and through Microsoft Teams webhooks.
+  - Nudges go in-app with browser push, by email, and through Microsoft Teams or Slack webhooks (Slack added 23 November 2026: team and incident channels, outbound only).
   - The reporting standard (verified confirmation, defensive writing, an assessment in every update, ACH) is built into Ostraka and doesn't depend on AI.
 - 10 November 2026 (phase 1):
   - MFA is mandatory for everyone.
