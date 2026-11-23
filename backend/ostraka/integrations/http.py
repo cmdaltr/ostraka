@@ -44,6 +44,24 @@ def _detail(response: httpx.Response) -> str:
 
 async def get_json(name: str, base: str, token: str, path: str, params: dict[str, Any] | None = None) -> Any:
     """GET `path` from `base` as the token's owner and return the JSON. Raises Unreachable or Refused."""
+    return await call_json(name, base, token, "GET", path, params=params)
+
+
+async def post_json(name: str, base: str, token: str, path: str, body: dict[str, Any]) -> Any:
+    """POST JSON to `path` on `base` (as the token's owner, when there is one) and return the JSON."""
+    return await call_json(name, base, token, "POST", path, body=body)
+
+
+async def call_json(
+    name: str,
+    base: str,
+    token: str,
+    method: str,
+    path: str,
+    *,
+    params: dict[str, Any] | None = None,
+    body: dict[str, Any] | None = None,
+) -> Any:
     headers = {"Accept": "application/json", "User-Agent": f"ostraka/{__version__}"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -53,7 +71,7 @@ async def get_json(name: str, base: str, token: str, path: str, params: dict[str
         async with httpx.AsyncClient(
             base_url=base, timeout=TIMEOUT, follow_redirects=False, transport=transport
         ) as client:
-            response = await client.get(path, params=params, headers=headers)
+            response = await client.request(method, path, params=params, json=body, headers=headers)
     except httpx.TimeoutException as exc:
         raise Unreachable(f"{name} didn't answer in time.") from exc
     except httpx.HTTPError as exc:

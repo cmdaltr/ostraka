@@ -28,6 +28,7 @@ from ostraka.integration_schemas import (
     CitationOut,
     ImportIn,
     ImportOut,
+    JobStartIn,
     RemoteFinding,
     RemoteJob,
     RowanholtLinkIn,
@@ -267,6 +268,65 @@ async def link_rowanholt(
     return await _out(db, user, incident, client.url)
 
 
+@router.post("/rowanholt/jobs", response_model=RowanholtOut, status_code=status.HTTP_201_CREATED)
+async def start_job(
+    incident_id: uuid.UUID,
+    body: JobStartIn,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_session),
+) -> RowanholtOut:
+    """Start a Rowanholt job for this record on evidence already on the Rowanholt server, and link it.
+    Rowanholt is told the record's reference (`external_ref`) and nothing else about it; its webhooks
+    then say when the job finishes and bring in what's confirmed there as leads."""
+    incident = await access.load(db, user, incident_id, edit=True)
+    client = await _server(db, incident)
+    try:
+        job = await client.start_job(body.case_number, body.source_paths, body.options, incident.ref)
+    except Refused as exc:
+        if exc.status == 403:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Rowanholt's token can't start jobs. Pair Ostraka with Rowanholt again (Settings → "
+                "Integrations) to get one that can.",
+            ) from exc
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT
+            if exc.status in (400, 409, 422)
+            else status.HTTP_502_BAD_GATEWAY,
+            f"Rowanholt: {exc}",
+        ) from exc
+    except Unreachable as exc:
+        raise _failed(exc) from exc
+    job_id = str(job.get("id") or "")
+    if not job_id:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Rowanholt didn't say which job it started.")
+    link = RowanholtLink(
+        id=uuid.uuid4(),
+        incident_id=incident.id,
+        job_id=job_id,
+        case_number=str(job.get("case_number") or body.case_number),
+        status=str(job.get("status") or "pending"),
+        progress=None,
+        jobs=[],
+        linked_by=user.id,
+        linked_at=utcnow(),
+        checked_at=utcnow(),
+    )
+    db.add(link)
+    await activity.record(
+        db,
+        incident,
+        user,
+        "rowanholt_job_started",
+        f"{user.name} started Rowanholt job {job_id} for case {link.case_number} "
+        f"on {len(body.source_paths)} evidence path(s)",
+        entity_type="rowanholt",
+        entity_id=link.id,
+    )
+    await activity.finish(db, user)
+    return await _out(db, user, incident, client.url)
+
+
 @router.delete("/rowanholt/links/{link_id}", response_model=RowanholtOut)
 async def unlink_rowanholt(
     incident_id: uuid.UUID,
@@ -414,6 +474,62 @@ def _snapshot(cells: dict) -> dict[str, str]:
     return {str(k)[:120]: str(v)[:MAX_CELL] for k, v in list((cells or {}).items())[:MAX_EXCERPT_CELLS]}
 
 
+async def bring_in(
+    db: AsyncSession, incident: Incident, actor: User | None, job: str, case_number: str, f: dict
+) -> Finding:
+    """One Rowanholt finding into the incident as a lead citing its row, whatever Rowanholt called it.
+    `actor` is None when Rowanholt's own webhook brought it (`finding.confirmed`). The caller commits."""
+    host, artefact, ref, digest = (str(f.get(k) or "") for k in ("host", "artefact", "row_ref", "row_hash"))
+    technique = str(f.get("technique") or "").upper()
+    said = str(f.get("status") or "lead")
+    changed = " The row no longer reads as it did when it was flagged." if f.get("intact") is False else ""
+    finding = Finding(
+        incident_id=incident.id,
+        kind=FindingKind.EVIDENCE,
+        title=(str(f.get("title") or "") or f"Rowanholt row {ref}")[:200],
+        statement=(
+            f"From Rowanholt job {job} ({cite(host, artefact, ref, digest)}), where it is {said}. "
+            f"It's a lead here until it's verified and confirmed in Ostraka.{changed}"
+        ),
+        status=FindingStatus.LEAD,
+        techniques=[technique] if technique else [],
+        tags=[],
+        created_by=actor.id if actor else None,
+    )
+    db.add(finding)
+    await db.flush()
+    remote = f"{job}:{f.get('id')}"
+    db.add(
+        RowanholtCitation(
+            incident_id=incident.id,
+            finding_id=finding.id,
+            job_id=job,
+            case_number=case_number,
+            host=host,
+            artefact=artefact,
+            row_ref=ref,
+            row_hash=digest,
+            excerpt={"excerpt": str(f.get("excerpt") or "")[:MAX_CELL]} if f.get("excerpt") else {},
+            remote_finding_id=remote,
+            remote_status=said[:16],
+            cited_by=actor.id if actor else None,
+            cited_at=utcnow(),
+        )
+    )
+    who = actor.name if actor else f"Rowanholt ({said} there)"
+    await activity.record(
+        db,
+        incident,
+        actor,
+        "finding_added",
+        f"{who} brought in FND-{finding.seq} from Rowanholt as a lead: {finding.title}",
+        entity_type="finding",
+        entity_id=finding.id,
+        rowanholt=remote,
+    )
+    return finding
+
+
 @router.post("/rowanholt/import", response_model=ImportOut, status_code=status.HTTP_201_CREATED)
 async def import_findings(
     incident_id: uuid.UUID,
@@ -451,57 +567,7 @@ async def import_findings(
         if remote in already:
             skipped += 1
             continue
-        f = found[remote_id]
-        host, artefact, ref, digest = (
-            str(f.get(k) or "") for k in ("host", "artefact", "row_ref", "row_hash")
-        )
-        technique = str(f.get("technique") or "").upper()
-        said = str(f.get("status") or "lead")
-        changed = (
-            " The row no longer reads as it did when it was flagged." if f.get("intact") is False else ""
-        )
-        finding = Finding(
-            incident_id=incident.id,
-            kind=FindingKind.EVIDENCE,
-            title=(str(f.get("title") or "") or f"Rowanholt row {ref}")[:200],
-            statement=(
-                f"From Rowanholt job {job} ({cite(host, artefact, ref, digest)}), where it is {said}. "
-                f"It's a lead here until it's verified and confirmed in Ostraka.{changed}"
-            ),
-            status=FindingStatus.LEAD,
-            techniques=[technique] if technique else [],
-            tags=[],
-            created_by=user.id,
-        )
-        db.add(finding)
-        await db.flush()
-        db.add(
-            RowanholtCitation(
-                incident_id=incident.id,
-                finding_id=finding.id,
-                job_id=job,
-                case_number=link.case_number,
-                host=host,
-                artefact=artefact,
-                row_ref=ref,
-                row_hash=digest,
-                excerpt={"excerpt": str(f.get("excerpt") or "")[:MAX_CELL]} if f.get("excerpt") else {},
-                remote_finding_id=remote,
-                remote_status=said[:16],
-                cited_by=user.id,
-                cited_at=utcnow(),
-            )
-        )
-        await activity.record(
-            db,
-            incident,
-            user,
-            "finding_added",
-            f"{user.name} brought in FND-{finding.seq} from Rowanholt as a lead: {finding.title}",
-            entity_type="finding",
-            entity_id=finding.id,
-            rowanholt=remote,
-        )
+        finding = await bring_in(db, incident, user, job, link.case_number, found[remote_id])
         imported.append(f"FND-{finding.seq}")
     await activity.finish(db, user)
     return ImportOut(imported=imported, skipped=skipped)

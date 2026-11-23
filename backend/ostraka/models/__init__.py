@@ -63,6 +63,7 @@ from ostraka.models.integrations import (
     Product,
     RowanholtCitation,
     RowanholtLink,
+    ShikariRun,
 )
 from ostraka.models.people import (
     ApiToken,
@@ -191,6 +192,7 @@ __all__ = [
     "Product",
     "RowanholtCitation",
     "RowanholtLink",
+    "ShikariRun",
     "CustodyEntry",
     "CustodyKind",
     "EvidenceItem",

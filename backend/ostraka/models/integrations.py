@@ -134,3 +134,31 @@ class DetectionGap(Base):
     check_error: Mapped[str] = mapped_column(String(300), default="")
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     closed_by: Mapped[str] = mapped_column(String(200), default="")  # how Shikari said so
+
+
+class ShikariRun(Base):
+    """A Shikari hunt run started from a record (`POST /api/runs` with the record's reference): what it
+    hunts, how far it has got, and, when its queries were run, how many results each found. Shikari keeps
+    the detections; Ostraka keeps this snapshot of them and the counts, never a result row."""
+
+    __tablename__ = "shikari_runs"
+    __table_args__ = (UniqueConstraint("run_id", name="uq_shikari_runs_run_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    incident_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("incidents.id", ondelete="CASCADE"), index=True)
+    run_id: Mapped[str] = mapped_column(String(64))  # Shikari's stable id
+    kind: Mapped[str] = mapped_column(String(16))  # group, cve or techniques
+    target: Mapped[str] = mapped_column(String(500))
+    execute: Mapped[bool] = mapped_column(Boolean, default=False)
+    window_days: Mapped[int] = mapped_column(Integer, default=7)
+    status: Mapped[str] = mapped_column(String(16), default="queued")
+    group_name: Mapped[str] = mapped_column(String(200), default="")
+    error: Mapped[str] = mapped_column(String(300), default="")
+    # [{"file", "name", "techniques", "platforms", "queries": [{"platform", "query"}]}]
+    detections: Mapped[list] = mapped_column(JSON, default=list)
+    # [{"file", "technique", "platform", "query_index", "hits", "error", "skipped"}]: counts, never rows
+    counts: Mapped[list] = mapped_column(JSON, default=list)
+    totals: Mapped[dict] = mapped_column(JSON, default=dict)
+    started_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

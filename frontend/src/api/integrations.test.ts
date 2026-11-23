@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { gapState, statusWords } from './integrations';
-import type { Gap } from './integrations';
+import { gapState, pairingLink, runSummary, statusWords } from './integrations';
+import type { Gap, ShikariRun } from './integrations';
 
 const gap = (overrides: Partial<Gap> = {}): Gap => ({
   id: 'g-1',
@@ -39,5 +39,28 @@ describe('what a detection gap waits for', () => {
     expect(gapState(gap())).toBe('Waiting for a detection');
     expect(gapState(gap({ task: null }))).toBe('No task yet');
     expect(gapState(gap({ check_error: "Shikari can't be reached" }))).toBe('Not checked: Shikari didn’t answer');
+  });
+});
+
+describe('the suite', () => {
+  const run = (over: Partial<ShikariRun>): ShikariRun => ({
+    id: 'r', run_id: 'x', kind: 'group', target: 'APT29', execute: true, window_days: 7, status: 'queued', error: '',
+    detections: [], counts: [], totals: {}, started_by: null, started_at: '', checked_at: null, link: null, ...over,
+  });
+
+  it('says what a run found in one line', () => {
+    expect(runSummary(run({ status: 'executed', totals: { queries: 4, run: 3, hits: 12, skipped: 1 } }))).toBe(
+      '3 of 4 queries run · 12 results · 1 had no SIEM connection',
+    );
+    expect(runSummary(run({ status: 'failed', error: 'no such group' }))).toBe('Failed: no such group');
+    expect(runSummary(run({ status: 'generated', detections: [{ file: 'a', name: 'a', techniques: [], platforms: [], queries: [] }] }))).toBe(
+      'generated: 1 detection',
+    );
+  });
+
+  it('knows a pairing link when it sees one', () => {
+    expect(pairingLink.test('https://rowanholt.example.org/pair#pair_' + 'a'.repeat(43))).toBe(true);
+    expect(pairingLink.test('https://rowanholt.example.org/pair')).toBe(false);
+    expect(pairingLink.test('rvt_' + 'a'.repeat(43))).toBe(false);
   });
 });

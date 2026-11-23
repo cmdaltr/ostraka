@@ -89,3 +89,10 @@ make release VERSION=0.1.0 UPLOAD=1
 ## Names that stay fixed
 
 Two key-derivation labels still say `ciphr`, on purpose: the one that encrypts TOTP secrets (`auth/secrets.py`) and the one that derives the Web Push key (`notify/push.py`). Changing either would make every stored authenticator unreadable or orphan every browser's push subscription.
+
+## The suite
+
+![The suite](suite/suite.svg)
+
+How Ostraka, Rowanholt and Shikari connect is `docs/suite/INTEGRATION.md`, the same contract in all three repositories. Ostraka is the client. Pairing (`integrations/pairing.py`) claims a one-use link made in Rowanholt or Shikari, which creates a token in that product's `ostraka` scope and a signed webhook back to Ostraka in one step. From a record, Ostraka starts Rowanholt jobs (`api/rowanholt.py`, evidence already on that server) and Shikari hunt runs (`api/shikari_runs.py`), sending the record's reference and nothing else. Both siblings' webhooks land at `/api/integrations/{rowanholt,shikari}/webhook`, are checked with `samarkand.webhooks`, and are acted on in the background by `integrations/events.py`: a finished job is noted on its records, a finding confirmed in Rowanholt arrives as a lead citing its row, and a hunt run's snapshot (its detections and a count per query, never a row) is refreshed. The TLP guard applies to all of it, as it does from a record's page.
+

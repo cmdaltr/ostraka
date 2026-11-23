@@ -6,8 +6,10 @@ the reference is the line number for JSON Lines and CSV, `#<index>` for a JSON a
 SHA-256 over the row's canonical JSON. A Rowanholt finding is `lead`, `confirmed` or `benign`; in
 Ostraka every one of them arrives as a lead.
 
-The best token is Rowanholt's read-only `smith-mcp` scope (`aule-mcp` and `eru-mcp` before it):
-Ostraka only ever reads. Rowanholt's UI has no address for a file or a row, so a deep link opens the
+Pairing (`integrations.pairing`) gives Ostraka a token with Rowanholt's `ostraka` scope: it reads cases
+and starts jobs (`POST /api/jobs` with the record's reference as `external_ref`), and nothing else. A
+read-only `smith-mcp` token (`aule-mcp` and `eru-mcp` before it) still works for everything but starting
+jobs. Rowanholt's UI has no address for a file or a row, so a deep link opens the
 job's case browser; the host, path and row ride along as query parameters for the day the case
 browser reads them.
 """
@@ -19,11 +21,20 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote, urlencode
 
+from samarkand.webhooks import headers_for
+
 from ostraka.integrations import base_url, token_of
-from ostraka.integrations.http import get_json
+from ostraka.integrations.http import get_json, post_json
 from ostraka.models import Integration
 
 NAME = "Rowanholt"
+# Rowanholt's webhooks (`webhooks.py` there): signed as Shikari's are, with its own header names
+EVENT, SIGNATURE = headers_for("X-Rowanholt")
+JOB_EVENTS = frozenset({"job.completed", "job.failed"})
+FINDING_EVENTS = frozenset({"finding.confirmed"})
+# The analysis switches Ostraka offers when it starts a job (Rowanholt's AnalysisOptions); the rest keep
+# Rowanholt's defaults
+OPTIONS = ("analysis", "extract_iocs", "timeline", "memory", "yara", "vss", "navigator", "threat_intel")
 STATUSES = (
     "pending",
     "running",
@@ -95,6 +106,19 @@ class Rowanholt:
     async def findings(self, job_id: str) -> list[dict]:
         found = await self._get(f"/api/jobs/{quote(job_id, safe='')}/case/findings", verify="true")
         return found if isinstance(found, list) else []
+
+    async def start_job(
+        self, case_number: str, source_paths: list[str], options: dict[str, bool], external_ref: str
+    ) -> dict:
+        """Start a job on evidence already on the Rowanholt server, for an Ostraka record. Needs a token
+        with the `ostraka` scope (or a full one)."""
+        body = {
+            "case_number": case_number,
+            "source_paths": source_paths,
+            "options": {k: bool(v) for k, v in options.items() if k in OPTIONS},
+            "external_ref": external_ref,
+        }
+        return await post_json(NAME, self.url, self.token, "/api/jobs", body)
 
     def job_link(self, job_id: str) -> str:
         return f"{self.url}/jobs/{quote(job_id, safe='')}/case"

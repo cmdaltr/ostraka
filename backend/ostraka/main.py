@@ -36,6 +36,7 @@ from ostraka.api import (
     pnyx,
     reports,
     rowanholt,
+    shikari_runs,
     siem,
     system,
     tags,
@@ -50,6 +51,7 @@ from ostraka.api import (
     webhooks as webhooks_api,
 )
 from ostraka.config import Environment, get_settings
+from ostraka.integrations import events as suite_events
 from ostraka.integrations import gaps
 from ostraka.log import configure
 
@@ -60,6 +62,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     notify.startup()
     webhooks.startup()
     gaps.startup()
+    suite_events.startup()
     scheduler.startup()
     try:
         yield
@@ -121,6 +124,7 @@ def create_app() -> FastAPI:
         pnyx,
         flow,
         chat,
+        shikari_runs,
     ):
         app.include_router(module.router)
     for extra in (

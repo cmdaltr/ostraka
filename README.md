@@ -54,6 +54,24 @@ You need Docker with Compose. From a checkout, the `ostraka` command writes `.en
 
 There is no default account and no self-registration. `first-admin` prints a one-time link for the first admin (`make env` and `make up` still work, with `docker compose exec backend ostraka bootstrap-admin you@example.org`). Open it, choose a password, scan the QR code with an authenticator app, and save your backup codes. Every sign-in needs the authenticator. After that, admins and team leads invite everyone else from **People**. Invitation links work once, within 24 hours. Someone who has lost their password, authenticator or backup codes gets a one-time link from **People → Reset access**, or, when no admin can sign in, from the server: `ostraka reset-access you@example.org`. It ends their sign-ins and revokes their API tokens straight away, so any script or MCP client using those tokens needs a new one. Where email is set up and `OSTRAKA_PUBLIC_URL` is set, **Forgot password?** on the sign-in page emails the same kind of link to the account's own address; nothing ends until it's used, and the old password keeps working until then. Opening a link again shows the same authenticator to scan. An expired link says so; five wrong authenticator codes close an invitation, and the person needs a new one, while wrong codes on a reset count towards the account's sign-in lockout. A link from an admin or team lead stops working if they're deactivated or can no longer give that access. Deactivating someone in **People** ends their sign-ins and revokes their API tokens. Links the API hands back use `OSTRAKA_PUBLIC_URL`, or the address the admin's browser is on when it isn't set; `bootstrap-admin` and `reset-access` warn on stderr when it isn't set, since their links then point at `http://localhost:24747`. Emailed links only ever use `OSTRAKA_PUBLIC_URL`.
 
+### Rowanholt and Shikari
+
+Ostraka works beside Rowanholt (evidence and analysis) and Shikari (detection and hunting). How they connect is [docs/suite/INTEGRATION.md](docs/suite/INTEGRATION.md).
+
+To connect one:
+
+1. In Rowanholt or Shikari, an admin goes to **Settings → Pair with Ostraka** and makes a pairing link.
+2. In Ostraka, an admin pastes the link into **Installation → Integrations** within ten minutes. It works once.
+
+This gives Ostraka a token that can only read and start work, and a signed webhook back to Ostraka.
+
+From a record's **Evidence** tab you can then:
+
+- **Start a Rowanholt job** on evidence already on the Rowanholt server. The job is linked to the record, and findings confirmed in Rowanholt arrive as leads.
+- **Start a Shikari hunt** for a threat group, a CVE or ATT&CK techniques. If you ask, Shikari runs the hunt's queries against its own SIEM connections. Ostraka shows how many results each query found and never the results themselves.
+
+Only the record's reference goes to either server. A TLP:RED or TLP:AMBER+STRICT record only exchanges anything with a server on your own network. Acting on the siblings' webhooks needs the Pro or Services edition, on both sides.
+
 ### Notifications
 
 Everything appears under the bell in Ostraka. To also send email, set the `OSTRAKA_SMTP_*` values in `.env` (see `.env.example`). Browser push needs no setup: each person turns it on under **Profile → Notifications**, where they also choose which kinds reach them outside Ostraka and set quiet hours (read in their own time zone; work on a critical incident still comes through). It works wherever Ostraka is served over HTTPS (or on `127.0.0.1`). Chat channels can be in Microsoft Teams or Slack. Both work outbound only, so Ostraka needs no public address for them.

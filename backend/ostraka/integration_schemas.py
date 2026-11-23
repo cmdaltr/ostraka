@@ -42,6 +42,7 @@ class IntegrationsOut(BaseModel):
     rowanholt: IntegrationOut | None
     shikari: IntegrationOut | None
     shikari_webhook_url: str  # where Shikari's webhook should point
+    rowanholt_webhook_url: str = ""  # where Rowanholt's webhook should point
     automation: bool  # whether Shikari's webhooks are acted on (the `automation` feature)
 
 
@@ -216,3 +217,66 @@ class GapTaskIn(BaseModel):
         if self.team_id is None and self.assignee_id is None:
             raise ValueError("Give the task to a team or a person.")
         return self
+
+
+class PairIn(BaseModel):
+    link: str = Field(
+        min_length=10, max_length=2000, description="The pairing link from Rowanholt or Shikari"
+    )
+
+
+class PairOut(BaseModel):
+    integration: IntegrationOut
+    test: ConnectionTest
+    events: list[str]
+
+
+class JobStartIn(BaseModel):
+    """A Rowanholt job on evidence already on the Rowanholt server."""
+
+    case_number: str = Field(min_length=6, max_length=30)
+    source_paths: list[str] = Field(min_length=1, max_length=20)
+    options: dict[str, bool] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _clean(self) -> JobStartIn:
+        self.case_number = self.case_number.strip()
+        self.source_paths = [p.strip() for p in self.source_paths if p.strip()]
+        if not self.source_paths or any(len(p) > 1000 for p in self.source_paths):
+            raise ValueError("Give the evidence's paths on the Rowanholt server, one per line.")
+        return self
+
+
+class ShikariRunIn(BaseModel):
+    kind: str = Field(pattern=r"^(group|cve|techniques)$")
+    target: str = Field(min_length=2, max_length=500)
+    execute: bool = False
+    window_days: int = Field(default=7, ge=1, le=90)
+
+
+class RunCount(BaseModel):
+    file: str = ""
+    technique: str = ""
+    platform: str = ""
+    query_index: int = 0
+    hits: int | None = None
+    error: str = ""
+    skipped: bool = False
+
+
+class ShikariRunOut(BaseModel):
+    id: uuid.UUID
+    run_id: str
+    kind: str
+    target: str
+    execute: bool
+    window_days: int
+    status: str
+    error: str
+    detections: list[dict]
+    counts: list[RunCount]
+    totals: dict
+    started_by: Person | None
+    started_at: datetime
+    checked_at: datetime | None
+    link: str | None

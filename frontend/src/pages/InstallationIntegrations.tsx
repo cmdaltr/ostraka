@@ -2,8 +2,8 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import { getIntegrations, names } from '../api/integrations';
-import type { ConnectionTest, Integration, Integrations, Product } from '../api/integrations';
+import { getIntegrations, names, pairWith, pairingLink } from '../api/integrations';
+import type { ConnectionTest, Integration, Integrations, Paired, Product } from '../api/integrations';
 import type { Team } from '../api/types';
 import { useFinishing } from '../components/sherd/Ostrakon';
 import { Progress } from '../components/sherd/Progress';
@@ -16,7 +16,7 @@ const about: Record<Product, { purpose: string; token: string; placeholder: stri
     purpose:
       'Link incidents to Rowanholt jobs and cases, see their status, cite Rowanholt rows in findings and bring Rowanholt’s findings in as leads.',
     token:
-      'A Rowanholt API token (rvt_…) from its Account page. Ostraka only reads, so a read-only smith-mcp token is enough. Leave it empty for Rowanholt in local mode.',
+      'Pairing (above) sets this for you. By hand: a Rowanholt API token (rvt_…) from its Account page. A read-only smith-mcp token reads cases but can’t start jobs. Leave it empty for Rowanholt in local mode.',
     placeholder: 'https://rowanholt.tail180683.ts.net',
   },
   shikari: {
@@ -243,6 +243,69 @@ function ServerPanel({
   );
 }
 
+// Paste a link made in Rowanholt or Shikari: the claim makes the token and the webhook there in one step
+function PairPanel({ onPaired }: { onPaired: () => void }) {
+  const [link, setLink] = useState('');
+  const [pairing, setPairing] = useState(false);
+  const phase = useFinishing(pairing);
+  const [done, setDone] = useState<Paired | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function pair(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPairing(true);
+    setError(null);
+    try {
+      const out = await pairWith(link.trim());
+      setDone(out);
+      setLink('');
+      onPaired();
+    } catch (e) {
+      setDone(null);
+      setError(messageOf(e));
+    } finally {
+      setPairing(false);
+    }
+  }
+
+  const looksRight = pairingLink.test(link.trim());
+  return (
+    <section className="panel" aria-label="Pair with Rowanholt or Shikari">
+      <header>
+        <h2>Pair with Rowanholt or Shikari</h2>
+        <p>
+          In Rowanholt or Shikari, an admin makes a pairing link (Settings → Pair with Ostraka). Paste it here within ten
+          minutes: Ostraka gets a token that can only read, start jobs or hunts, and the signed webhooks that say when
+          they finish. The link works once.
+        </p>
+      </header>
+      <form className="inline-form" onSubmit={pair}>
+        <input
+          className="input mono"
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+          placeholder="https://rowanholt.example.org/pair#pair_…"
+          aria-label="Pairing link"
+          required
+        />
+        <button className="btn btn-primary" type="submit" disabled={pairing || !looksRight}>
+          <Progress phase={phase} ok={!!done?.test.ok} label="Pairing" busy="Pairing…" done="Paired">
+            Pair
+          </Progress>
+        </button>
+      </form>
+      {link.trim() && !looksRight && <p className="hint">That isn’t a pairing link: it ends in #pair_ and a code.</p>}
+      {error && <Notice kind="error">{error}</Notice>}
+      {done && (
+        <Notice kind={done.test.ok ? 'ok' : 'error'}>
+          Paired with {names[done.integration.product]} at {done.integration.url}.{' '}
+          {done.test.ok ? 'The connection works.' : `The connection test failed: ${done.test.message}`}
+        </Notice>
+      )}
+    </section>
+  );
+}
+
 export function IntegrationsTab() {
   const queryClient = useQueryClient();
   const servers = useQuery({ queryKey: ['integrations'], queryFn: getIntegrations });
@@ -262,6 +325,7 @@ export function IntegrationsTab() {
           </p>
         </header>
       </section>
+      <PairPanel onPaired={refresh} />
       {(['rowanholt', 'shikari'] as const).map((p) => (
         <ServerPanel
           key={p}

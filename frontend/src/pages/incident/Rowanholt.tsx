@@ -271,6 +271,98 @@ function LinkPanel({ incident, link, onUnlink }: { incident: Incident; link: Row
 }
 
 // The incident's Rowanholt jobs and cases with their status, and the rows its findings cite
+// The analysis switches Ostraka offers; Rowanholt keeps its own defaults for the rest
+const jobOptions: [string, string][] = [
+  ['analysis', 'Analysis'],
+  ['extract_iocs', 'Extract IOCs'],
+  ['timeline', 'Timeline'],
+  ['memory', 'Memory'],
+  ['yara', 'YARA'],
+  ['vss', 'Volume shadow copies'],
+  ['navigator', 'ATT&CK Navigator layer'],
+  ['threat_intel', 'Threat intelligence'],
+];
+
+// Start a Rowanholt job on evidence already on the Rowanholt server; it's linked here when it starts
+function StartJob({ incident, onStarted }: { incident: Incident; onStarted: () => void }) {
+  const save = useSave(incident, ['rowanholt', 'activity']);
+  const [open, setOpen] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const phase = useFinishing(starting);
+  const [started, setStarted] = useState(false);
+
+  async function start(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const options = Object.fromEntries(jobOptions.map(([key]) => [key, data.get(key) === 'on']));
+    setStarting(true);
+    const out = await save.run(() =>
+      api(`/api/incidents/${incident.id}/rowanholt/jobs`, {
+        method: 'POST',
+        json: {
+          case_number: String(data.get('case_number') ?? '').trim(),
+          source_paths: String(data.get('source_paths') ?? '')
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean),
+          options,
+        },
+      }),
+    );
+    setStarting(false);
+    setStarted(out !== undefined);
+    if (out !== undefined) {
+      form.reset();
+      setOpen(false);
+      onStarted();
+    }
+  }
+
+  if (!open)
+    return (
+      <button className="btn btn-quiet" type="button" onClick={() => setOpen(true)}>
+        Start a Rowanholt job…
+      </button>
+    );
+  return (
+    <form className="stack" onSubmit={start} aria-label="Start a Rowanholt job">
+      <p className="hint">
+        The evidence must already be on the Rowanholt server, in a folder it allows. Rowanholt is told this {incident.kind}’s
+        reference, {incident.ref}, and nothing else about it.
+      </p>
+      <label className="field">
+        <span>Case number</span>
+        <input className="input mono" name="case_number" required minLength={6} maxLength={30} />
+      </label>
+      <label className="field">
+        <span>Evidence paths on the Rowanholt server, one per line</span>
+        <textarea className="input mono" name="source_paths" required rows={3} placeholder="/evidence/DC02.E01" />
+      </label>
+      <fieldset className="field team-picks">
+        <legend>Analysis</legend>
+        {jobOptions.map(([key, label]) => (
+          <label key={key} className="check">
+            <input type="checkbox" name={key} defaultChecked={key === 'analysis' || key === 'timeline'} />
+            <span>{label}</span>
+          </label>
+        ))}
+      </fieldset>
+      {save.error && <Notice kind="error">{save.error}</Notice>}
+      <div className="actions">
+        <button className="btn btn-primary" type="submit" disabled={starting}>
+          <Progress phase={phase} ok={started} label="Starting the job" busy="Starting…" done="Started">
+            Start the job
+          </Progress>
+        </button>
+        <button className="btn btn-quiet" type="button" onClick={() => setOpen(false)}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function Rowanholt({ incident }: { incident: Incident }) {
   const view = useSection<RowanholtView>(incident, 'rowanholt');
   const save = useSave(incident, ['rowanholt', 'activity']);
@@ -305,7 +397,7 @@ export function Rowanholt({ incident }: { incident: Incident }) {
           <p>The evidence stays in Rowanholt. Ostraka keeps which jobs belong to this {incident.kind} and the rows its findings cite.</p>
         </header>
         {!v.configured && (
-          <Notice kind="info">No Rowanholt server is connected. An admin connects one under Installation.</Notice>
+          <Notice kind="info">No Rowanholt server is connected. An admin pairs one under Installation → Integrations.</Notice>
         )}
         {v.message && <Notice kind={v.reachable === false ? 'error' : 'info'}>{v.message}</Notice>}
         {v.links.length === 0 ? (
@@ -339,6 +431,7 @@ export function Rowanholt({ incident }: { incident: Incident }) {
             </button>
           </form>
         )}
+        {v.configured && incident.can_edit && <StartJob incident={incident} onStarted={() => setLinked(true)} />}
         {save.error && <Notice kind="error">{save.error}</Notice>}
       </section>
       <section className="panel" aria-label="Cited rows">

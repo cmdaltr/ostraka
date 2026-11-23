@@ -199,3 +199,118 @@ test('an observer reads the gaps but cannot ask Shikari or give tasks', async ({
   await expect(section.getByText('No task yet')).toBeVisible();
   await expect(section.getByRole('button')).toHaveCount(0);
 });
+
+test('an admin pairs with Rowanholt from a link made there', async ({ page }) => {
+  await stubLive(page);
+  let paired = false;
+  const link = 'https://rowanholt.tail180683.ts.net/pair#pair_' + 'k'.repeat(43);
+  const api = await stubApi(page, admin, (method, path) => {
+    if (method === 'GET' && path === '/api/integrations')
+      return {
+        json: {
+          rowanholt: paired ? server('rowanholt', { has_webhook_secret: true }) : null,
+          shikari: null,
+          shikari_webhook_url: '',
+          automation: true,
+        },
+      };
+    if (method === 'POST' && path === '/api/integrations/pair') {
+      paired = true;
+      return {
+        json: {
+          integration: server('rowanholt', { has_webhook_secret: true }),
+          test: { ok: true, message: 'Connected.', steps: [] },
+          events: ['job.completed', 'job.failed', 'finding.confirmed'],
+        },
+      };
+    }
+    return undefined;
+  });
+  await page.goto('/installation?tab=integrations');
+  const panel = page.getByRole('region', { name: 'Pair with Rowanholt or Shikari' });
+  await panel.getByLabel('Pairing link').fill('rvt_not_a_link');
+  await expect(panel.getByText('That isn’t a pairing link')).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Pair' })).toBeDisabled();
+
+  await panel.getByLabel('Pairing link').fill(link);
+  await panel.getByRole('button', { name: 'Pair' }).click();
+  await expect(panel).toContainText('Paired with Rowanholt at https://rowanholt.tail180683.ts.net. The connection works.');
+  expect(api.requests.find((r) => r.path === '/api/integrations/pair')!.body).toEqual({ link });
+});
+
+test('a record starts a Rowanholt job on evidence already there', async ({ page }) => {
+  await stubLive(page);
+  const api = await stubApi(page, me(), (method, path) => {
+    if (method === 'GET' && path === '/api/incidents/i-1/rowanholt')
+      return { json: { configured: true, reachable: true, message: '', links: [], citations: [] } };
+    if (method === 'POST' && path === '/api/incidents/i-1/rowanholt/jobs')
+      return { status: 201, json: { configured: true, reachable: true, message: '', links: [], citations: [] } };
+    if (path === '/api/incidents/i-1/shikari/runs') return { json: [] };
+    return undefined;
+  });
+  await page.goto('/incidents/OST-26-001?s=evidence');
+  await page.getByRole('button', { name: 'Start a Rowanholt job…' }).click();
+  const form = page.getByRole('form', { name: 'Start a Rowanholt job' });
+  await expect(form).toContainText('Rowanholt is told this incident’s reference, OST-26-001, and nothing else');
+  await form.getByLabel('Case number').fill('2026-117');
+  await form.getByLabel('Evidence paths on the Rowanholt server, one per line').fill('/evidence/DC02.E01\n\n/evidence/WS14.E01');
+  await form.getByLabel('YARA').check();
+  await form.getByRole('button', { name: 'Start the job' }).click();
+  await expect(form).toHaveCount(0);
+  const body = api.requests.find((r) => r.path === '/api/incidents/i-1/rowanholt/jobs')!.body as Record<string, unknown>;
+  expect(body.case_number).toBe('2026-117');
+  expect(body.source_paths).toEqual(['/evidence/DC02.E01', '/evidence/WS14.E01']);
+  expect(body.options).toMatchObject({ analysis: true, timeline: true, yara: true, memory: false });
+});
+
+test('a hunt starts a Shikari run and shows counts, never results', async ({ page }) => {
+  await stubLive(page);
+  const run = {
+    id: 'sr-1',
+    run_id: 'r-1',
+    kind: 'techniques',
+    target: 'T1059.001',
+    execute: true,
+    window_days: 14,
+    status: 'executed',
+    error: '',
+    detections: [],
+    counts: [
+      { file: 'T1059.001.yaml', technique: 'T1059.001', platform: 'splunk', query_index: 0, hits: 12, error: '', skipped: false },
+      { file: 'T1059.001.yaml', technique: 'T1059.001', platform: 'elastic', query_index: 0, hits: null, error: '', skipped: true },
+    ],
+    totals: { queries: 2, run: 1, hits: 12, errors: 0, skipped: 1 },
+    started_by: { id: 'u-1', name: 'Sam Soc' },
+    started_at: '2026-11-23T10:00:00Z',
+    checked_at: '2026-11-23T10:05:00Z',
+    link: 'https://shikari.tail180683.ts.net/results/techniques-T1059.001',
+  };
+  let runs: unknown[] = [];
+  const api = await stubApi(page, me(), (method, path) => {
+    if (method === 'GET' && path === '/api/incidents/i-1/rowanholt')
+      return { json: { configured: false, reachable: null, message: '', links: [], citations: [] } };
+    if (method === 'GET' && path === '/api/incidents/i-1/shikari/runs') return { json: runs };
+    if (method === 'POST' && path === '/api/incidents/i-1/shikari/runs') {
+      runs = [run];
+      return { status: 201, json: run };
+    }
+    return undefined;
+  });
+  await page.goto('/incidents/OST-26-001?s=evidence');
+  const panel = page.getByRole('region', { name: 'Shikari hunts' });
+  await expect(panel).toContainText('No Shikari hunt for this incident yet.');
+  await panel.getByLabel('Hunt for').selectOption('techniques');
+  await panel.getByLabel('Target').fill('T1059.001');
+  await panel.getByLabel('Days').fill('14');
+  await panel.getByRole('button', { name: 'Start the hunt' }).click();
+  await expect(panel).toContainText('1 of 2 queries run · 12 results · 1 had no SIEM connection');
+  const table = panel.getByRole('table', { name: 'Counts for T1059.001' });
+  await expect(table).toContainText('12');
+  await expect(table).toContainText('no connection');
+  expect(api.requests.find((r) => r.method === 'POST' && r.path === '/api/incidents/i-1/shikari/runs')!.body).toEqual({
+    kind: 'techniques',
+    target: 'T1059.001',
+    execute: true,
+    window_days: 14,
+  });
+});

@@ -148,6 +148,10 @@ async def client():
 
     await notify.wait()  # deliveries still running would hold a transaction into the next test
     await webhooks.wait()
+    from ostraka.integrations import events, gaps
+
+    await events.wait()
+    await gaps.wait()
 
 
 class Person:

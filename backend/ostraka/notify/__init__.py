@@ -225,6 +225,7 @@ _CHANNEL_ACTIONS = {
     "clock_breached": "A regulator deadline has passed",
     "handover_posted": "A shift handover was posted",
     "team_added": "A team was brought in",
+    "rowanholt_job_finished": "A Rowanholt job finished",
 }
 
 
@@ -244,6 +245,10 @@ def channel_words(action: str, data: dict[str, Any]) -> str | None:
         if "tlp" in changes:
             return "The TLP changed"
         return None
+    if action == "shikari_run_updated":
+        return (
+            "A Shikari hunt finished" if data.get("status") in ("generated", "executed", "failed") else None
+        )
     return _CHANNEL_ACTIONS.get(action)
 
 

@@ -32,6 +32,7 @@ import { Overview } from './Overview';
 import { CompassIcon, Pnyx } from './Pnyx';
 import { Rail } from './Rail';
 import { Rowanholt } from './Rowanholt';
+import { ShikariRuns } from './ShikariRuns';
 import { Tasks } from './Tasks';
 import { Timeline } from './Timeline';
 import { Updates } from './Updates';
@@ -340,6 +341,7 @@ export function IncidentPage({ me }: { me: Me }) {
               <Evidence incident={incident} />
               <IncidentQueries incident={incident} />
               <Rowanholt incident={incident} />
+              <ShikariRuns incident={incident} />
             </>
           )}
           {section === 'assessments' && (
