@@ -56,6 +56,8 @@ class NotificationKind(StrEnum):
     CLOCK_BREACHED = "clock_breached"  # a regulator deadline passed unmet
     UPDATE_DUE = "update_due"  # an incident's stakeholder update is due, and its draft is ready
     STAKEHOLDER_UPDATE = "stakeholder_update"  # an approved update, to its stakeholders
+    ARCHIVE_ASKED = "archive_asked"  # someone asks to restore or archive a record, and you may approve it
+    ARCHIVE_DECIDED = "archive_decided"  # your archive or restore request was decided, or lapsed
 
 
 class Task(Base):

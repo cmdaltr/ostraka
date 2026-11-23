@@ -1,4 +1,5 @@
-"""Reminders and escalation for tasks with due dates, run in-process every minute.
+"""Reminders and escalation for tasks with due dates, run in-process every minute. The same tick moves
+closed records into the archive and cold store (`ostraka.archive`).
 
 Due soon: the owner. Overdue: the owner, again every few hours. Further overdue: the team lead, then
 the incident commander. An unclaimed team task's owner is its queue: the team's members in ostraka and
@@ -16,7 +17,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ostraka import notify, work
+from ostraka import archive, notify, work
 from ostraka.clocks import nudges as clock_nudges
 from ostraka.config import get_settings
 from ostraka.db import sessions
@@ -130,6 +131,7 @@ async def tick(db: AsyncSession, now: datetime | None = None) -> int:
 
     acted += await clock_nudges.tick(db, now)  # regulator clocks (ostraka/clocks/nudges.py)
     await drafts.tick(db, now)  # stakeholder updates on their rhythm (not counted: tasks only)
+    await archive.tick(db, now)  # closed records archived, then cold store; lapsed restore requests
     await activity.finish(db)
     return acted
 

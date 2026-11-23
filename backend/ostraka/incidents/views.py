@@ -10,6 +10,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ostraka import archive
 from ostraka.incident_schemas import (
     Elsewhere,
     FindingOut,
@@ -78,6 +79,7 @@ def summary(incident: Incident) -> IncidentSummary:
         declared_at=incident.declared_at,
         updated_at=incident.updated_at,
         tags=incident.tags or [],
+        archive_state=incident.archive_state,
     )
 
 
@@ -116,6 +118,7 @@ async def detail(db: AsyncSession, user: User, incident: Incident) -> IncidentOu
         brand_id=incident.brand_id,
         channel_kind=incident.channel_kind,
         counts=counts,
+        archive=await archive.view(db, user, incident),
     )
 
 

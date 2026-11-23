@@ -12,6 +12,7 @@ import { AppShell } from './components/AppShell';
 import { Opening } from './components/sherd/Ostrakon';
 import { WholeSherd } from './components/sherd/WholeSherd';
 import { AcceptInvite } from './pages/AcceptInvite';
+import { Catalogue } from './pages/Catalogue';
 import { DesignSystem } from './pages/DesignSystem';
 import { DetectionGapsPage } from './pages/DetectionGapsPage';
 import { HelpLicence } from './pages/HelpLicence';
@@ -81,6 +82,7 @@ function App() {
           <Route element={<AppShell me={session.me} />}>
             <Route index element={<Incidents me={session.me} />} />
             <Route path="incidents/:ref" element={<IncidentPage me={session.me} />} />
+            <Route path="catalogue" element={<Catalogue me={session.me} />} />
             <Route path="work" element={<Work me={session.me} />} />
             <Route path="queries" element={<Queries me={session.me} />} />
             <Route path="detection-gaps" element={<DetectionGapsPage />} />

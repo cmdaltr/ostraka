@@ -124,7 +124,9 @@ export type NotificationKind =
   | 'clock_due'
   | 'clock_breached'
   | 'update_due'
-  | 'stakeholder_update';
+  | 'stakeholder_update'
+  | 'archive_asked'
+  | 'archive_decided';
 
 export interface Notification {
   id: string;

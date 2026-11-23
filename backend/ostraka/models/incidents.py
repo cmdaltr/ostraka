@@ -93,6 +93,31 @@ class IncidentStatus(StrEnum):
     CLOSED = "closed"
 
 
+class ArchiveState(StrEnum):
+    """Where a closed record is in its keeping. Archived records are read only; a record in cold store
+    keeps its catalogue entry and its lessons, and the rest waits until it's restored. Ostraka moves a
+    closed record on by itself (`ostraka.archive`); only an approved restore brings one back."""
+
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+    COLD = "cold"
+
+
+class RequestAction(StrEnum):
+    """What an archive request asks for: a record back, or a closed record archived ahead of its days."""
+
+    RESTORE = "restore"
+    ARCHIVE = "archive"
+
+
+class RequestOutcome(StrEnum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    DECLINED = "declined"
+    WITHDRAWN = "withdrawn"
+    EXPIRED = "expired"  # nobody approved it within 24 hours
+
+
 class IncidentRole(StrEnum):
     COMMANDER = "commander"
     COMMS = "comms"
@@ -181,6 +206,17 @@ class Incident(Base):
     # When the organisation became aware: regulator clocks (phase 4) run from here
     aware_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Keeping a closed record: archived after `archive_after_days`, cold store after `cold_after_days`,
+    # counted from closing or from the last restore, whichever is later; `auto_archive` off keeps it out
+    archive_state: Mapped[ArchiveState] = mapped_column(
+        _enum(ArchiveState, "archive_state"), default=ArchiveState.ACTIVE
+    )
+    auto_archive: Mapped[bool] = mapped_column(Boolean, default=True)
+    archive_after_days: Mapped[int] = mapped_column(Integer, default=30)
+    cold_after_days: Mapped[int] = mapped_column(Integer, default=90)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cold_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    restored_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
     version: Mapped[int] = mapped_column(Integer, default=1)
 
@@ -194,6 +230,39 @@ class Incident(Base):
 
         prefix = branding.HUNT_PREFIX if self.kind is RecordKind.HUNT else branding.INCIDENT_PREFIX
         return f"{prefix}-{short_year(self.year)}-{self.number:03d}"
+
+
+class ArchiveRequest(Base):
+    """Someone asks for an archived or cold record back, or for a closed one to be archived (or put in
+    cold store) now. Another senior person (an admin, or a lead of a team on the record) approves it
+    within 24 hours, or it lapses. One waits per record at a time, whichever it is."""
+
+    __tablename__ = "archive_requests"
+    __table_args__ = (
+        Index(
+            "uq_archive_requests_pending",
+            "incident_id",
+            unique=True,
+            postgresql_where=text("outcome = 'pending'"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    incident_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("incidents.id", ondelete="CASCADE"), index=True)
+    action: Mapped[RequestAction] = mapped_column(_enum(RequestAction, "request_action"))
+    reason: Mapped[str] = mapped_column(Text)
+    # where it was when asked, and where approving puts it: a restore always to active
+    from_state: Mapped[ArchiveState] = mapped_column(_enum(ArchiveState, "archive_state"))
+    to_state: Mapped[ArchiveState] = mapped_column(_enum(ArchiveState, "archive_state"))
+    requested_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    outcome: Mapped[RequestOutcome] = mapped_column(
+        _enum(RequestOutcome, "request_outcome"), default=RequestOutcome.PENDING
+    )
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    note: Mapped[str] = mapped_column(Text, default="")
 
 
 class IncidentCounter(Base):

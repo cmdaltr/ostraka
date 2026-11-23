@@ -290,3 +290,42 @@ def can_approve_update(viewer: User, *, is_commander: bool, is_comms: bool, comm
     if is_commander:
         return "This incident has a comms lead: they approve its updates."
     return "Only the incident's comms lead approves stakeholder updates."
+
+
+def can_ask_restore(actor: User, *, can_view: bool) -> str | None:
+    """Ask for an archived or cold record back: anyone who works records and can see this one."""
+    if actor.role is Role.OBSERVER:
+        return "Observers can read archived records but can't ask for one back."
+    if not can_view:
+        return "No such incident."
+    return None
+
+
+def can_ask_archive(actor: User, *, manages: bool) -> str | None:
+    """Ask for a closed record to be archived, or put in cold store, ahead of its days: whoever manages it
+    (its commander, a lead of a team on it, or an admin). It still needs another senior person's yes."""
+    if not manages:
+        return "Only the incident commander, the leads of the teams involved, or an admin can ask for that."
+    return None
+
+
+def can_decide_archive_request(
+    approver: User, *, requester_id: uuid.UUID | None, leads_a_team_on_it: bool
+) -> str | None:
+    """Approve or decline a request to restore a record or archive it early: another senior person, never
+    the one who asked. Senior is an admin, or the lead of a team on the record, so a lead can't decide for
+    a record their team never worked."""
+    if requester_id is not None and approver.id == requester_id:
+        return "Someone else has to approve your own request."
+    if approver.role is Role.ADMIN:
+        return None
+    if approver.role is Role.TEAM_LEAD and leads_a_team_on_it:
+        return None
+    return "Only an admin, or the lead of a team on the record, can approve that."
+
+
+def can_set_retention(actor: User, *, can_manage: bool) -> str | None:
+    """Change when a record is archived, or stop it being archived: whoever manages the record."""
+    if not can_manage:
+        return "Only the incident commander, the leads of the teams involved, or an admin can do that."
+    return None

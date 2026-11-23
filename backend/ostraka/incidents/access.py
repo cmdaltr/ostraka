@@ -3,6 +3,10 @@
 An incident is visible to members of the teams involved, to people added to it by name, and to
 admins. Observers may look but never change anything. People and roles are managed by the incident
 commander, the leads of the teams involved, and admins.
+
+An archived record is read only, and one in cold store shows only its catalogue entry and lessons
+(`ostraka.archive`); both answer 423 until a restore is approved. The chain of custody is the exception:
+an exhibit still changes hands after its record is archived, so custody passes `custody=True`.
 """
 
 from __future__ import annotations
@@ -14,7 +18,16 @@ from sqlalchemy import Select, exists, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ostraka.auth import policy
-from ostraka.models import ActivityEvent, Incident, IncidentMember, IncidentRole, IncidentTeam, Role, User
+from ostraka.models import (
+    ActivityEvent,
+    ArchiveState,
+    Incident,
+    IncidentMember,
+    IncidentRole,
+    IncidentTeam,
+    Role,
+    User,
+)
 
 
 def visible_filter(user: User):
@@ -38,16 +51,43 @@ def can_view(user: User, incident: Incident) -> bool:
     return any(m.user_id == user.id for m in incident.members)
 
 
-def can_edit(user: User, incident: Incident) -> bool:
+def can_edit(user: User, incident: Incident, *, custody: bool = False) -> bool:
+    if not custody and incident.archive_state is not ArchiveState.ACTIVE:
+        return False
     return user.role is not Role.OBSERVER and can_view(user, incident)
+
+
+STATE_WORDS = {ArchiveState.ARCHIVED: "archived", ArchiveState.COLD: "in cold store"}
+
+
+def locked(incident: Incident) -> HTTPException | None:
+    """The answer to changing a record that's archived or in cold store, if it is."""
+    if incident.archive_state is ArchiveState.ACTIVE:
+        return None
+    return HTTPException(
+        status.HTTP_423_LOCKED,
+        f"{incident.ref} is {STATE_WORDS[incident.archive_state]}, so it can't be changed. "
+        "Ask for it to be restored first.",
+    )
+
+
+def sealed(incident: Incident) -> HTTPException:
+    return HTTPException(
+        status.HTTP_423_LOCKED,
+        f"{incident.ref} is in cold store: its catalogue entry and lessons can be read, the rest can't. "
+        "Ask for it to be restored to open it.",
+    )
 
 
 def commander_id(incident: Incident) -> uuid.UUID | None:
     return next((m.user_id for m in incident.members if m.role is IncidentRole.COMMANDER), None)
 
 
-def can_manage(user: User, incident: Incident) -> bool:
-    """Add or remove teams and people, assign roles, close the incident, change its TLP."""
+def can_manage(user: User, incident: Incident, *, custody: bool = False) -> bool:
+    """Add or remove teams and people, assign roles, close the incident, change its TLP. Nobody does
+    while it's archived."""
+    if not custody and incident.archive_state is not ArchiveState.ACTIVE:
+        return False
     if user.role is Role.ADMIN or commander_id(incident) == user.id:
         return True
     return (
@@ -57,18 +97,40 @@ def can_manage(user: User, incident: Incident) -> bool:
     )
 
 
-async def load(db: AsyncSession, user: User, incident_id: uuid.UUID, *, edit: bool = False) -> Incident:
+def manages_record(user: User, incident: Incident) -> bool:
+    """Whether `user` would manage the record, archived or not: who may ask to archive it further."""
+    return can_manage(user, incident, custody=True)
+
+
+async def load(
+    db: AsyncSession,
+    user: User,
+    incident_id: uuid.UUID,
+    *,
+    edit: bool = False,
+    sealed_ok: bool = False,
+    custody: bool = False,
+) -> Incident:
     """The incident, if `user` may see it (and change it, with `edit`). Otherwise 404 or 403:
-    an incident you can't see is reported as missing, so its existence doesn't leak."""
+    an incident you can't see is reported as missing, so its existence doesn't leak. An archived record
+    refuses `edit`, and one in cold store refuses everything but what passes `sealed_ok`, with 423;
+    `custody` is let through both."""
     incident = await db.get(Incident, incident_id)
     if incident is None or not can_view(user, incident):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such incident.")
-    if edit and not can_edit(user, incident):
+    if not custody:
+        if incident.archive_state is ArchiveState.COLD and not sealed_ok:
+            raise sealed(incident)
+        if edit and (refused := locked(incident)):
+            raise refused
+    if edit and not can_edit(user, incident, custody=custody):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Observers can read incidents but not change them.")
     return incident
 
 
 def require_manage(user: User, incident: Incident) -> None:
+    if refused := locked(incident):
+        raise refused
     if not can_manage(user, incident):
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,

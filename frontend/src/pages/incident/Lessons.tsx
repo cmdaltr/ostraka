@@ -8,8 +8,8 @@ import { Notice, formatDate } from '../../components/ui';
 import { FollowUp } from './FollowUp';
 import { Rich, useSave, useSection } from './shared';
 
-const kindNames: Record<LessonKind, string> = { went_well: 'Went well', improve: 'To improve' };
-const areaNames: Record<LessonArea, string> = {
+export const kindNames: Record<LessonKind, string> = { went_well: 'Went well', improve: 'To improve' };
+export const areaNames: Record<LessonArea, string> = {
   people: 'People',
   process: 'Process',
   technology: 'Technology',

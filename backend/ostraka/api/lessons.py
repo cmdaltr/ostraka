@@ -50,7 +50,7 @@ async def _lesson(db: AsyncSession, incident: Incident, lesson_id: uuid.UUID) ->
 async def list_lessons(
     incident_id: uuid.UUID, user: User = Depends(current_user), db: AsyncSession = Depends(get_session)
 ) -> list[LessonOut]:
-    await access.load(db, user, incident_id)
+    await access.load(db, user, incident_id, sealed_ok=True)  # lessons outlast cold store
     rows = await db.scalars(select(Lesson).where(Lesson.incident_id == incident_id).order_by(Lesson.seq))
     return [await lesson_out(db, user, lesson) for lesson in rows.all()]
 

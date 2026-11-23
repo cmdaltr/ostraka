@@ -14,6 +14,7 @@ import { useLiveIncident } from '../../live/live';
 import type { Present } from '../../live/live';
 import { PresenceProvider } from '../../live/presence';
 import { AchMatrix } from './AchMatrix';
+import { Archiving } from './Archiving';
 import { AttackFlow } from './AttackFlow';
 import { Activity } from './Activity';
 import { Assessments } from './Assessments';
@@ -234,6 +235,7 @@ export function IncidentPage({ me }: { me: Me }) {
   });
   const people = useLiveIncident(id, queryClient);
   const incident = live.data;
+  const cold = incident?.archive_state === 'cold';
   const { hash } = useLocation();
 
   // A #reference link names a record; sections load on demand, so wait briefly for it to appear
@@ -276,11 +278,15 @@ export function IncidentPage({ me }: { me: Me }) {
             <SeverityPill level={incident.severity} />
             <TlpPill level={incident.tlp} />
             {incident.kind === 'hunt' && <span className="chip chip-hunt">Hunt</span>}
-            {incident.status === 'closed' && <span className="chip">Closed</span>}
-            {!incident.can_edit && <span className="chip">Read only</span>}
+            {incident.status === 'closed' && incident.archive_state !== 'archived' && incident.archive_state !== 'cold' && (
+              <span className="chip">Closed</span>
+            )}
+            {incident.archive_state === 'archived' && <span className="chip archive-archived">Archived</span>}
+            {incident.archive_state === 'cold' && <span className="chip archive-cold">Cold store</span>}
+            {!incident.can_edit && incident.archive_state !== 'cold' && <span className="chip">Read only</span>}
           </span>
           <Here people={people} me={me} />
-          {incident.can_export && <Export incident={incident} />}
+          {incident.can_export && !cold && <Export incident={incident} />}
           {incident.kind === 'hunt' && incident.can_edit && me.role !== 'observer' && !promoting && (
             <button className="btn" type="button" onClick={() => setPromoting(true)}>
               Promote to an incident
@@ -292,6 +298,15 @@ export function IncidentPage({ me }: { me: Me }) {
 
       {promoting && <Promote hunt={incident} onClose={() => setPromoting(false)} />}
 
+      {cold ? (
+        // cold store: the catalogue entry, the way back, its lessons and its exhibits' custody, nothing else
+        <div className="incident-main incident-cold">
+          <Archiving incident={incident} />
+          <Lessons incident={incident} me={me} />
+          <Evidence incident={incident} />
+        </div>
+      ) : (
+      <>
       <SinceYouLeftBanner incident={incident} />
 
       <nav className="tabs" aria-label="Incident sections">
@@ -317,6 +332,7 @@ export function IncidentPage({ me }: { me: Me }) {
           {section === 'overview' && (
             <>
               <Overview incident={incident} me={me} />
+              <Archiving incident={incident} />
               {/* lessons learned are what the last phase is for: they join the overview once it's reached */}
               {(incident.status === 'closed' || incident.phase === phasesOf(incident.kind).at(-1)) && (
                 <Lessons incident={incident} me={me} />
@@ -391,6 +407,8 @@ export function IncidentPage({ me }: { me: Me }) {
         />
       </div>
       </PresenceProvider>
+      </>
+      )}
     </div>
       )}
     </Loading>

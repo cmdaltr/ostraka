@@ -72,6 +72,10 @@ From a record's **Evidence** tab you can then:
 
 Only the record's reference goes to either server. A TLP:RED or TLP:AMBER+STRICT record only exchanges anything with a server on your own network. Acting on the siblings' webhooks needs the Pro or Services edition, on both sides.
 
+### The catalogue
+
+**Catalogue** lists closed incidents and hunts, searched on the server by reference, code name, title, tags, ATT&CK technique and the dates they were opened and closed, with the lessons register beside it. A closed record is archived (read only) 30 days after closing and goes into cold store (only its catalogue entry, lessons and exhibits' custody) after 90; whoever manages a record can change those days or keep it out of the archive. To bring one back, or to archive one before its days are up (**Archive now**), ask from the record with a reason; an admin or a lead of a team on it, not you, approves within 24 hours, or the request lapses.
+
 ### Notifications
 
 Everything appears under the bell in Ostraka. To also send email, set the `OSTRAKA_SMTP_*` values in `.env` (see `.env.example`). Browser push needs no setup: each person turns it on under **Profile → Notifications**, where they also choose which kinds reach them outside Ostraka and set quiet hours (read in their own time zone; work on a critical incident still comes through). It works wherever Ostraka is served over HTTPS (or on `127.0.0.1`). Chat channels can be in Microsoft Teams or Slack. Both work outbound only, so Ostraka needs no public address for them.

@@ -31,6 +31,12 @@ A record is an incident (`OST-YY-NNN`) or a hunt (`HNT-YY-NNN`), the same table 
 
 Findings (`FND-N`) start as leads. A lead can come from anyone, from an MCP client or from the importer, and it is never confirmed by itself: confirmation needs a verification (source reliability, information credibility, what it was checked against) and an analyst. A refuted finding is kept, with the reason. Every update carries an assessment in the PHIA yardstick's probability terms. All of this is enforced by Ostraka's own structure, not by AI.
 
+### The catalogue and archiving
+
+Closed records are found in the Catalogue (`api/catalogue.py`): a search on the server by reference, code name, title, tags, technique and dates, a page at a time, filtered by `access.visible_filter` so a record you can't open is neither shown nor counted. The lessons register searches lessons across records the same way; an observer whose view masks indicators matches only on what they see, as on the Queries page.
+
+`ostraka/archive.py` keeps closed records: the scheduler archives one `archive_after_days` (30) after it closed and puts it in cold store after `cold_after_days` (90), each record's own. `access.load` answers 423 to a change on an archived record and to anything but the catalogue entry, lessons and custody on a cold one. A request (`api/archive.py`), to restore a record or to archive it ahead of its days, is made with a reason and decided by another admin or lead of a team on the record within 24 hours, or lapses; one waits per record. An approved restore makes the record active again and starts its days over.
+
 ## Assessments, ACH and lessons
 
 An assessment (`ASM-N`) is stored as parts: the claim, a yardstick term, the findings it rests on, and negative evidence, each piece of which names the search that came back empty (platform, query, scope, window). `ostraka/standard/` turns the parts into sentences, bottom line first and strongest evidence first ("We assess it is likely (55–75%) that ..."), and lints them with fixed rules. An error (no basis, a refuted finding cited, "almost certain" resting only on leads) stops the save. A warning (certainty words, loaded adjectives, likelihood written into the claim, the author writing "we assess" themselves) is saved and shown. Assessments are never edited: a new one supersedes the old, so the record shows how the judgement moved.

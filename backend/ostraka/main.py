@@ -11,9 +11,11 @@ from starlette.routing import Route
 from ostraka import __version__, branding, live, mcp_server, notify, scheduler, webhooks
 from ostraka.api import (
     ach,
+    archive,
     assessments,
     assets,
     auth,
+    catalogue,
     chat,
     clocks,
     comments,
@@ -125,6 +127,8 @@ def create_app() -> FastAPI:
         flow,
         chat,
         shikari_runs,
+        archive,
+        catalogue,
     ):
         app.include_router(module.router)
     for extra in (
@@ -133,6 +137,7 @@ def create_app() -> FastAPI:
         playbooks.incident_router,
         clocks.mine_router,
         flow.groups_router,
+        archive.waiting_router,
     ):
         app.include_router(extra)
     # MCP over HTTP, as the bearer token's owner (ostraka/mcp_server.py)

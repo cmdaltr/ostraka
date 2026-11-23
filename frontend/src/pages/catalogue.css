@@ -1,0 +1,46 @@
+/* The catalogue (pages/Catalogue.tsx) and a record's archiving (pages/incident/Archiving.tsx) */
+.catalogue-search {
+  display: grid;
+  gap: var(--space-3);
+}
+.catalogue-search .form-row {
+  flex-wrap: wrap;
+}
+.catalogue-q input {
+  width: 100%;
+}
+.field-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+/* closed and active: plain; archived: ochre; cold store: the muted ink, as something put away */
+.archive-active {
+  color: var(--muted);
+}
+.archive-archived {
+  color: var(--ochre-ink);
+  background: var(--ochre-soft);
+  border-color: transparent;
+}
+.archive-cold {
+  color: var(--surface);
+  background: var(--muted);
+  border-color: transparent;
+}
+.archive-request {
+  border-left: 3px solid var(--ochre);
+  padding-left: var(--space-3);
+}
+.incident-cold {
+  display: grid;
+  gap: var(--space-4);
+}

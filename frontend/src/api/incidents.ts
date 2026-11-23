@@ -29,6 +29,46 @@ export interface IncidentSummary {
   declared_at: string;
   updated_at: string;
   tags: string[];
+  archive_state?: ArchiveState;
+}
+
+// Keeping a closed record (backend/ostraka/archive.py): archived is read only, cold store shows only
+// its catalogue entry, lessons and exhibits' custody
+export type ArchiveState = 'active' | 'archived' | 'cold';
+export type RequestOutcome = 'pending' | 'approved' | 'declined' | 'withdrawn' | 'expired';
+
+// A request to restore a record, or to archive it (or put it in cold store) ahead of its days
+export interface ArchiveRequest {
+  id: string;
+  action: 'restore' | 'archive';
+  reason: string;
+  from_state: ArchiveState;
+  to_state: ArchiveState;
+  requested_by: PersonRef | null;
+  requested_at: string;
+  expires_at: string;
+  outcome: RequestOutcome;
+  decided_by: PersonRef | null;
+  decided_at: string | null;
+  note: string;
+  can_decide: boolean;
+  can_withdraw: boolean;
+}
+
+export interface Archive {
+  state: ArchiveState;
+  auto: boolean;
+  archive_after_days: number;
+  cold_after_days: number;
+  archived_at: string | null;
+  cold_at: string | null;
+  restored_at: string | null;
+  next_state: ArchiveState | null;
+  next_at: string | null;
+  can_set: boolean;
+  can_restore: boolean;
+  archive_to: ArchiveState[];
+  request: ArchiveRequest | null;
 }
 
 export interface Incident extends IncidentSummary {
@@ -45,6 +85,7 @@ export interface Incident extends IncidentSummary {
   brand_id: string | null;
   channel_kind?: '' | 'teams' | 'slack';
   counts: { observables: number; assets: number; findings: number; comments: number; tasks: number };
+  archive?: Archive;
 }
 
 export interface Sighting {

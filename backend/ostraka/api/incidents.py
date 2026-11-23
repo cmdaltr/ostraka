@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ostraka import codenames, licence, notify
+from ostraka import archive, codenames, licence, notify
 from ostraka.api import playbooks
 from ostraka.auth.deps import current_user
 from ostraka.db import get_session
@@ -195,7 +195,7 @@ async def by_ref(ref: str, user: User = Depends(current_user), db: AsyncSession 
 async def get_incident(
     incident_id: uuid.UUID, user: User = Depends(current_user), db: AsyncSession = Depends(get_session)
 ) -> IncidentOut:
-    return await views.detail(db, user, await access.load(db, user, incident_id))
+    return await views.detail(db, user, await access.load(db, user, incident_id, sealed_ok=True))
 
 
 async def _choose_brand(db: AsyncSession, user: User, incident: Incident, brand_id: uuid.UUID | None) -> str:
@@ -251,6 +251,8 @@ async def update_incident(
             described.append(f"{field.replace('_', ' ')} {shown(before)} → {shown(value)}")
     if "status" in changes:
         incident.closed_at = utcnow() if incident.status is IncidentStatus.CLOSED else None
+        if incident.status is IncidentStatus.OPEN:
+            await archive.withdraw_unneeded(db, incident, utcnow(), "it was reopened")
     if described:
         incident.version += 1
         incident.updated_at = utcnow()

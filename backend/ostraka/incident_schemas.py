@@ -9,6 +9,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from ostraka.models import (
+    ArchiveState,
     AssetStatus,
     FindingKind,
     FindingStatus,
@@ -17,6 +18,8 @@ from ostraka.models import (
     LinkKind,
     Phase,
     RecordKind,
+    RequestAction,
+    RequestOutcome,
     Severity,
     Tlp,
     Verdict,
@@ -119,6 +122,68 @@ class IncidentSummary(BaseModel):
     declared_at: datetime
     updated_at: datetime
     tags: list[str]
+    archive_state: ArchiveState = ArchiveState.ACTIVE
+
+
+class ArchiveRequestOut(BaseModel):
+    id: uuid.UUID
+    action: RequestAction
+    reason: str
+    from_state: ArchiveState
+    to_state: ArchiveState
+    requested_by: Person | None
+    requested_at: datetime
+    expires_at: datetime
+    outcome: RequestOutcome
+    decided_by: Person | None
+    decided_at: datetime | None
+    note: str
+    can_decide: bool  # this viewer may approve or decline it
+    can_withdraw: bool
+
+
+class ArchiveOut(BaseModel):
+    """Where a record is in its keeping, what happens next, and what this viewer may do about it."""
+
+    state: ArchiveState
+    auto: bool
+    archive_after_days: int
+    cold_after_days: int
+    archived_at: datetime | None
+    cold_at: datetime | None
+    restored_at: datetime | None
+    next_state: ArchiveState | None
+    next_at: datetime | None
+    can_set: bool
+    can_restore: bool  # this viewer may ask for it back
+    archive_to: list[ArchiveState]  # where this viewer may ask for it to be archived ahead of its days
+    request: ArchiveRequestOut | None  # the one waiting, if any
+
+
+class ArchivingIn(BaseModel):
+    version: int
+    auto: bool
+    archive_after_days: int = Field(ge=1, le=3649)
+    cold_after_days: int = Field(ge=2, le=3650)
+
+    @model_validator(mode="after")
+    def _order(self) -> ArchivingIn:
+        if self.cold_after_days <= self.archive_after_days:
+            raise ValueError("Cold store comes after archiving: give it more days.")
+        return self
+
+
+class RestoreIn(BaseModel):
+    reason: str = Field(min_length=5, max_length=1000)
+
+
+class ArchiveNowIn(BaseModel):
+    reason: str = Field(min_length=5, max_length=1000)
+    to_state: ArchiveState = ArchiveState.ARCHIVED
+
+
+class RestoreDecision(BaseModel):
+    note: str = Field(default="", max_length=1000)
 
 
 class IncidentOut(IncidentSummary):
@@ -134,6 +199,7 @@ class IncidentOut(IncidentSummary):
     brand_id: uuid.UUID | None
     channel_kind: str = ""  # the incident's own chat channel: teams, slack or none
     counts: dict[str, int]
+    archive: ArchiveOut | None = None
 
 
 class LinkedRecord(BaseModel):

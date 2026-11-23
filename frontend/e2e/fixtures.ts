@@ -170,7 +170,7 @@ export const noLinks = {
 };
 
 export interface Api {
-  requests: { method: string; path: string; body: unknown }[];
+  requests: { method: string; path: string; body: unknown; query: URLSearchParams }[];
   handle: (method: string, path: string, body: unknown) => { status?: number; json?: unknown } | undefined;
 }
 
@@ -235,7 +235,7 @@ export async function stubApi(page: Page, who = me(), handle: Api['handle'] = ()
     } catch {
       body = { bytes: request.postDataBuffer()?.length ?? 0 };
     }
-    api.requests.push({ method: request.method(), path: url.pathname, body });
+    api.requests.push({ method: request.method(), path: url.pathname, body, query: url.searchParams });
     if (url.pathname === '/api/auth/refresh') return route.fulfill({ json: { access_token: 'a', expires_in: 900 } });
     const answer = api.handle(request.method(), url.pathname, body);
     if (answer) return route.fulfill({ status: answer.status ?? 200, json: answer.json ?? {} });

@@ -108,7 +108,7 @@ async def evidence_out(
     if cited is None:
         cited = (await _citations(db, [item.id]))[item.id]
     masked = hides_iocs(user)
-    manage = access.can_manage(user, incident)
+    manage = access.can_manage(user, incident, custody=True)
     pending = now.pending
     lookup = await views.names(db, [item.created_by])
     return EvidenceOut(
@@ -136,7 +136,7 @@ async def evidence_out(
             broken_at=check.broken_at,
             head=entries[-1].hash if entries else custody.anchor(item),
         ),
-        can_offer=access.can_edit(user, incident)
+        can_offer=access.can_edit(user, incident, custody=True)
         and policy.can_offer_custody(
             user, holder_id=now.holder_id, can_manage=manage, pending=pending is not None
         )
@@ -250,7 +250,7 @@ async def _log(
 async def list_evidence(
     incident_id: uuid.UUID, user: User = Depends(current_user), db: AsyncSession = Depends(get_session)
 ):
-    incident = await access.load(db, user, incident_id)
+    incident = await access.load(db, user, incident_id, custody=True)
     items = (
         await db.scalars(
             select(EvidenceItem).where(EvidenceItem.incident_id == incident.id).order_by(EvidenceItem.seq)
@@ -267,7 +267,7 @@ async def get_evidence(
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_session),
 ) -> EvidenceOut:
-    incident = await access.load(db, user, incident_id)
+    incident = await access.load(db, user, incident_id, custody=True)
     return await evidence_out(db, user, incident, await _item(db, incident, evidence_id))
 
 
@@ -371,14 +371,14 @@ async def offer(
     db: AsyncSession = Depends(get_session),
 ) -> EvidenceOut:
     """Offer the exhibit to someone. It stays with its holder until they accept."""
-    incident = await access.load(db, user, incident_id, edit=True)
+    incident = await access.load(db, user, incident_id, edit=True, custody=True)
     item = await _item(db, incident, evidence_id, lock=True)
     now = custody.state(item, list(item.entries))
     _refuse(
         policy.can_offer_custody(
             user,
             holder_id=now.holder_id,
-            can_manage=access.can_manage(user, incident),
+            can_manage=access.can_manage(user, incident, custody=True),
             pending=now.pending is not None,
         ),
         status.HTTP_409_CONFLICT if now.pending is not None else status.HTTP_403_FORBIDDEN,
@@ -431,7 +431,7 @@ async def offer(
 async def _answer(
     db: AsyncSession, user: User, incident_id: uuid.UUID, evidence_id: uuid.UUID
 ) -> tuple[Incident, EvidenceItem, custody.State, CustodyEntry]:
-    incident = await access.load(db, user, incident_id)
+    incident = await access.load(db, user, incident_id, custody=True)
     item = await _item(db, incident, evidence_id, lock=True)
     now = custody.state(item, list(item.entries))
     if now.pending is None:
@@ -554,7 +554,7 @@ async def withdraw(
             user,
             offered_by=pending.actor_id,
             holder_id=now.holder_id,
-            can_manage=access.can_manage(user, incident),
+            can_manage=access.can_manage(user, incident, custody=True),
         )
     )
     entry = _append(

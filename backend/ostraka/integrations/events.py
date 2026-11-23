@@ -34,7 +34,7 @@ from ostraka.integrations.http import Refused, Unreachable
 from ostraka.integrations.rowanholt import FINDING_EVENTS, JOB_EVENTS, Rowanholt
 from ostraka.integrations.shikari import RUN_EVENTS, Shikari
 from ostraka.log import get_logger
-from ostraka.models import Incident, Product, RowanholtCitation, RowanholtLink, ShikariRun
+from ostraka.models import ArchiveState, Incident, Product, RowanholtCitation, RowanholtLink, ShikariRun
 
 log = get_logger(__name__)
 _background: set[asyncio.Task] = set()
@@ -73,7 +73,8 @@ def startup() -> None:
 
 
 async def records_for(db: AsyncSession, job_id: str, case_number: str, external_ref: str) -> list[Incident]:
-    """The records a Rowanholt job concerns: the one it was started for, and any linked to it or its case."""
+    """The records a Rowanholt job concerns: the one it was started for, and any linked to it or its case,
+    while they aren't archived."""
     found: dict[uuid.UUID, Incident] = {}
     ref = parse_ref(external_ref) if external_ref else None
     if ref is not None and ref.kind == "incident":
@@ -87,7 +88,8 @@ async def records_for(db: AsyncSession, job_id: str, case_number: str, external_
     for link in (await db.scalars(select(RowanholtLink).where(or_(*clauses)))).all():
         if link.incident_id not in found and (incident := await db.get(Incident, link.incident_id)):
             found[incident.id] = incident
-    return list(found.values())
+    # an archived record takes nothing new until it's restored
+    return [i for i in found.values() if i.archive_state is ArchiveState.ACTIVE]
 
 
 async def _rowanholt(event: str, data: dict[str, Any]) -> None:

@@ -260,6 +260,8 @@ const kindNames: Record<string, string> = {
   clock_breached: 'A regulator deadline I answer for has passed',
   update_due: 'A stakeholder update I handle is due',
   stakeholder_update: 'A stakeholder update is sent to me',
+  archive_asked: 'Someone asks to archive or restore a record and I may approve it',
+  archive_decided: 'My request to archive or restore a record is decided or lapses',
 };
 
 function Kinds({ me }: { me: Me }) {
