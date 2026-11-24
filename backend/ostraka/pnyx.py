@@ -13,7 +13,6 @@ words is set aside. The TLP guard is the stakeholder updates' (`updates.ai.provi
 
 from __future__ import annotations
 
-import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -37,8 +36,7 @@ from ostraka.models import (
     TaskStatus,
     User,
 )
-from ostraka.standard import yardstick
-from ostraka.standard.assessment import CERTAINTY
+from ostraka.standard import claims, yardstick
 from ostraka.standard.rephrase import REFS
 from ostraka.updates import drafts, rhythm
 
@@ -349,28 +347,9 @@ def known_refs(f: Facts) -> set[str]:
     return {m.upper() for m in REFS.findall(record_text(f))} | {f.ref.upper()}
 
 
-_SENTENCE = re.compile(r"(?<=[.!?])\s+|\n+")
-_CONFIRMED = re.compile(r"\bconfirm(?:ed|s)?\b", re.I)
-_UNCONFIRMED = re.compile(r"\b(?:not|un|yet to be|still to be|isn't|aren't|hasn't|haven't)\b", re.I)
-
-
 def problems(f: Facts, answer: str) -> list[str]:
     """Why an answer can't be shown; empty when it can. Fixed rules, no model."""
-    out: list[str] = []
-    known = known_refs(f)
-    unknown = sorted({m.upper() for m in REFS.findall(answer)} - known)
-    if unknown:
-        out.append(f"It cites {', '.join(unknown)}, which the record doesn't hold.")
-    leads = {x.ref.upper() for x in f.leads}
-    for sentence in _SENTENCE.split(answer):
-        if not _CONFIRMED.search(sentence) or _UNCONFIRMED.search(sentence):
-            continue
-        called = sorted({m.upper() for m in REFS.findall(sentence)} & leads)
-        if called:
-            still = "they are still leads" if len(called) > 1 else "it is still a lead"
-            out.append(f"It calls {', '.join(called)} confirmed, but {still}.")
-    if CERTAINTY.search(answer):
-        out.append("It asserts certainty in words, which only the evidence may.")
+    out = claims.problems(answer, known_refs(f), {x.ref.upper(): "lead" for x in f.leads})
     if not answer.strip():
         out.append("It came back empty.")
     return out

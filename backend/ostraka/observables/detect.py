@@ -293,7 +293,8 @@ def detect(raw: str, context: str | None = None) -> Detection:
 
 
 _TOKEN_SPLIT = re.compile(r"[\s,;|]+")
-_WRAPPERS = "()[]{}'\"<>.:?!"  # brackets, quotes and sentence punctuation around a token
+# brackets, quotes (typographic ones too, as word processors write them) and sentence punctuation
+_WRAPPERS = "()[]{}'\"<>.:?!“”‘’«»"
 
 
 def detect_many(text: str, min_confidence: float = 0.8) -> list[Detection]:

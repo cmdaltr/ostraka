@@ -30,7 +30,7 @@ STRENGTH = {
 }
 
 
-def _yardstick_terms(text: str) -> Counter:
+def yardstick_terms(text: str) -> Counter:
     found: Counter = Counter()
     for probability in yardstick.TERMS:
         phrase = f"{yardstick.words(probability)} ({yardstick.range_of(probability)})"
@@ -38,7 +38,7 @@ def _yardstick_terms(text: str) -> Counter:
     return +found
 
 
-def _without_terms(text: str) -> str:
+def without_terms(text: str) -> str:
     out = text
     for probability in yardstick.TERMS:
         out = re.sub(
@@ -71,7 +71,7 @@ def problems(original: list[str], reworded: list[str]) -> list[str]:
                 Counter(r.upper() for r in REFS.findall(b)),
             ),
             ("numbers", Counter(NUMBERS.findall(a)), Counter(NUMBERS.findall(b))),
-            ("probability terms", _yardstick_terms(a), _yardstick_terms(b)),
+            ("probability terms", yardstick_terms(a), yardstick_terms(b)),
             (
                 "masked indicators",
                 Counter(m.lower() for m in MASKED.findall(a)),
@@ -84,8 +84,8 @@ def problems(original: list[str], reworded: list[str]) -> list[str]:
         for word, pattern in STRENGTH.items():
             if len(pattern.findall(a)) != len(pattern.findall(b)):
                 out.append(f"Line {n} changed how strongly it's put (“{word}”).")
-        loose = len(yardstick.LOOSE_PROBABILITY.findall(_without_terms(b)))
-        if loose > len(yardstick.LOOSE_PROBABILITY.findall(_without_terms(a))):
+        loose = len(yardstick.LOOSE_PROBABILITY.findall(without_terms(b)))
+        if loose > len(yardstick.LOOSE_PROBABILITY.findall(without_terms(a))):
             out.append(f"Line {n} adds likelihood words outside the yardstick.")
         for name, pattern in (("certainty", CERTAINTY), ("loaded", LOADED)):
             if len(pattern.findall(b)) > len(pattern.findall(a)):

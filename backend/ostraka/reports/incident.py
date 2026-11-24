@@ -291,6 +291,17 @@ def _cards(record: Record) -> bytes:
     return charts.headline_cards(cards)
 
 
+def _executive(record: Record, mask) -> list[tuple]:
+    """The saved executive summary, first, with how it was worded."""
+    text = record.incident.executive_summary.strip()
+    if not text:
+        return []
+    blocks: list[tuple] = [("section", "Executive Summary"), ("para", mask(text))]
+    if record.incident.executive_summary_worded in ("ollama", "anthropic"):
+        blocks.append(("note", ["Worded with AI help from the record, and checked by Ostraka's rules."]))
+    return blocks
+
+
 def _bluf(record: Record, mask) -> list[tuple]:
     current = _current(record)
     if not current:
@@ -340,6 +351,7 @@ def technical(record: Record) -> tuple[Cover, list[tuple]]:
     keep = lambda text: text  # noqa: E731 (the technical report shows what responders see)
     blocks: list[tuple] = []
 
+    blocks += _executive(record, keep)
     blocks += [("section", "Bottom Line Up Front"), *_bluf(record, keep)]
     blocks.append(("figure", _cards(record), "The incident in four numbers.", 17.0))
     if incident.summary.strip():
@@ -926,7 +938,11 @@ def briefing(record: Record) -> tuple[Cover, list[tuple]]:
     mask = mask_text
     confirmed = [f for f in record.findings if f.status is FindingStatus.CONFIRMED]
     leads = sum(f.status is FindingStatus.LEAD for f in record.findings)
-    blocks: list[tuple] = [("section", "Bottom Line Up Front"), *_bluf(record, mask)]
+    blocks: list[tuple] = [
+        *_executive(record, mask),
+        ("section", "Bottom Line Up Front"),
+        *_bluf(record, mask),
+    ]
     blocks.append(("figure", _cards(record), "The incident in four numbers.", 17.0))
     if record.incident.summary.strip():
         blocks.append(("para", mask(record.incident.summary.strip())))

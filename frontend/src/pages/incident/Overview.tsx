@@ -17,6 +17,7 @@ import { ChannelForm, ChannelHelp, channelStatus } from '../../components/ChatCh
 import { keys } from '../../api/incidents';
 import { PhasePill, SeverityPill, TlpPill } from '../../components/Pills';
 import { Notice, formatDate } from '../../components/ui';
+import { ExecutiveSummary } from './ExecutiveSummary';
 import { Links } from './Links';
 import { Rich, Tags, splitTags, useSave } from './shared';
 
@@ -383,6 +384,7 @@ function Channel({ incident }: { incident: Incident }) {
 export function Overview({ incident, me }: { incident: Incident; me: Me }) {
   return (
     <>
+      <ExecutiveSummary incident={incident} />
       <Details incident={incident} />
       <Links incident={incident} />
       <People incident={incident} me={me} />

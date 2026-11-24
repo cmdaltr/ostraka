@@ -186,8 +186,16 @@ class RestoreDecision(BaseModel):
     note: str = Field(default="", max_length=1000)
 
 
+class ExecutiveOut(BaseModel):
+    text: str
+    by: Person | None
+    at: datetime | None
+    worded: str  # ostraka, ollama, anthropic or person
+
+
 class IncidentOut(IncidentSummary):
     summary: str
+    executive: ExecutiveOut | None = None
     aware_at: datetime
     closed_at: datetime | None
     members: list[MemberOut]

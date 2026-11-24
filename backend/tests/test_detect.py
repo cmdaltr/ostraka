@@ -103,3 +103,8 @@ def test_an_indicator_ending_a_question_or_exclamation_is_still_found():
 def test_an_indicator_given_as_a_fields_value_is_found_and_a_url_keeps_its_query():
     found = detect_many('index=proxy dest=203.0.113.7 src="10.1.2.3" see https://evil.example/a?b=c')
     assert [d.value for d in found] == ["203.0.113.7", "10.1.2.3", "https://evil.example/a?b=c"]
+
+
+def test_an_indicator_in_typographic_quotes_is_found():
+    found = detect_many("Beacons to “185.220.101.4” and ‘evil.example’, «10.1.2.3»")
+    assert [d.value for d in found] == ["185.220.101.4", "evil.example", "10.1.2.3"]

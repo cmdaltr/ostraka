@@ -71,8 +71,19 @@ export interface Archive {
   request: ArchiveRequest | null;
 }
 
+// Who worded a record's executive summary (backend/ostraka/executive.py)
+export type Worded = 'ostraka' | 'ollama' | 'anthropic' | 'person';
+
+export interface Executive {
+  text: string;
+  by: PersonRef | null;
+  at: string | null;
+  worded: Worded;
+}
+
 export interface Incident extends IncidentSummary {
   summary: string;
+  executive?: Executive | null;
   aware_at: string;
   closed_at: string | null;
   members: { user: PersonRef; role: IncidentRole }[];

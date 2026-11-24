@@ -21,6 +21,7 @@ from ostraka.api import (
     comments,
     detection_gaps,
     evidence,
+    executive,
     exports,
     findings,
     flow,
@@ -129,6 +130,7 @@ def create_app() -> FastAPI:
         shikari_runs,
         archive,
         catalogue,
+        executive,
     ):
         app.include_router(module.router)
     for extra in (

@@ -150,6 +150,8 @@ Only the web container publishes a port. Postgres and Redis are reachable only o
 
 ### Reports
 
+A record's overview has an **executive summary**: Generate drafts four sentences from the whole record (what it is, what's confirmed, the conclusion), worded by the model when one may read it and checked by Ostraka's rules, or by those rules alone. Edit it, save it, and every report opens with it.
+
 An incident or hunt exports from its page (Export) as the full technical report or a shorter briefing, in PDF or Word, in the Ostrakon palette (or your brand, with a Pro or Services licence) with the TLP on every page. Set `OSTRAKA_ORGANISATION` to name who reports are prepared for. Exports are open to people who worked on the incident; tick Sensitive on its overview and only the commander can export. The PDF embeds Inter and JetBrains Mono; Word names them and substitutes its own fonts on a machine without them.
 
 ### Editions and licences

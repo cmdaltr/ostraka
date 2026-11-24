@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ostraka import archive
 from ostraka.incident_schemas import (
     Elsewhere,
+    ExecutiveOut,
     FindingOut,
     IncidentObservableOut,
     IncidentOut,
@@ -104,6 +105,7 @@ async def detail(db: AsyncSession, user: User, incident: Incident) -> IncidentOu
     return IncidentOut(
         **base.model_dump(),
         summary=for_viewer(user, incident.summary),
+        executive=await executive_of(db, user, incident),
         aware_at=incident.aware_at,
         closed_at=incident.closed_at,
         members=[
@@ -119,6 +121,18 @@ async def detail(db: AsyncSession, user: User, incident: Incident) -> IncidentOu
         channel_kind=incident.channel_kind,
         counts=counts,
         archive=await archive.view(db, user, incident),
+    )
+
+
+async def executive_of(db: AsyncSession, user: User, incident: Incident) -> ExecutiveOut | None:
+    if not incident.executive_summary:
+        return None
+    by = await db.get(User, incident.executive_summary_by) if incident.executive_summary_by else None
+    return ExecutiveOut(
+        text=for_viewer(user, incident.executive_summary),
+        by=Person(id=by.id, name=by.name) if by else None,
+        at=incident.executive_summary_at,
+        worded=incident.executive_summary_worded,
     )
 
 

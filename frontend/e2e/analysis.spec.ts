@@ -108,7 +108,7 @@ test('lessons stay out of the overview until the incident reaches Learn', async 
   await stubLive(page);
   await stubApi(page, me(), (method, path) => (method === 'GET' && path === '/api/incidents/i-1/lessons' ? { json: [] } : undefined));
   await page.goto('/incidents/OST-26-001');
-  await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Summary', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Record a lesson' })).toHaveCount(0);
   await expect(page.getByRole('navigation', { name: 'Incident sections' }).getByRole('button')).toHaveText([
     /Overview/, /Tasks/, /Findings/, /Observables/, /Assets/, /Evidence/, /Assessments/, /Updates/, /Timeline/,
@@ -159,7 +159,7 @@ test('scrolling over the discussion never scrolls the page behind it', async ({ 
   await stubApi(page, me());
   await page.setViewportSize({ width: 1280, height: 500 });
   await page.goto('/incidents/OST-26-001');
-  await page.getByRole('heading', { name: 'Summary' }).waitFor();
+  await page.getByRole('heading', { name: 'Summary', exact: true }).waitFor();
   const tab = page.getByRole('button', { name: /Discussion/ });
   await tab.hover();
   await page.mouse.wheel(0, 600);
@@ -174,16 +174,16 @@ test('a card folds by its title, stays folded next time, and find-in-page still 
   await stubLive(page);
   await stubApi(page, me());
   await page.goto('/incidents/OST-26-001');
-  const summary = page.locator('.panel', { has: page.getByRole('heading', { name: 'Summary' }) });
+  const summary = page.locator('.panel', { has: page.getByRole('heading', { name: 'Summary', exact: true }) });
   const facts = summary.locator('.facts');
   await expect(facts).toBeVisible();
-  await page.getByRole('heading', { name: 'Summary' }).click();
+  await page.getByRole('heading', { name: 'Summary', exact: true }).click();
   await expect(facts).toBeHidden();
   // hidden until found, not removed: the browser's find searches it
   await expect(facts).toHaveAttribute('hidden', 'until-found');
 
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Summary', exact: true })).toBeVisible();
   await expect(summary.locator('.facts')).toHaveAttribute('hidden', 'until-found');
 
   // what the browser does when find-in-page matches inside: beforematch, then the hidden part shows
@@ -194,12 +194,12 @@ test('a card folds by its title, stays folded next time, and find-in-page still 
   await expect(summary.locator('.facts')).toBeVisible();
   await expect(summary.locator('[hidden]')).toHaveCount(0);
   await page.reload();
-  await expect(page.locator('.panel', { has: page.getByRole('heading', { name: 'Summary' }) }).locator('.facts')).toBeVisible();
+  await expect(page.locator('.panel', { has: page.getByRole('heading', { name: 'Summary', exact: true }) }).locator('.facts')).toBeVisible();
 
   // and by keyboard
-  await page.getByRole('heading', { name: 'Summary' }).focus();
+  await page.getByRole('heading', { name: 'Summary', exact: true }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.panel', { has: page.getByRole('heading', { name: 'Summary' }) }).locator('.facts')).toBeHidden();
+  await expect(page.locator('.panel', { has: page.getByRole('heading', { name: 'Summary', exact: true }) }).locator('.facts')).toBeHidden();
 });
 
 test('Pnyx gives the bearings and answers a free question, beside the discussion', async ({ page }) => {

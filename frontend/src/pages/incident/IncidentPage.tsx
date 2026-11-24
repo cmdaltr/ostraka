@@ -15,6 +15,7 @@ import type { Present } from '../../live/live';
 import { PresenceProvider } from '../../live/presence';
 import { AchMatrix } from './AchMatrix';
 import { Archiving } from './Archiving';
+import { ExecutiveSummary } from './ExecutiveSummary';
 import { AttackFlow } from './AttackFlow';
 import { Activity } from './Activity';
 import { Assessments } from './Assessments';
@@ -302,6 +303,7 @@ export function IncidentPage({ me }: { me: Me }) {
         // cold store: the catalogue entry, the way back, its lessons and its exhibits' custody, nothing else
         <div className="incident-main incident-cold">
           <Archiving incident={incident} />
+          <ExecutiveSummary incident={incident} />
           <Lessons incident={incident} me={me} />
           <Evidence incident={incident} />
         </div>

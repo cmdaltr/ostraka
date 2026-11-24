@@ -186,6 +186,14 @@ class Incident(Base):
     # the ATT&CK group it's attributed to (G0016), which shapes the attack flow's expectations
     attributed_group: Mapped[str | None] = mapped_column(String(16))
     summary: Mapped[str] = mapped_column(Text, default="")
+    # Four sentences for senior readers (`ostraka.executive`): what it is, what's confirmed, the conclusion;
+    # worded by ostraka (its fixed rules), ollama or anthropic (checked by those rules), or a person
+    executive_summary: Mapped[str] = mapped_column(Text, default="")
+    executive_summary_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    executive_summary_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    executive_summary_worded: Mapped[str] = mapped_column(String(16), default="")
     severity: Mapped[Severity] = mapped_column(_enum(Severity, "severity"))
     tlp: Mapped[Tlp] = mapped_column(_enum(Tlp, "tlp"))
     phase: Mapped[Phase] = mapped_column(_enum(Phase, "phase"), default=Phase.DETECT)
